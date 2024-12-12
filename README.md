@@ -2,9 +2,9 @@
 
 The server uses the MCP protocol to share access to a local Home Assistant instance with an LLM application.
 
-More about MCP here:
+More about MCP here: https://modelcontextprotocol.io/introduction
 
-More about Home Assistant here:
+More about Home Assistant here: https://www.home-assistant.io
 
 ## Usage
 
