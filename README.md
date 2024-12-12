@@ -36,3 +36,16 @@ Then configure your application (like Claude Desktop) to use it.
 You'll need a personal access token from home assistant.
 
 Get one using this guide: https://community.home-assistant.io/t/how-to-get-long-lived-access-token/162159
+
+## In Progress
+
+- [x] Access to entities
+- [x] Access to Floors
+- [x] Access to Areas
+- [ ] Control for entities
+    - [ ] Lights
+    - [ ] Thermostats
+    - [ ] Covers
+- [ ] Testing / writing custom prompts
+- [ ] Testing using resources for high-level context
+- [ ] Test varying tool organization
