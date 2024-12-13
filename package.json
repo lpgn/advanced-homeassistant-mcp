@@ -1,7 +1,7 @@
 {
-  "name": "mcp",
-  "version": "1.0.0",
-  "description": "MCP for HASS",
+  "name": "@strandbrown/homeassistant-mcp",
+  "version": "0.1.0",
+  "description": "Home Assistant Model Context Protocol Server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -13,7 +13,16 @@
     "build:start": "npm run build && npm run start"
   },
   "author": "Tevon Strand-Brown",
-  "license": "ISC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tevonsb/homeassistant-mcp.git"
+  },
+  "keywords": [
+    "home-assistant",
+    "mcp",
+    "model-context-protocol"
+  ],
   "dependencies": {
     "@digital-alchemy/core": "^24.11.4",
     "@digital-alchemy/hass": "^24.11.4",
@@ -35,5 +44,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },
-  "type": "module"
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  }
 }
