@@ -136,6 +136,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return formatToolCall(controlClimate(request.params.arguments as { entity_id: TRawEntityIds, temperature: number }));
     case "control_cover":
       return formatToolCall(controlCover(request.params.arguments as { entity_id: TRawEntityIds, state: string, position?: number }));
+    case "control_switch":
+      return formatToolCall(controlSwitch(request.params.arguments as { entity_id: TRawEntityIds, state: string }));
+    case "control_alarm_control_panel":
+      return formatToolCall(controlAlarmControlPanel(request.params.arguments as { entity_id: TRawEntityIds, state: string }));
   }
 
   return formatToolCall({
@@ -154,6 +158,40 @@ runServer().catch((error) => {
   console.error("Fatal error in runServer():", error);
   process.exit(1);
 });
+
+const controlSwitch = async (params: { entity_id: TRawEntityIds, state: string }) => {
+  if (params.state === "on") {
+    return hass.hass.call.switch.turn_on({
+      entity_id: params.entity_id,
+    })
+  }
+  return hass.hass.call.switch.turn_off({
+    entity_id: params.entity_id,
+  })
+}
+
+const controlAlarmControlPanel = async (params: { entity_id: TRawEntityIds, state: string }) => {
+  if (params.state === "arm_away") {
+    return hass.hass.call.alarm_control_panel.alarm_arm_away({
+      entity_id: params.entity_id,
+    })
+  }
+  if (params.state === "disarm") {
+    return hass.hass.call.alarm_control_panel.alarm_disarm({
+      entity_id: params.entity_id,
+    })
+  }
+  if (params.state === "arm_home") {
+    return hass.hass.call.alarm_control_panel.alarm_arm_home({
+      entity_id: params.entity_id,
+    })
+  }
+  if (params.state === "arm_night") {
+    return hass.hass.call.alarm_control_panel.alarm_arm_night({
+      entity_id: params.entity_id,
+    })
+  }
+}
 
 const controlLight = async (params: { entity_id: TRawEntityIds, state: string, brightness?: number }) => {
   if (params.state === "on") {
