@@ -58,6 +58,46 @@ server.setRequestHandler(ListToolsRequestSchema, async (request) => {
         inputSchema: zodToJsonSchema(z.object({
           entity_ids: z.array(z.string())
         })),
+      },
+      {
+        name: "get_entity_history",
+        description: "Gets the history of an entity",
+        inputSchema: zodToJsonSchema(z.object({
+          entity_id: z.string()
+        })),
+      },
+      {
+        name: "get_entity_history_by_ids",
+        description: "Gets the history of a list of entities",
+        inputSchema: zodToJsonSchema(z.object({
+          entity_ids: z.array(z.string())
+        })),
+      },
+      {
+        name: "control_light",
+        description: "Controls a light",
+        inputSchema: zodToJsonSchema(z.object({
+          entity_id: z.string(),
+          state: z.enum(["on", "off"]),
+          brightness: z.number().min(0).max(255).optional(),
+        })),
+      },
+      {
+        name: "control_climate",
+        description: "Controls a climate",
+        inputSchema: zodToJsonSchema(z.object({
+          entity_id: z.string(),
+          temperature: z.number(),
+        })),
+      },
+      {
+        name: "control_cover",
+        description: "Controls a cover",
+        inputSchema: zodToJsonSchema(z.object({
+          entity_id: z.string(),
+          state: z.string().optional(),
+          position: z.number().optional(),
+        })),
       }
     ]
   }
@@ -90,6 +130,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return formatToolCall(getEntityHistory(request.params.arguments as { entity_id: TRawEntityIds, start_time: string, end_time?: string }));
     case "get_entity_history_by_ids":
       return formatToolCall(getEntityHistoryByIds(request.params.arguments as { entity_ids: TRawEntityIds[], start_time: string, end_time?: string }));
+    case "control_light":
+      return formatToolCall(controlLight(request.params.arguments as { entity_id: TRawEntityIds, state: string, brightness?: number }));
+    case "control_climate":
+      return formatToolCall(controlClimate(request.params.arguments as { entity_id: TRawEntityIds, temperature: number }));
+    case "control_cover":
+      return formatToolCall(controlCover(request.params.arguments as { entity_id: TRawEntityIds, state: string, position?: number }));
   }
 
   return formatToolCall({
@@ -108,6 +154,44 @@ runServer().catch((error) => {
   console.error("Fatal error in runServer():", error);
   process.exit(1);
 });
+
+const controlLight = async (params: { entity_id: TRawEntityIds, state: string, brightness?: number }) => {
+  if (params.state === "on") {
+    return hass.hass.call.light.turn_on({
+      entity_id: params.entity_id,
+      brightness_pct: params.brightness,
+    })
+  }
+  return hass.hass.call.light.turn_off({
+    entity_id: params.entity_id,
+  })
+}
+
+const controlClimate = async (params: { entity_id: TRawEntityIds, temperature: number }) => {
+  return hass.hass.call.climate.set_temperature({
+    entity_id: params.entity_id,
+    temperature: params.temperature,
+  })
+}
+
+const controlCover = async (params: { entity_id: TRawEntityIds, state: string, position?: number }) => {
+  if (params.position) {
+    return hass.hass.call.cover.set_cover_position({
+      entity_id: params.entity_id,
+      position: params.position,
+    })
+  }
+  if (params.state === "open") {
+    return hass.hass.call.cover.open_cover({
+      entity_id: params.entity_id,
+    })
+  }
+  if (params.state === "close") {
+    return hass.hass.call.cover.close_cover({
+      entity_id: params.entity_id,
+    })
+  }
+}
 
 const listDomains = () => {
   return ["light", "climate", "alarm_control_panel", "cover", "switch", "sensor", "button"];
