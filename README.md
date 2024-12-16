@@ -16,12 +16,32 @@ The server uses the MCP protocol to share access to a local Home Assistant insta
 
 ## Prerequisites
 
-- Node.js 20.10.0 or higher
+- Node.js 20.10.0 or higher (Required for Array.prototype.toSorted())
 - NPM package manager
 - A running Home Assistant instance
 - A long-lived access token from Home Assistant
 
+### Node.js Version Management
+
+If you're using an older version of Node.js, you can use `nvm` (Node Version Manager) to install and use the correct version:
+
+```bash
+# Install nvm (if not already installed)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Reload shell configuration
+source ~/.bashrc  # or source ~/.zshrc for Zsh
+
+# Install Node.js 20.10.0
+nvm install 20.10.0
+
+# Use Node.js 20.10.0
+nvm use 20.10.0
+```
+
 ## Installation
+
+### Classic Installation
 
 ```bash
 # Clone the repository
@@ -29,10 +49,66 @@ git clone https://github.com/jango-blockchained/homeassistant-mcp.git
 cd homeassistant-mcp
 
 # Install dependencies
-yarn install
+npm install
 
 # Build the server
-yarn build
+npm run build
+```
+
+### Docker Installation
+
+#### Using Docker Compose (Recommended)
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/jango-blockchained/homeassistant-mcp.git
+   cd homeassistant-mcp
+   ```
+
+2. Create a `.env` file with your Home Assistant configuration:
+   ```env
+   NODE_ENV=production
+   HASS_HOST=your_home_assistant_url
+   HASS_TOKEN=your_home_assistant_token
+   ```
+
+3. Start the container:
+   ```bash
+   docker-compose up -d
+   ```
+
+#### Using Docker Directly
+
+1. Build the image:
+   ```bash
+   docker build -t homeassistant-mcp .
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -d \
+     --name homeassistant-mcp \
+     -e HASS_HOST=your_home_assistant_url \
+     -e HASS_TOKEN=your_home_assistant_token \
+     -p 3000:3000 \
+     homeassistant-mcp
+   ```
+
+### Docker Management Commands
+
+```bash
+# Stop the container
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Restart the container
+docker-compose restart
+
+# Update to latest version
+git pull
+docker-compose up -d --build
 ```
 
 ## Configuration
@@ -284,19 +360,15 @@ yarn test
 
 ### Common Issues
 
-1. **Connection Errors**
+1. **Node.js Version Error (`positive.toSorted is not a function`)**
+   - This error occurs when using Node.js version lower than 20
+   - Solution: Update to Node.js 20.10.0 or higher using nvm (see Prerequisites section)
+   - Docker users: The container automatically uses the correct Node.js version
+
+2. **Connection Errors**
    - Verify your Home Assistant instance is running
    - Check the HASS_HOST is correct and accessible
    - Ensure your token has the required permissions
-
-2. **Entity Control Issues**
-   - Verify the entity_id exists in Home Assistant
-   - Check the entity domain matches the command
-   - Ensure parameter values are within valid ranges
-
-3. **Permission Issues**
-   - Verify your token has write permissions for the entity
-   - Check Home Assistant logs for authorization errors
 
 ## Project Status
 
