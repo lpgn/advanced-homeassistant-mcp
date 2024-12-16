@@ -3,6 +3,10 @@ import { LiteMCP } from 'litemcp';
 import { z } from 'zod';
 import { DomainSchema } from './schemas.js';
 
+// Configuration
+const HASS_HOST = process.env.HASS_HOST || 'http://192.168.178.63:8123';
+const HASS_TOKEN = process.env.HASS_TOKEN;
+
 interface CommandParams {
   command: string;
   entity_id: string;
@@ -41,9 +45,9 @@ async function main() {
     parameters: z.object({}),
     execute: async () => {
       try {
-        const response = await fetch(`${process.env.HASS_HOST}/api/states`, {
+        const response = await fetch(`${HASS_HOST}/api/states`, {
           headers: {
-            Authorization: `Bearer ${process.env.HASS_TOKEN}`,
+            Authorization: `Bearer ${HASS_TOKEN}`,
             'Content-Type': 'application/json',
           },
         });
@@ -185,15 +189,26 @@ async function main() {
 
         // Call Home Assistant service
         try {
-          await hass.services[domain][service](serviceData);
+          const response = await fetch(`${HASS_HOST}/api/services/${domain}/${service}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${HASS_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(serviceData),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to execute ${service} for ${params.entity_id}: ${response.statusText}`);
+          }
+
+          return {
+            success: true,
+            message: `Successfully executed ${service} for ${params.entity_id}`
+          };
         } catch (error) {
           throw new Error(`Failed to execute ${service} for ${params.entity_id}: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
         }
-
-        return {
-          success: true,
-          message: `Successfully executed ${service} for ${params.entity_id}`
-        };
       } catch (error) {
         return {
           success: false,

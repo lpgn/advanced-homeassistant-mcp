@@ -20,7 +20,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
+.cursorrules
 # Environment variables
 .env
 .env.local
