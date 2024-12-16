@@ -1,7 +1,20 @@
 import { CreateApplication, TServiceParams, StringConfig } from "@digital-alchemy/core";
 import { LIB_HASS, PICK_ENTITY } from "@digital-alchemy/hass";
+import { DomainSchema } from "../schemas.js";
 
 type Environments = "development" | "production" | "test";
+
+// Define the type for Home Assistant services
+type HassServices = {
+  [K in keyof typeof DomainSchema.Values]: {
+    [service: string]: (data: Record<string, any>) => Promise<void>;
+  };
+};
+
+// Define the type for Home Assistant instance
+interface HassInstance extends TServiceParams {
+  services: HassServices;
+}
 
 // application
 const MY_APP = CreateApplication({
@@ -28,11 +41,12 @@ const MY_APP = CreateApplication({
   name: 'hass' as const
 });
 
-let hassInstance: Awaited<ReturnType<typeof MY_APP.bootstrap>>;
+let hassInstance: HassInstance;
 
-export async function get_hass() {
+export async function get_hass(): Promise<HassInstance> {
   if (!hassInstance) {
-    hassInstance = await MY_APP.bootstrap();
+    const instance = await MY_APP.bootstrap();
+    hassInstance = instance as unknown as HassInstance;
   }
   return hassInstance;
 }
