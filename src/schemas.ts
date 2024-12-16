@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 
-export const DomainSchema = z.enum(["light", "climate", "alarm_control_panel", "cover", "switch"]);
+export const DomainSchema = z.enum(["light", "climate", "alarm_control_panel", "cover", "switch", "contact"]);
 
 // Generic list request schema
 
@@ -53,30 +53,30 @@ export const ListAlarmsResponseSchema = z.object({
 // Devices
 
 export const DeviceSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  name_by_user: z.string().optional(),
-  model: z.string(),
-  model_id: z.string().nullable(),
-  manufacturer: z.string(),
-  area_id: z.string().nullable(),
-  config_entries: z.array(z.string()),
-  primary_config_entry: z.string(),
-  connections: z.array(z.tuple([z.string(), z.string()])),
-  configuration_url: z.string().nullable(),
-  disabled_by: z.string().nullable(),
-  entry_type: z.string().nullable(),
-  hw_version: z.string().nullable(),
-  sw_version: z.string().nullable(),
-  via_device_id: z.string().nullable(),
-  created_at: z.number(),
-  modified_at: z.number(),
-  identifiers: z.array(z.any()),
-  labels: z.array(z.string()),
-  serial_number: z.string().optional()
+    id: z.string(),
+    name: z.string(),
+    name_by_user: z.string().optional(),
+    model: z.string(),
+    model_id: z.string().nullable(),
+    manufacturer: z.string(),
+    area_id: z.string().nullable(),
+    config_entries: z.array(z.string()),
+    primary_config_entry: z.string(),
+    connections: z.array(z.tuple([z.string(), z.string()])),
+    configuration_url: z.string().nullable(),
+    disabled_by: z.string().nullable(),
+    entry_type: z.string().nullable(),
+    hw_version: z.string().nullable(),
+    sw_version: z.string().nullable(),
+    via_device_id: z.string().nullable(),
+    created_at: z.number(),
+    modified_at: z.number(),
+    identifiers: z.array(z.any()),
+    labels: z.array(z.string()),
+    serial_number: z.string().optional()
 });
 
 export const ListDevicesResponseSchema = z.object({
-  _meta: z.object({}).optional(),
-  devices: z.array(DeviceSchema)
+    _meta: z.object({}).optional(),
+    devices: z.array(DeviceSchema)
 });
