@@ -4,6 +4,7 @@ import { DomainSchema } from '../schemas.js';
 // Define types for tool and server
 interface Tool {
     name: string;
+    description: string;
     execute: (params: any) => Promise<any>;
     parameters: z.ZodType<any>;
 }

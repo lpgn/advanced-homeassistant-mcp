@@ -34,6 +34,51 @@ async function main() {
   // Create MCP server
   const server = new LiteMCP('home-assistant', '0.1.0');
 
+  // Add the list devices tool
+  server.addTool({
+    name: 'list_devices',
+    description: 'List all available Home Assistant devices',
+    parameters: z.object({}),
+    execute: async () => {
+      try {
+        const response = await fetch(`${process.env.HASS_HOST}/api/states`, {
+          headers: {
+            Authorization: `Bearer ${process.env.HASS_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch devices: ${response.statusText}`);
+        }
+
+        const states = await response.json();
+        const devices = states.reduce((acc: any, state: any) => {
+          const domain = state.entity_id.split('.')[0];
+          if (!acc[domain]) {
+            acc[domain] = [];
+          }
+          acc[domain].push({
+            entity_id: state.entity_id,
+            state: state.state,
+            attributes: state.attributes,
+          });
+          return acc;
+        }, {});
+
+        return {
+          success: true,
+          devices,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+        };
+      }
+    },
+  });
+
   // Add the Home Assistant control tool
   server.addTool({
     name: 'control',
@@ -137,6 +182,7 @@ async function main() {
           default:
             throw new Error(`Unsupported operation for domain: ${domain}`);
         }
+
         // Call Home Assistant service
         try {
           await hass.services[domain][service](serviceData);
