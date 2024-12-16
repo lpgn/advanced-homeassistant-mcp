@@ -1,8 +1,7 @@
 import { CreateApplication, TServiceParams, StringConfig } from "@digital-alchemy/core";
+import { LIB_HASS, PICK_ENTITY } from "@digital-alchemy/hass";
 
 type Environments = "development" | "production" | "test";
-
-import { LIB_HASS } from "@digital-alchemy/hass";
 
 // application
 const MY_APP = CreateApplication({
@@ -13,15 +12,27 @@ const MY_APP = CreateApplication({
       enum: ["development", "production", "test"],
       description: "Code runner addon can set with it's own NODE_ENV",
     } satisfies StringConfig<Environments>,
+    HASS_HOST: {
+      type: "string",
+      description: "Home Assistant host URL",
+      required: true
+    },
+    HASS_TOKEN: {
+      type: "string",
+      description: "Home Assistant long-lived access token",
+      required: true
+    }
   },
   services: {},
   libraries: [LIB_HASS],
-  name: 'boilerplate'
+  name: 'hass' as const
 });
 
-const hass = await MY_APP.bootstrap()
-
+let hassInstance: Awaited<ReturnType<typeof MY_APP.bootstrap>>;
 
 export async function get_hass() {
-  return hass;
+  if (!hassInstance) {
+    hassInstance = await MY_APP.bootstrap();
+  }
+  return hassInstance;
 }
