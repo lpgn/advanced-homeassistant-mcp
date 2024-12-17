@@ -1,30 +1,36 @@
 # Dependencies
 node_modules
 npm-debug.log
+yarn-debug.log
+yarn-error.log
 
-# Build outputs
+# Build output
 dist
-
-# Environment and config
-.env
-.env.*
 
 # Version control
 .git
 .gitignore
 
-# IDE
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE files
 .vscode
 .idea
 
-# Testing
+# Test files
 coverage
 __tests__
+jest.config.js
+jest.setup.js
+*.test.ts
+*.spec.ts
 
-# Logs
-*.log
-
-# Documentation
-README.md
-LICENSE
-CHANGELOG.md
+# Other
+*.md
+.DS_Store
+Dockerfile
+docker-compose.yml
+.dockerignore

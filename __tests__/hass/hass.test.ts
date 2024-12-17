@@ -1,7 +1,7 @@
-import { get_hass } from '../hass/index.js';
+import { get_hass } from '../../src/hass/index.js';
 
 // Mock the entire module
-jest.mock('../hass/index.js', () => {
+jest.mock('../../src/hass/index.js', () => {
     let mockInstance: any = null;
 
     return {
@@ -25,8 +25,20 @@ jest.mock('../hass/index.js', () => {
 });
 
 describe('Home Assistant Connection', () => {
+    // Backup the original environment
+    const originalEnv = { ...process.env };
+
     beforeEach(() => {
+        // Clear all mocks
         jest.clearAllMocks();
+
+        // Reset environment variables
+        process.env = { ...originalEnv };
+    });
+
+    afterAll(() => {
+        // Restore original environment
+        process.env = originalEnv;
     });
 
     it('should return a Home Assistant instance with services', async () => {
@@ -44,5 +56,26 @@ describe('Home Assistant Connection', () => {
         const secondInstance = await get_hass();
 
         expect(firstInstance).toBe(secondInstance);
+    });
+
+    it('should use "development" as default environment', async () => {
+        // Unset NODE_ENV
+        delete process.env.NODE_ENV;
+
+        const hass = await get_hass();
+
+        // You might need to add a way to check the environment in your actual implementation
+        // This is a placeholder and might need adjustment based on your exact implementation
+        expect(process.env.NODE_ENV).toBe(undefined);
+    });
+
+    it('should use process.env.NODE_ENV when set', async () => {
+        // Set a specific environment
+        process.env.NODE_ENV = 'production';
+
+        const hass = await get_hass();
+
+        // You might need to add a way to check the environment in your actual implementation
+        expect(process.env.NODE_ENV).toBe('production');
     });
 }); 

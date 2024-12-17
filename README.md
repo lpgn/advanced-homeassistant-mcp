@@ -128,6 +128,82 @@ npx jest --config=jest.config.js  # Run tests
 }
 ```
 
+### Media Player Control
+```json
+{
+  "tool": "control",
+  "command": "media_play",  // or "media_pause", "media_stop", "media_next", "media_previous"
+  "entity_id": "media_player.living_room",
+  "volume_level": 0.5,
+  "source": "Spotify",
+  "media_content_id": "spotify:playlist:xyz",
+  "media_content_type": "playlist"
+}
+```
+
+### Fan Control
+```json
+{
+  "tool": "control",
+  "command": "turn_on",
+  "entity_id": "fan.bedroom",
+  "percentage": 50,
+  "preset_mode": "auto",
+  "oscillating": true,
+  "direction": "forward"
+}
+```
+
+### Lock Control
+```json
+{
+  "tool": "control",
+  "command": "lock",  // or "unlock"
+  "entity_id": "lock.front_door"
+}
+```
+
+### Vacuum Control
+```json
+{
+  "tool": "control",
+  "command": "start",  // or "pause", "stop", "return_to_base", "clean_spot"
+  "entity_id": "vacuum.robot",
+  "fan_speed": "medium"
+}
+```
+
+### Scene Control
+```json
+{
+  "tool": "control",
+  "command": "turn_on",
+  "entity_id": "scene.movie_night"
+}
+```
+
+### Script Control
+```json
+{
+  "tool": "control",
+  "command": "turn_on",
+  "entity_id": "script.welcome_home",
+  "variables": {
+    "brightness": 100,
+    "color": "red"
+  }
+}
+```
+
+### Camera Control
+```json
+{
+  "tool": "control",
+  "command": "enable_motion_detection",  // or "disable_motion_detection"
+  "entity_id": "camera.front_door"
+}
+```
+
 ## Natural Language Integration
 
 ### Example Commands

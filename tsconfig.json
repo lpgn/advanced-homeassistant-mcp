@@ -4,21 +4,43 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
+    "baseUrl": "./",
+    "paths": {
+      "@src/*": [
+        "src/*"
+      ],
+      "@tests/*": [
+        "__tests__/*"
+      ]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "allowJs": true,
+    "types": [
+      "node",
+      "jest"
+    ],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@types/node"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "__tests__/**/*.test.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "__tests__"
+    "dist"
   ]
 }
