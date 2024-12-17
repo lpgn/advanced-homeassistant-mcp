@@ -67,19 +67,22 @@ npm install
 npm run build
 ```
 
-### Docker Setup (Recommended)
+### Docker Setup
+
+> Note: This setup is currently in progress. You can use the `docker` branch to get the latest changes.
 
 1. **Clone and prepare:**
     ```bash
-    git clone https://github.com/jango-blockchained/homeassistant-mcp.git
+    git clone -b docker https://github.com/jango-blockchained/homeassistant-mcp.git
     cd homeassistant-mcp
+    cp .env.example .env
     ```
 
-2. **Configure environment:**
+2. **Configure environment `.env` file:**
     ```env
-    NODE_ENV=production
-    HASS_HOST=your_home_assistant_url
+    ...
     HASS_TOKEN=your_home_assistant_token
+    ...
     ```
 
 3. **Launch with Docker Compose:**
@@ -89,12 +92,17 @@ npm run build
 
 ## Configuration
 
-Create a `.env` file with:
+Copy `.env.example` to `.env`.
 
+```bash
+cp .env.example .env
+```
+
+Configure environment `.env` file:
 ```env
+...
 HASS_TOKEN=your_home_assistant_token
-HASS_HOST=your_home_assistant_url  # e.g., http://homeassistant.local:8123
-PORT=3000  # Optional, defaults to 3000
+...
 ```
 
 ## Development
