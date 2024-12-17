@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DomainSchema } from '../schemas.js';
+import { DomainSchema } from '../../src/schemas.js';
 
 // Define types for tool and server
 interface Tool {
@@ -25,7 +25,7 @@ class MockLiteMCP {
 }
 
 // Mock the Home Assistant instance
-jest.mock('../hass/index.js', () => ({
+jest.mock('../../src/hass/index.js', () => ({
     get_hass: jest.fn().mockResolvedValue({
         services: {
             light: {

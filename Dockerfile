@@ -1,38 +1,23 @@
-# Build stage
-FROM node:20.10.0-alpine AS builder
+# Use Node.js 20.10.0 as the base image
+FROM node:20.10.0-slim
 
+# Create app directory
 WORKDIR /app
 
-# Install TypeScript globally
-RUN npm install -g typescript
+# Copy package files
+COPY package*.json ./
 
-# Copy source files first
-COPY . .
-
-# Install all dependencies (including dev dependencies)
+# Install dependencies
 RUN npm install
 
-# Build the project
+# Copy source code
+COPY . .
+
+# Build the application
 RUN npm run build
 
-# Production stage
-FROM node:20.10.0-alpine
+# Expose the port your app runs on (if needed)
+# EXPOSE 3000
 
-WORKDIR /app
-
-# Set Node options for better compatibility
-ENV NODE_OPTIONS="--experimental-modules"
-ENV NODE_ENV="production"
-
-# Copy package files and install production dependencies
-COPY package*.json ./
-RUN npm install --omit=dev --ignore-scripts
-
-# Copy built files from builder stage
-COPY --from=builder /app/dist ./dist
-
-# Expose default port
-EXPOSE 3000
-
-# Start the server
-CMD ["node", "dist/index.js"] 
+# Start the application
+CMD ["npm", "start"] 

@@ -1,3 +1,4 @@
+import './polyfills.js';
 import { get_hass } from './hass/index.js';
 import { LiteMCP } from 'litemcp';
 import { z } from 'zod';
