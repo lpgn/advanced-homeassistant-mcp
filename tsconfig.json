@@ -4,16 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "./dist",
-    "rootDir": "./",
-    "baseUrl": "./",
-    "paths": {
-      "@src/*": [
-        "src/*"
-      ],
-      "@tests/*": [
-        "__tests__/*"
-      ]
-    },
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -27,20 +18,21 @@
       "jest"
     ],
     "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@types/node"
+      "./node_modules/@types"
     ],
     "lib": [
-      "ES2022",
-      "DOM"
+      "ES2022"
     ]
   },
   "include": [
-    "src/**/*",
-    "__tests__/**/*.test.ts"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "jest.config.js",
+    "jest.setup.js"
   ]
 }
