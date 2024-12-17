@@ -33,6 +33,19 @@ const commonCommands = ['turn_on', 'turn_off', 'toggle'] as const;
 const coverCommands = [...commonCommands, 'open', 'close', 'stop', 'set_position', 'set_tilt_position'] as const;
 const climateCommands = [...commonCommands, 'set_temperature', 'set_hvac_mode', 'set_fan_mode', 'set_humidity'] as const;
 
+interface HassEntity {
+  entity_id: string;
+  state: string;
+  attributes: Record<string, any>;
+  last_changed?: string;
+  last_updated?: string;
+  context?: {
+    id: string;
+    parent_id?: string;
+    user_id?: string;
+  };
+}
+
 async function main() {
   const hass = await get_hass();
 
@@ -57,8 +70,8 @@ async function main() {
           throw new Error(`Failed to fetch devices: ${response.statusText}`);
         }
 
-        const states = await response.json();
-        const devices = states.reduce((acc: any, state: any) => {
+        const states = await response.json() as HassEntity[];
+        const devices = states.reduce((acc: Record<string, HassEntity[]>, state: HassEntity) => {
           const domain = state.entity_id.split('.')[0];
           if (!acc[domain]) {
             acc[domain] = [];
