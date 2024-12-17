@@ -1,6 +1,30 @@
 # Model Context Protocol Server for Home Assistant
 
+*Forked from [tevonsb/homeassistant-mcp](https://github.com/tevonsb/homeassistant-mcp)*
+
 A powerful bridge between your Home Assistant instance and Language Learning Models (LLMs), enabling natural language control and monitoring of your smart home devices through the Model Context Protocol (MCP).
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node.js](https://img.shields.io/badge/node-%3E%3D20.10.0-green.svg)
+![Docker Compose](https://img.shields.io/badge/docker-compose-%3E%3D1.27.0-blue.svg)
+![NPM](https://img.shields.io/badge/npm-%3E%3D7.0.0-orange.svg)
+
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+  - [Basic Setup](#basic-setup)
+  - [Docker Setup (Recommended)](#docker-setup-recommended)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Supported Commands](#supported-commands)
+- [Natural Language Integration](#natural-language-integration)
+- [Troubleshooting](#troubleshooting)
+- [Project Status](#project-status)
+- [Contributing](#contributing)
+- [Resources](#resources)
+- [License](#license)
 
 ## Key Features
 
@@ -21,9 +45,10 @@ A powerful bridge between your Home Assistant instance and Language Learning Mod
 
 ## Prerequisites
 
-- Node.js 20.10.0 or higher
-- NPM package manager
-- Running Home Assistant instance
+- **Node.js** 20.10.0 or higher
+- **NPM** package manager
+- **Docker Compose** for containerization
+- Running **Home Assistant** instance
 - Home Assistant long-lived access token ([How to get token](https://community.home-assistant.io/t/how-to-get-long-lived-access-token/162159))
 
 ## Installation
@@ -44,23 +69,23 @@ npm run build
 
 ### Docker Setup (Recommended)
 
-1. Clone and prepare:
-```bash
-git clone https://github.com/jango-blockchained/homeassistant-mcp.git
-cd homeassistant-mcp
-```
+1. **Clone and prepare:**
+    ```bash
+    git clone https://github.com/jango-blockchained/homeassistant-mcp.git
+    cd homeassistant-mcp
+    ```
 
-2. Configure environment:
-```env
-NODE_ENV=production
-HASS_HOST=your_home_assistant_url
-HASS_TOKEN=your_home_assistant_token
-```
+2. **Configure environment:**
+    ```env
+    NODE_ENV=production
+    HASS_HOST=your_home_assistant_url
+    HASS_TOKEN=your_home_assistant_token
+    ```
 
-3. Launch with Docker Compose:
-```bash
-docker-compose up -d
-```
+3. **Launch with Docker Compose:**
+    ```bash
+    docker-compose up -d
+    ```
 
 ## Configuration
 
@@ -78,7 +103,7 @@ PORT=3000  # Optional, defaults to 3000
 npm run dev      # Development mode
 npm run build    # Build project
 npm run start    # Production mode
-npx jest --config=jest.config.js  # Run tests
+npx jest --config=jest.config.cjs  # Run tests
 ```
 
 ## Supported Commands
@@ -220,14 +245,14 @@ npx jest --config=jest.config.js  # Run tests
 ## Troubleshooting
 
 ### Common Issues
-1. Node.js Version (`toSorted is not a function`)
-   - Solution: Update to Node.js 20.10.0+
-2. Connection Issues
+1. **Node.js Version (`toSorted is not a function`)**
+   - **Solution:** Update to Node.js 20.10.0+
+2. **Connection Issues**
    - Verify Home Assistant is running
-   - Check HASS_HOST accessibility
+   - Check `HASS_HOST` accessibility
    - Validate token permissions
-3. Entity Control Issues
-   - Verify entity_id exists
+3. **Entity Control Issues**
+   - Verify `entity_id` exists
    - Check entity domain matches command
    - Ensure parameter values are valid
 
