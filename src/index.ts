@@ -221,7 +221,20 @@ async function main() {
 
   // Start the server
   await server.start();
-  console.log('MCP Server started');
+  console.log('MCP Server started successfully and is ready to accept commands.');
+  // Add more detailed logging for server actions
+  server.on('toolAdded', (tool) => {
+    console.log(`Tool added: ${tool.name} - ${tool.description}`);
+  });
+
+  server.on('toolExecuted', (tool, result) => {
+    console.log(`Tool executed: ${tool.name} - Result: ${result.success ? 'Success' : 'Failure'}`);
+    if (!result.success) {
+      console.error(`Error: ${result.message}`);
+    }
+  });
+
+  console.log('Listening for incoming connections...');
 }
 
 main().catch(console.error);
