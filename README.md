@@ -9,7 +9,7 @@ A powerful bridge between your Home Assistant instance and Language Learning Mod
   - 🌡️ **Climate**: Temperature, HVAC modes, fan modes, humidity
   - 🚪 **Covers**: Position and tilt control
   - 🔌 **Switches**: On/off control
-  - 🚨 **Sensors**: State monitoring
+  - 🚨 **Sensors & Contacts**: State monitoring
 - **Intelligent Organization** 🏠
   - Area and floor-based device grouping
   - State monitoring and querying
@@ -19,21 +19,26 @@ A powerful bridge between your Home Assistant instance and Language Learning Mod
   - State validation
   - Secure API integration
 
-## Quick Start
+## Prerequisites
 
-### Prerequisites
-
-- Node.js 20.10.0+ (for Array.prototype.toSorted())
-- NPM
+- Node.js 20.10.0 or higher
+- NPM package manager
 - Running Home Assistant instance
-- Home Assistant long-lived access token
+- Home Assistant long-lived access token ([How to get token](https://community.home-assistant.io/t/how-to-get-long-lived-access-token/162159))
 
-### Basic Installation
+## Installation
+
+### Basic Setup
 
 ```bash
+# Clone the repository
 git clone https://github.com/jango-blockchained/homeassistant-mcp.git
 cd homeassistant-mcp
+
+# Install dependencies
 npm install
+
+# Build the project
 npm run build
 ```
 
@@ -52,36 +57,74 @@ HASS_HOST=your_home_assistant_url
 HASS_TOKEN=your_home_assistant_token
 ```
 
-3. Launch:
+3. Launch with Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-## Usage Guide
+## Configuration
 
-### Device Discovery
+Create a `.env` file with:
+
+```env
+HASS_TOKEN=your_home_assistant_token
+HASS_HOST=your_home_assistant_url  # e.g., http://homeassistant.local:8123
+PORT=3000  # Optional, defaults to 3000
+```
+
+## Development
+
+```bash
+npm run dev      # Development mode
+npm run build    # Build project
+npm run start    # Production mode
+npx jest --config=jest.config.js  # Run tests
+```
+
+## Supported Commands
+
+### Common Entity Controls
 ```json
 {
-  "tool": "list_devices"
+  "tool": "control",
+  "command": "turn_on",  // or "turn_off", "toggle"
+  "entity_id": "light.living_room"
 }
 ```
 
-### Basic Controls
+### Light Control
 ```json
-// Light control
 {
   "tool": "control",
   "command": "turn_on",
   "entity_id": "light.living_room",
-  "brightness": 128
+  "brightness": 128,
+  "color_temp": 4000,
+  "rgb_color": [255, 0, 0]
 }
+```
 
-// Climate control
+### Climate Control
+```json
 {
   "tool": "control",
   "command": "set_temperature",
   "entity_id": "climate.bedroom",
-  "temperature": 22
+  "temperature": 22,
+  "hvac_mode": "heat",
+  "fan_mode": "auto",
+  "humidity": 45
+}
+```
+
+### Cover Control
+```json
+{
+  "tool": "control",
+  "command": "set_position",
+  "entity_id": "cover.living_room",
+  "position": 50,
+  "tilt_position": 45
 }
 ```
 
@@ -98,14 +141,6 @@ docker-compose up -d
 - Intelligent error prevention
 - Multi-device orchestration
 
-## Development
-
-```bash
-npm run dev      # Development mode
-npm run build    # Build project
-npm test         # Run tests
-```
-
 ## Troubleshooting
 
 ### Common Issues
@@ -115,30 +150,35 @@ npm test         # Run tests
    - Verify Home Assistant is running
    - Check HASS_HOST accessibility
    - Validate token permissions
+3. Entity Control Issues
+   - Verify entity_id exists
+   - Check entity domain matches command
+   - Ensure parameter values are valid
 
 ## Project Status
 
 ✅ **Complete**
 - Entity, Floor, and Area access
-- Device control (Lights, Climate, Covers, Switches)
+- Device control (Lights, Climate, Covers, Switches, Contacts)
 - Basic state management
+- Error handling and validation
 
 🚧 **In Progress**
 - Custom prompt testing
 - Resource context integration
 - Tool organization optimization
 
-## Resources
-
-- [MCP Documentation](https://modelcontextprotocol.io/introduction)
-- [Home Assistant Docs](https://www.home-assistant.io)
-- [HA REST API](https://developers.home-assistant.io/docs/api/rest)
-
 ## Contributing
 
 1. Fork repository
 2. Create feature branch
 3. Submit pull request
+
+## Resources
+
+- [MCP Documentation](https://modelcontextprotocol.io/introduction)
+- [Home Assistant Docs](https://www.home-assistant.io)
+- [HA REST API](https://developers.home-assistant.io/docs/api/rest)
 
 ## License
 
