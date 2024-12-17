@@ -263,11 +263,27 @@ npx jest --config=jest.config.cjs  # Run tests
 - Device control (Lights, Climate, Covers, Switches, Contacts)
 - Basic state management
 - Error handling and validation
+- Docker containerization and configuration
+- Jest testing setup and TypeScript integration
+- Environment variable management
+- Home Assistant API integration
+- Project documentation and README organization
 
 🚧 **In Progress**
-- Custom prompt testing
+- Custom prompt testing and optimization
 - Resource context integration
 - Tool organization optimization
+- Enhanced macOS integration
+- Type safety improvements
+- Testing coverage expansion
+
+🔜 **Planned**
+- Multi-platform desktop integration
+- Advanced error recovery mechanisms
+- Performance optimization
+- WebSocket implementation for real-time updates
+- Enhanced security features
+- API documentation generation
 
 ## Contributing
 
