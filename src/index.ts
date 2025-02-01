@@ -49,6 +49,41 @@ app.get('/mcp', (_req, res) => {
   res.json(MCP_SCHEMA);
 });
 
+// MCP execute endpoint - requires authentication
+app.post('/mcp/execute', async (req, res) => {
+  try {
+    // Get token from Authorization header
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token || token !== HASS_TOKEN) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - Invalid token'
+      });
+    }
+
+    const { tool: toolName, parameters } = req.body;
+
+    // Find the requested tool
+    const tool = tools.find(t => t.name === toolName);
+    if (!tool) {
+      return res.status(404).json({
+        success: false,
+        message: `Tool '${toolName}' not found`
+      });
+    }
+
+    // Execute the tool with the provided parameters
+    const result = await tool.execute(parameters);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({
