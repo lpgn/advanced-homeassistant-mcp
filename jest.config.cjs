@@ -2,7 +2,7 @@
 module.exports = {
     preset: 'ts-jest/presets/default-esm',
     testEnvironment: 'node',
-    extensionsToTreatAsEsm: ['.ts'],
+    extensionsToTreatAsEsm: ['.ts', '.mts'],
     moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
         '^(\\.{1,2}/.*)\\.ts$': '$1',
@@ -11,7 +11,7 @@ module.exports = {
         '#supports-color': '<rootDir>/node_modules/supports-color/index.js'
     },
     transform: {
-        '^.+\\.tsx?$': [
+        '^.+\\.(ts|mts|js|mjs)$': [
             'ts-jest',
             {
                 useESM: true,
@@ -20,7 +20,7 @@ module.exports = {
         ],
     },
     transformIgnorePatterns: [
-        'node_modules/(?!(@digital-alchemy|chalk|ansi-styles|supports-color)/.*)'
+        'node_modules/(?!(@digital-alchemy|chalk|ansi-styles|supports-color)/.*)(?!.*\\.mjs$)'
     ],
     resolver: '<rootDir>/jest-resolver.cjs',
     setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],

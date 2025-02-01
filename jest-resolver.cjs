@@ -16,18 +16,43 @@ module.exports = (request, options) => {
         }
     }
 
+    // Handle @digital-alchemy packages
+    if (request.startsWith('@digital-alchemy/')) {
+        try {
+            const packagePath = path.resolve(__dirname, 'node_modules', request);
+            return options.defaultResolver(packagePath, {
+                ...options,
+                packageFilter: pkg => {
+                    if (pkg.type === 'module') {
+                        if (pkg.exports && pkg.exports.import) {
+                            pkg.main = pkg.exports.import;
+                        } else if (pkg.module) {
+                            pkg.main = pkg.module;
+                        }
+                    }
+                    return pkg;
+                }
+            });
+        } catch (e) {
+            // If resolution fails, continue with default resolver
+        }
+    }
+
     // Call the default resolver
     return options.defaultResolver(request, {
         ...options,
         // Handle ESM modules
         packageFilter: pkg => {
             // Preserve ESM modules
-            if (pkg.type === 'module' && pkg.exports) {
-                // If there's a specific export for the current conditions, use that
-                if (pkg.exports.import) {
-                    pkg.main = pkg.exports.import;
-                } else if (typeof pkg.exports === 'string') {
-                    pkg.main = pkg.exports;
+            if (pkg.type === 'module') {
+                if (pkg.exports) {
+                    if (pkg.exports.import) {
+                        pkg.main = pkg.exports.import;
+                    } else if (typeof pkg.exports === 'string') {
+                        pkg.main = pkg.exports;
+                    }
+                } else if (pkg.module) {
+                    pkg.main = pkg.module;
                 }
             }
             return pkg;
