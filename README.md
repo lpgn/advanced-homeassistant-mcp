@@ -59,6 +59,9 @@ See [SSE_API.md](docs/SSE_API.md) for complete documentation of the SSE system.
   - [Add-on Management](#add-on-management)
   - [Package Management](#package-management)
   - [Automation Management](#automation-management)
+- [OpenAI Integration](#openai-integration)
+  - [Standard Analysis](#1-standard-analysis)
+  - [Custom Prompt Analysis](#2-custom-prompt-analysis)
 - [Natural Language Integration](#natural-language-integration)
 - [Troubleshooting](#troubleshooting)
 - [Project Status](#project-status)
@@ -666,6 +669,75 @@ async function executeAction() {
   console.log('Action result:', data);
 }
 ```
+
+## OpenAI Integration
+
+The server includes powerful AI analysis capabilities powered by OpenAI's GPT-4 model. This feature provides intelligent analysis of your Home Assistant setup through two main modes:
+
+### 1. Standard Analysis
+
+Performs a comprehensive system analysis including:
+- System Overview
+- Performance Analysis
+- Security Assessment
+- Optimization Recommendations
+- Maintenance Tasks
+
+```bash
+# Run standard analysis
+npm run test:openai
+# Select option 1 when prompted
+```
+
+### 2. Custom Prompt Analysis
+
+Allows you to ask specific questions about your Home Assistant setup. The analysis can include:
+- Device States
+- Configuration Details
+- Active Devices
+- Device Attributes (brightness, temperature, etc.)
+
+```bash
+# Run custom analysis
+npm run test:openai
+# Select option 2 when prompted
+```
+
+#### Available Variables
+When using custom prompts, you can use these variables:
+- `{device_count}`: Total number of devices
+- `{device_types}`: List of device types
+- `{device_states}`: Current states of devices
+- `{device_examples}`: Example devices and their states
+
+#### Example Custom Prompts
+```
+"Show me all active lights"
+"Which devices in {device_types} need maintenance?"
+"Analyze my {device_count} devices and suggest automations"
+```
+
+### Configuration
+
+To use the OpenAI integration, you need to set up your OpenAI API key in the `.env` file:
+```env
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+### Features
+- 🔍 Intelligent device state analysis
+- 📊 System health assessment
+- 🤖 Smart automation suggestions
+- 🔧 Maintenance recommendations
+- 💡 Custom query support
+- 🔄 Real-time device state information
+
+### Token Usage Optimization
+The analysis tool includes smart token usage optimization:
+- Automatic filtering of relevant devices based on query
+- Fallback to summarized data for large systems
+- Intelligent attribute selection based on device types
+- Automatic retry with condensed information if token limit is reached
 
 ## Development
 
