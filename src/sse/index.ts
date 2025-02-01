@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { HassEntity, HassEvent, StateChangedEvent } from '../types/hass.js';
+import { TokenManager } from '../security/index.js';
 
 interface RateLimit {
     count: number;
@@ -264,8 +265,7 @@ export class SSEManager extends EventEmitter {
 
     private validateToken(token?: string): boolean {
         if (!token) return false;
-        // Compare with HASS_TOKEN from environment
-        return token === process.env.HASS_TOKEN;
+        return TokenManager.validateToken(token);
     }
 
     // Utility methods
