@@ -127,8 +127,8 @@ export class TokenManager {
 
 // Request validation middleware
 export function validateRequest(req: Request, res: Response, next: NextFunction) {
-    // Skip validation for health endpoint
-    if (req.path === '/health') {
+    // Skip validation for health and MCP schema endpoints
+    if (req.path === '/health' || req.path === '/mcp') {
         return next();
     }
 

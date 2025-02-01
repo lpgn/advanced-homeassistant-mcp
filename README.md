@@ -54,6 +54,7 @@ See [SSE_API.md](docs/SSE_API.md) for complete documentation of the SSE system.
 - [Configuration](#configuration)
 - [Development](#development)
 - [API Reference](#api-reference)
+  - [MCP Schema](#mcp-schema-endpoint)
   - [Device Control](#device-control)
   - [Add-on Management](#add-on-management)
   - [Package Management](#package-management)
@@ -247,6 +248,49 @@ TEST_HASS_TOKEN=test_token           # Test token
 3. **Testing**: Copy `.env.example` to `.env.test`
 
 ## API Reference
+
+### MCP Schema Endpoint
+
+The server exposes an MCP (Model Context Protocol) schema endpoint that describes all available tools and their parameters:
+
+```http
+GET /mcp
+```
+
+This endpoint returns a JSON schema describing all available tools, their parameters, and documentation resources. The schema follows the MCP specification and can be used by LLM clients to understand the server's capabilities.
+
+Example response:
+```json
+{
+  "tools": [
+    {
+      "name": "list_devices",
+      "description": "List all devices connected to Home Assistant",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "enum": ["light", "climate", "alarm_control_panel", ...]
+          },
+          "area": { "type": "string" },
+          "floor": { "type": "string" }
+        }
+      }
+    },
+    // ... other tools
+  ],
+  "prompts": [],
+  "resources": [
+    {
+      "name": "Home Assistant API",
+      "url": "https://developers.home-assistant.io/docs/api/rest/"
+    }
+  ]
+}
+```
+
+Note: The `/mcp` endpoint is publicly accessible and does not require authentication, as it only provides schema information.
 
 ### Device Control
 

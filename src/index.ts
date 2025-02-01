@@ -6,6 +6,7 @@ import { sseManager } from './sse/index.js';
 import { ILogger } from "@digital-alchemy/core";
 import express from 'express';
 import { rateLimiter, securityHeaders, validateRequest, sanitizeInput, errorHandler } from './security/index.js';
+import { MCP_SCHEMA } from './mcp/schema.js';
 
 // Load environment variables based on NODE_ENV
 const envFile = process.env.NODE_ENV === 'production'
@@ -41,6 +42,12 @@ app.use(sanitizeInput);
 
 // Initialize LiteMCP
 const server = new LiteMCP('home-assistant', '0.1.0');
+
+// MCP schema endpoint - no auth required as it's just the schema
+app.get('/mcp', (_req, res) => {
+  // Return the MCP schema without requiring authentication
+  res.json(MCP_SCHEMA);
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
