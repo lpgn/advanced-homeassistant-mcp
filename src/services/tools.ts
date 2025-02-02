@@ -1,8 +1,7 @@
 import { z } from 'zod';
-import { Tool } from '../interfaces/index.js';
+import { Tool, HassEntity } from '../interfaces/index.js';
 import { get_hass } from '../hass/index.js';
 import { DomainSchema } from '../schemas.js';
-import { HassEntity, HassState } from '../interfaces/index.js';
 
 // Define tools array
 export const tools: Tool[] = [

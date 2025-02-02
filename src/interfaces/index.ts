@@ -54,6 +54,7 @@ export interface HassState {
     };
 }
 
+// Add-on interfaces
 export interface HassAddon {
     name: string;
     slug: string;
@@ -178,4 +179,7 @@ export interface AutomationConfigParams {
         condition?: any[];
         action: any[];
     };
-} 
+}
+
+// Re-export Home Assistant types
+export * from './hass.js'; 
