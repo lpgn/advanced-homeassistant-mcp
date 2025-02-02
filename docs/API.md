@@ -1,364 +1,419 @@
-# Home Assistant MCP API Documentation
+# API Reference
 
-## Overview
+## MCP Schema Endpoint
 
-The Home Assistant Model Context Protocol (MCP) Server provides a comprehensive API for managing and controlling your Home Assistant instance. This document outlines all available endpoints, their parameters, and includes practical examples.
-
-## Authentication
-
-All API requests require authentication using a Bearer token.
+The server exposes an MCP (Model Context Protocol) schema endpoint that describes all available tools and their parameters:
 
 ```http
-Authorization: Bearer your_home_assistant_token
+GET /mcp
 ```
 
-## Rate Limiting
+This endpoint returns a JSON schema describing all available tools, their parameters, and documentation resources. The schema follows the MCP specification and can be used by LLM clients to understand the server's capabilities.
 
-The API implements rate limiting with the following defaults:
-- 100 requests per 15-minute window per IP
-- Model-specific limits:
-  - Claude: 100 requests/minute, 1000/hour
-  - GPT-4: 50 requests/minute, 500/hour
-  - Custom: 200 requests/minute, 2000/hour
-
-## Endpoints
-
-### 1. Natural Language Processing
-
-#### POST /interpret
-
-Interprets natural language commands for Home Assistant control.
-
-**Request Body:**
+Example response:
 ```json
 {
-  "input": "Turn on the living room lights",
-  "context": {
-    "user_id": "user123",
-    "session_id": "sess456",
-    "timestamp": "2024-03-20T10:30:00Z",
-    "location": "home",
-    "previous_actions": [],
-    "environment_state": {}
-  },
-  "model": "claude"  // Optional: defaults to "claude"
-}
-```
-
-**Response:**
-```json
-{
-  "natural_language": "I'll turn on the living room lights",
-  "structured_data": {
-    "success": true,
-    "action_taken": "turn_on",
-    "entities_affected": ["light.living_room"],
-    "state_changes": {
-      "state": "on"
-    }
-  },
-  "next_suggestions": [
-    "Would you like to adjust the brightness?",
-    "Should I turn on other lights?",
-    "Would you like to save this as a scene?"
+  "tools": [
+    {
+      "name": "list_devices",
+      "description": "List all devices connected to Home Assistant",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "enum": ["light", "climate", "alarm_control_panel", ...]
+          },
+          "area": { "type": "string" },
+          "floor": { "type": "string" }
+        }
+      }
+    },
+    // ... other tools
   ],
-  "confidence": 0.95,
-  "context": {
-    "user_id": "user123",
-    "session_id": "sess456",
-    "timestamp": "2024-03-20T10:30:00Z"
-  }
+  "prompts": [],
+  "resources": [
+    {
+      "name": "Home Assistant API",
+      "url": "https://developers.home-assistant.io/docs/api/rest/"
+    }
+  ]
 }
 ```
 
-### 2. Device Control
+Note: The `/mcp` endpoint is publicly accessible and does not require authentication, as it only provides schema information.
 
-#### POST /control
+## Device Control
 
-Controls Home Assistant devices and services.
-
-**Request Body:**
+### Common Entity Controls
 ```json
 {
+  "tool": "control",
+  "command": "turn_on",  // or "turn_off", "toggle"
+  "entity_id": "light.living_room"
+}
+```
+
+### Light Control
+```json
+{
+  "tool": "control",
   "command": "turn_on",
   "entity_id": "light.living_room",
-  "brightness": 255,
+  "brightness": 128,
   "color_temp": 4000,
   "rgb_color": [255, 0, 0]
 }
 ```
 
-**Example Commands by Device Type:**
+## Add-on Management
 
-**1. Lights:**
+### List Available Add-ons
 ```json
 {
-  "command": "turn_on",
-  "entity_id": "light.bedroom",
-  "brightness": 128,
-  "color_temp": 3500
+  "tool": "addon",
+  "action": "list"
 }
 ```
 
-**2. Climate:**
+### Install Add-on
 ```json
 {
-  "command": "set_temperature",
-  "entity_id": "climate.living_room",
-  "temperature": 72,
-  "hvac_mode": "heat"
-}
-```
-
-**3. Covers:**
-```json
-{
-  "command": "set_position",
-  "entity_id": "cover.garage",
-  "position": 50
-}
-```
-
-### 3. History
-
-#### GET /history
-
-Retrieves state history for entities.
-
-**Query Parameters:**
-- `entity_id` (required): Entity ID to get history for
-- `start_time` (optional): Start time in ISO format
-- `end_time` (optional): End time in ISO format
-- `minimal_response` (optional): Boolean to reduce response size
-- `significant_changes_only` (optional): Boolean to filter minor changes
-
-**Example Request:**
-```http
-GET /history?entity_id=light.living_room&start_time=2024-03-19T00:00:00Z&minimal_response=true
-```
-
-### 4. Scenes
-
-#### GET /scenes
-
-Lists all available scenes.
-
-**Response:**
-```json
-{
-  "success": true,
-  "scenes": [
-    {
-      "entity_id": "scene.movie_time",
-      "name": "Movie Time",
-      "description": "Dim lights and lower blinds"
-    }
-  ]
-}
-```
-
-#### POST /scenes/activate
-
-Activates a scene.
-
-**Request Body:**
-```json
-{
-  "scene_id": "scene.movie_time"
-}
-```
-
-### 5. Automations
-
-#### GET /automations
-
-Lists all automations.
-
-**Response:**
-```json
-{
-  "success": true,
-  "automations": [
-    {
-      "entity_id": "automation.morning_routine",
-      "name": "Morning Routine",
-      "state": "on",
-      "last_triggered": "2024-03-20T06:00:00Z"
-    }
-  ]
-}
-```
-
-#### POST /automations
-
-Creates or modifies automations.
-
-**Request Body (Create):**
-```json
-{
-  "action": "create",
-  "config": {
-    "alias": "Morning Routine",
-    "description": "Turn on lights at sunrise",
-    "trigger": {
-      "platform": "sun",
-      "event": "sunrise"
-    },
-    "action": {
-      "service": "light.turn_on",
-      "target": {
-        "entity_id": "light.living_room"
-      }
-    }
-  }
-}
-```
-
-### 6. Add-ons
-
-#### GET /addons
-
-Lists available add-ons.
-
-**Response:**
-```json
-{
-  "success": true,
-  "addons": [
-    {
-      "name": "File Editor",
-      "slug": "core_configurator",
-      "description": "Simple browser-based file editor",
-      "version": "5.6.0",
-      "installed": true,
-      "available": true,
-      "state": "started"
-    }
-  ]
-}
-```
-
-#### POST /addons
-
-Manages add-ons.
-
-**Request Body (Install):**
-```json
-{
+  "tool": "addon",
   "action": "install",
   "slug": "core_configurator",
   "version": "5.6.0"
 }
 ```
 
-### 7. Package Management (HACS)
-
-#### GET /packages
-
-Lists available HACS packages.
-
-**Query Parameters:**
-- `category`: One of ["integration", "plugin", "theme", "python_script", "appdaemon", "netdaemon"]
-
-**Response:**
+### Manage Add-on State
 ```json
 {
-  "success": true,
-  "packages": [
-    {
-      "name": "Custom Component",
-      "repository": "owner/repo",
-      "category": "integration",
-      "installed_version": "1.0.0",
-      "available_version": "1.1.0"
-    }
-  ]
+  "tool": "addon",
+  "action": "start",  // or "stop", "restart"
+  "slug": "core_configurator"
 }
 ```
 
-#### POST /packages
+## Package Management
 
-Manages HACS packages.
-
-**Request Body (Install):**
+### List HACS Packages
 ```json
 {
+  "tool": "package",
+  "action": "list",
+  "category": "integration"  // or "plugin", "theme", "python_script", "appdaemon", "netdaemon"
+}
+```
+
+### Install Package
+```json
+{
+  "tool": "package",
   "action": "install",
   "category": "integration",
-  "repository": "owner/repo",
-  "version": "1.1.0"
+  "repository": "hacs/integration",
+  "version": "1.32.0"
 }
 ```
 
-## Error Handling
+## Automation Management
 
-All endpoints return errors in a consistent format:
-
+### Create Automation
 ```json
 {
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human readable error message",
-    "suggestion": "Suggestion to fix the error",
-    "recovery_options": [
-      "Option 1",
-      "Option 2"
+  "tool": "automation_config",
+  "action": "create",
+  "config": {
+    "alias": "Motion Light",
+    "description": "Turn on light when motion detected",
+    "mode": "single",
+    "trigger": [
+      {
+        "platform": "state",
+        "entity_id": "binary_sensor.motion",
+        "to": "on"
+      }
+    ],
+    "action": [
+      {
+        "service": "light.turn_on",
+        "target": {
+          "entity_id": "light.living_room"
+        }
+      }
     ]
   }
 }
 ```
 
-Common HTTP status codes:
+### Duplicate Automation
+```json
+{
+  "tool": "automation_config",
+  "action": "duplicate",
+  "automation_id": "automation.motion_light"
+}
+```
+
+## Core Functions
+
+### State Management
+```http
+GET /api/state
+POST /api/state
+```
+
+Manages the current state of the system.
+
+**Example Request:**
+```json
+POST /api/state
+{
+  "context": "living_room",
+  "state": {
+    "lights": "on",
+    "temperature": 22
+  }
+}
+```
+
+### Context Updates
+```http
+POST /api/context
+```
+
+Updates the current context with new information.
+
+**Example Request:**
+```json
+POST /api/context
+{
+  "user": "john",
+  "location": "kitchen",
+  "time": "morning",
+  "activity": "cooking"
+}
+```
+
+## Action Endpoints
+
+### Execute Action
+```http
+POST /api/action
+```
+
+Executes a specified action with given parameters.
+
+**Example Request:**
+```json
+POST /api/action
+{
+  "action": "turn_on_lights",
+  "parameters": {
+    "room": "living_room",
+    "brightness": 80
+  }
+}
+```
+
+### Batch Actions
+```http
+POST /api/actions/batch
+```
+
+Executes multiple actions in sequence.
+
+**Example Request:**
+```json
+POST /api/actions/batch
+{
+  "actions": [
+    {
+      "action": "turn_on_lights",
+      "parameters": {
+        "room": "living_room"
+      }
+    },
+    {
+      "action": "set_temperature",
+      "parameters": {
+        "temperature": 22
+      }
+    }
+  ]
+}
+```
+
+## Query Functions
+
+### Get Available Actions
+```http
+GET /api/actions
+```
+
+Returns a list of all available actions.
+
+**Example Response:**
+```json
+{
+  "actions": [
+    {
+      "name": "turn_on_lights",
+      "parameters": ["room", "brightness"],
+      "description": "Turns on lights in specified room"
+    },
+    {
+      "name": "set_temperature",
+      "parameters": ["temperature"],
+      "description": "Sets temperature in current context"
+    }
+  ]
+}
+```
+
+### Context Query
+```http
+GET /api/context?type=current
+```
+
+Retrieves context information.
+
+**Example Response:**
+```json
+{
+  "current_context": {
+    "user": "john",
+    "location": "kitchen",
+    "time": "morning",
+    "activity": "cooking"
+  }
+}
+```
+
+## WebSocket Events
+
+The server supports real-time updates via WebSocket connections.
+
+```javascript
+// Client-side connection example
+const ws = new WebSocket('ws://localhost:3000/ws');
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('Received update:', data);
+};
+```
+
+### Supported Events
+
+- `state_change`: Emitted when system state changes
+- `context_update`: Emitted when context is updated
+- `action_executed`: Emitted when an action is completed
+- `error`: Emitted when an error occurs
+
+**Example Event Data:**
+```json
+{
+  "event": "state_change",
+  "data": {
+    "previous_state": {
+      "lights": "off"
+    },
+    "current_state": {
+      "lights": "on"
+    },
+    "timestamp": "2024-03-20T10:30:00Z"
+  }
+}
+```
+
+## Error Handling
+
+All endpoints return standard HTTP status codes:
+
 - 200: Success
 - 400: Bad Request
 - 401: Unauthorized
 - 403: Forbidden
 - 404: Not Found
-- 429: Too Many Requests
 - 500: Internal Server Error
 
-## WebSocket Events
-
-The server supports WebSocket connections for real-time updates.
-
-### Connection
-
-```javascript
-const ws = new WebSocket('ws://your-server/api/websocket');
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log('Received:', data);
-};
+**Error Response Format:**
+```json
+{
+  "error": {
+    "code": "INVALID_PARAMETERS",
+    "message": "Missing required parameter: room",
+    "details": {
+      "missing_fields": ["room"]
+    }
+  }
+}
 ```
 
-### Event Subscription
+## Rate Limiting
 
-```javascript
-// Subscribe to all events
-ws.send(JSON.stringify({
-  type: 'subscribe_events'
-}));
+The API implements rate limiting to prevent abuse:
 
-// Subscribe to specific event type
-ws.send(JSON.stringify({
-  type: 'subscribe_events',
-  event_type: 'state_changed'
-}));
+- 100 requests per minute per IP for regular endpoints
+- 1000 requests per minute per IP for WebSocket connections
+
+When rate limit is exceeded, the server returns:
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests",
+    "reset_time": "2024-03-20T10:31:00Z"
+  }
+}
 ```
 
-## Security Best Practices
+## Example Usage
 
-1. Always use HTTPS in production
-2. Store tokens securely
-3. Implement proper token rotation
-4. Monitor and log API usage
-5. Regular security audits
+### Using curl
+```bash
+# Get current state
+curl -X GET \
+  http://localhost:3000/api/state \
+  -H 'Authorization: ApiKey your_api_key_here'
 
-## Rate Limiting Headers
+# Execute action
+curl -X POST \
+  http://localhost:3000/api/action \
+  -H 'Authorization: ApiKey your_api_key_here' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "action": "turn_on_lights",
+    "parameters": {
+      "room": "living_room",
+      "brightness": 80
+    }
+  }'
+```
 
-The API includes rate limit information in response headers:
-```http
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1621436800
+### Using JavaScript
+```javascript
+// Execute action
+async function executeAction() {
+  const response = await fetch('http://localhost:3000/api/action', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'ApiKey your_api_key_here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action: 'turn_on_lights',
+      parameters: {
+        room: 'living_room',
+        brightness: 80
+      }
+    })
+  });
+  
+  const data = await response.json();
+  console.log('Action result:', data);
+}
 ``` 
