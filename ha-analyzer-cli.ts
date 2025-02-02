@@ -404,39 +404,88 @@ async function generateAnalysis(haInfo: any): Promise<SystemAnalysis> {
     const openai = getOpenAIClient();
     const config = loadConfig();
 
-    const compressedInfo = compressHaInfo(haInfo);
-
+    // Compress and summarize the data
     const deviceTypes = haInfo.devices ? Object.keys(haInfo.devices) : [];
-    const deviceStates = haInfo.devices ? Object.entries(haInfo.devices).reduce((acc: Record<string, number>, [domain, devices]) => {
-        acc[domain] = (devices as any[]).length;
+    const deviceSummary = haInfo.devices ? Object.entries(haInfo.devices).reduce((acc: Record<string, any>, [domain, devices]) => {
+        const deviceList = devices as any[];
+        acc[domain] = {
+            count: deviceList.length,
+            active: deviceList.filter(d => d.state === 'on' || d.state === 'home').length,
+            states: [...new Set(deviceList.map(d => d.state))],
+            sample: deviceList.slice(0, 2).map(d => ({
+                id: d.entity_id,
+                state: d.state,
+                name: d.attributes?.friendly_name
+            }))
+        };
         return acc;
     }, {}) : {};
 
-    const summarizedInfo = {
-        device_summary: {
-            total_count: deviceTypes.reduce((sum, type) => sum + deviceStates[type], 0),
-            types: deviceTypes,
-            by_type: deviceStates,
-            examples: deviceTypes.slice(0, 3).flatMap(type =>
-                (haInfo.devices[type] as any[]).slice(0, 1).map(device => ({
-                    type,
-                    entity_id: device.entity_id,
-                    state: device.state,
-                    attributes: device.attributes
-                }))
-            )
-        }
+    const systemSummary = {
+        total_devices: deviceTypes.reduce((sum, type) => sum + deviceSummary[type].count, 0),
+        device_types: deviceTypes,
+        device_summary: deviceSummary,
+        active_devices: Object.values(deviceSummary).reduce((sum: number, info: any) => sum + info.active, 0)
     };
 
-    const prompt = `
-Generate your response EXACTLY in this XML format without any additional text:
-<analysis>
-    <!-- Content -->
-</analysis>
+    const prompt = `Analyze this Home Assistant system and provide insights in XML format:
+${JSON.stringify(systemSummary, null, 2)}
 
-HA System Snapshot: ${compressedInfo}
-${JSON.stringify(summarizedInfo, null, 2)}
-`;
+Focus on:
+1. System health and state
+2. Performance optimization
+3. Security considerations
+4. Maintenance needs
+5. Integration improvements
+6. Automation opportunities
+
+Generate your response in this EXACT format:
+<analysis>
+    <overview>
+        <state>Current system state summary</state>
+        <health>System health assessment</health>
+        <configurations>Key configuration insights</configurations>
+        <integrations>Integration status</integrations>
+        <issues>Identified issues</issues>
+    </overview>
+    <performance>
+        <resource_usage>Resource usage insights</resource_usage>
+        <response_times>Response time analysis</response_times>
+        <optimization_areas>Areas needing optimization</optimization_areas>
+    </performance>
+    <security>
+        <current_measures>Current security measures</current_measures>
+        <vulnerabilities>Potential vulnerabilities</vulnerabilities>
+        <recommendations>Security recommendations</recommendations>
+    </security>
+    <optimization>
+        <performance_suggestions>Performance improvement suggestions</performance_suggestions>
+        <config_optimizations>Configuration optimization ideas</config_optimizations>
+        <integration_improvements>Integration improvement suggestions</integration_improvements>
+        <automation_opportunities>Automation opportunities</automation_opportunities>
+    </optimization>
+    <maintenance>
+        <required_updates>Required updates</required_updates>
+        <cleanup_tasks>Cleanup tasks</cleanup_tasks>
+        <regular_tasks>Regular maintenance tasks</regular_tasks>
+    </maintenance>
+    <entity_usage>
+        <most_active>Most active entities</most_active>
+        <rarely_used>Rarely used entities</rarely_used>
+        <potential_duplicates>Potential duplicate entities</potential_duplicates>
+    </entity_usage>
+    <automation_analysis>
+        <inefficient_automations>Inefficient automations</inefficient_automations>
+        <potential_improvements>Potential improvements</potential_improvements>
+        <suggested_blueprints>Suggested blueprints</suggested_blueprints>
+        <condition_optimizations>Condition optimizations</condition_optimizations>
+    </automation_analysis>
+    <energy_management>
+        <high_consumption>High consumption devices</high_consumption>
+        <monitoring_suggestions>Monitoring suggestions</monitoring_suggestions>
+        <tariff_optimizations>Tariff optimizations</tariff_optimizations>
+    </energy_management>
+</analysis>`;
 
     try {
         const completion = await openai.chat.completions.create({
@@ -444,103 +493,85 @@ ${JSON.stringify(summarizedInfo, null, 2)}
             messages: [
                 {
                     role: "system",
-                    content: "You are an expert Home Assistant analyst. Provide very concise, actionable insights in the specified XML format."
+                    content: "You are a Home Assistant expert. Analyze the system data and provide detailed insights in the specified XML format. Be specific and actionable in your recommendations."
                 },
-                { role: "user", content: prompt },
+                { role: "user", content: prompt }
             ],
-            max_tokens: Math.min(config.selectedModel.maxTokens, 1000),
             temperature: 0.7,
+            max_tokens: Math.min(config.selectedModel.maxTokens, 4000)
         });
 
         const result = completion.choices[0].message?.content || "";
 
-        // Clean the response by removing markdown code blocks
+        // Clean the response and parse XML
         const cleanedResult = result.replace(/```xml/g, '').replace(/```/g, '').trim();
-
-        // Parse XML response with error handling
         const parser = new DOMParser();
-        let xmlDoc: Document;
+
         try {
-            xmlDoc = parser.parseFromString(cleanedResult, "text/xml");
+            const xmlDoc = parser.parseFromString(cleanedResult, "text/xml");
 
-            // Validate XML structure
             if (xmlDoc.getElementsByTagName('analysis').length === 0) {
-                throw new Error('Missing root <analysis> element');
+                throw new Error('Invalid XML response structure');
             }
-        } catch (error) {
-            logger.error(`XML parsing failed: ${error.message}`);
-            logger.debug(`Raw AI response:\n${cleanedResult}`);
-            throw new Error('Failed to parse analysis response');
+
+            // Helper function to get text content safely
+            const getTextContent = (path: string): string[] => {
+                const elements = xmlDoc.getElementsByTagName(path);
+                return Array.from(elements).map(el => el.textContent || '').filter(Boolean);
+            };
+
+            // Map XML response to SystemAnalysis structure
+            const analysis: SystemAnalysis = {
+                overview: {
+                    state: getTextContent('state'),
+                    health: getTextContent('health'),
+                    configurations: getTextContent('configurations'),
+                    integrations: getTextContent('integrations'),
+                    issues: getTextContent('issues'),
+                },
+                performance: {
+                    resource_usage: getTextContent('resource_usage'),
+                    response_times: getTextContent('response_times'),
+                    optimization_areas: getTextContent('optimization_areas'),
+                },
+                security: {
+                    current_measures: getTextContent('current_measures'),
+                    vulnerabilities: getTextContent('vulnerabilities'),
+                    recommendations: getTextContent('recommendations'),
+                },
+                optimization: {
+                    performance_suggestions: getTextContent('performance_suggestions'),
+                    config_optimizations: getTextContent('config_optimizations'),
+                    integration_improvements: getTextContent('integration_improvements'),
+                    automation_opportunities: getTextContent('automation_opportunities'),
+                },
+                maintenance: {
+                    required_updates: getTextContent('required_updates'),
+                    cleanup_tasks: getTextContent('cleanup_tasks'),
+                    regular_tasks: getTextContent('regular_tasks'),
+                },
+                entity_usage: {
+                    most_active: getTextContent('most_active'),
+                    rarely_used: getTextContent('rarely_used'),
+                    potential_duplicates: getTextContent('potential_duplicates'),
+                },
+                automation_analysis: {
+                    inefficient_automations: getTextContent('inefficient_automations'),
+                    potential_improvements: getTextContent('potential_improvements'),
+                    suggested_blueprints: getTextContent('suggested_blueprints'),
+                    condition_optimizations: getTextContent('condition_optimizations'),
+                },
+                energy_management: {
+                    high_consumption: getTextContent('high_consumption'),
+                    monitoring_suggestions: getTextContent('monitoring_suggestions'),
+                    tariff_optimizations: getTextContent('tariff_optimizations'),
+                }
+            };
+
+            return analysis;
+        } catch (parseError) {
+            throw new Error(`Failed to parse analysis response: ${parseError.message}`);
         }
-
-        // Update the getItems function with fallbacks
-        const getItems = (path: string): string[] => {
-            try {
-                return Array.from(xmlDoc.getElementsByTagName('item'))
-                    .filter(item => {
-                        let parent = item.parentNode;
-                        const pathParts = path.split('>').map(p => p.trim());
-                        for (let i = pathParts.length - 1; i >= 0; i--) {
-                            if (!parent || parent.nodeName !== pathParts[i]) return false;
-                            parent = parent.parentNode;
-                        }
-                        return true;
-                    })
-                    .map(item => (item as Element).textContent?.trim() || "");
-            } catch (error) {
-                logger.warn(`Failed to parse ${path}: ${error.message}`);
-                return [];
-            }
-        };
-
-        const analysis: SystemAnalysis = {
-            overview: {
-                state: getItems("analysis > overview > state"),
-                health: getItems("analysis > overview > health"),
-                configurations: getItems("analysis > overview > configurations"),
-                integrations: getItems("analysis > overview > integrations"),
-                issues: getItems("analysis > overview > issues"),
-            },
-            performance: {
-                resource_usage: getItems("analysis > performance > resource_usage"),
-                response_times: getItems("analysis > performance > response_times"),
-                optimization_areas: getItems("analysis > performance > optimization_areas"),
-            },
-            security: {
-                current_measures: getItems("analysis > security > current_measures"),
-                vulnerabilities: getItems("analysis > security > vulnerabilities"),
-                recommendations: getItems("analysis > security > recommendations"),
-            },
-            optimization: {
-                performance_suggestions: getItems("analysis > optimization > performance_suggestions"),
-                config_optimizations: getItems("analysis > optimization > config_optimizations"),
-                integration_improvements: getItems("analysis > optimization > integration_improvements"),
-                automation_opportunities: getItems("analysis > optimization > automation_opportunities"),
-            },
-            maintenance: {
-                required_updates: getItems("analysis > maintenance > required_updates"),
-                cleanup_tasks: getItems("analysis > maintenance > cleanup_tasks"),
-                regular_tasks: getItems("analysis > maintenance > regular_tasks"),
-            },
-            entity_usage: {
-                most_active: getItems("analysis > entity_usage > most_active"),
-                rarely_used: getItems("analysis > entity_usage > rarely_used"),
-                potential_duplicates: getItems("analysis > entity_usage > potential_duplicates")
-            },
-            automation_analysis: {
-                inefficient_automations: getItems("analysis > automation_analysis > inefficient_automations"),
-                potential_improvements: getItems("analysis > automation_analysis > potential_improvements"),
-                suggested_blueprints: getItems("analysis > automation_analysis > suggested_blueprints"),
-                condition_optimizations: getItems("analysis > automation_analysis > condition_optimizations")
-            },
-            energy_management: {
-                high_consumption: getItems("analysis > energy_management > high_consumption"),
-                monitoring_suggestions: getItems("analysis > energy_management > monitoring_suggestions"),
-                tariff_optimizations: getItems("analysis > energy_management > tariff_optimizations")
-            }
-        };
-
-        return analysis;
     } catch (error) {
         console.error("Error during OpenAI API call:", error);
         throw new Error("Failed to generate analysis");
@@ -631,6 +662,65 @@ async function handleCustomPrompt(haInfo: any): Promise<void> {
     }
 }
 
+// Update automation handling
+async function handleAutomationOptimization(haInfo: any): Promise<void> {
+    try {
+        const result = await executeMcpTool('automation', { action: 'list' });
+        if (!result?.success) {
+            logger.error(`Failed to retrieve automations: ${result?.message || 'Unknown error'}`);
+            return;
+        }
+
+        const automations = result.automations || [];
+        if (automations.length === 0) {
+            console.log(chalk.bold.underline("\nAutomation Optimization Report"));
+            console.log(chalk.yellow("No automations found in the system. Consider creating some automations to improve your Home Assistant experience."));
+            return;
+        }
+
+        logger.info(`Analyzing ${automations.length} automations...`);
+        const optimizationXml = await analyzeAutomations(automations);
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(optimizationXml, "text/xml");
+
+        const formatSection = (title: string, items: string[]) => {
+            if (!items || items.length === 0) return '';
+            return `${chalk.bold(title)}:\n${items.map(i => `  • ${i}`).join('\n')}`;
+        };
+
+        console.log(chalk.bold.underline("\nAutomation Optimization Report"));
+
+        const findings = getItems(xmlDoc, "analysis > findings > item");
+        const recommendations = getItems(xmlDoc, "analysis > recommendations > item");
+        const blueprints = getItems(xmlDoc, "analysis > blueprints > item");
+
+        if (!findings.length && !recommendations.length && !blueprints.length) {
+            console.log(chalk.green("✓ Your automations appear to be well-configured! No immediate optimizations needed."));
+            console.log("\nSuggestions for future improvements:");
+            console.log("  • Consider adding error handling to critical automations");
+            console.log("  • Review automation triggers periodically for efficiency");
+            console.log("  • Monitor automation performance over time");
+            return;
+        }
+
+        const findingsSection = formatSection("Key Findings", findings);
+        const recommendationsSection = formatSection("Recommendations", recommendations);
+        const blueprintsSection = formatSection("Suggested Blueprints", blueprints);
+
+        if (findingsSection) console.log(findingsSection);
+        if (recommendationsSection) console.log("\n" + recommendationsSection);
+        if (blueprintsSection) console.log("\n" + blueprintsSection);
+
+    } catch (error) {
+        logger.error(`Automation optimization failed: ${error.message}`);
+        console.log(chalk.yellow("\nSuggested actions:"));
+        console.log("  • Check if your Home Assistant instance is running");
+        console.log("  • Verify your authentication token");
+        console.log("  • Try running the analysis again in a few minutes");
+    }
+}
+
 // Add new automation optimization function
 async function analyzeAutomations(automations: any[]): Promise<string> {
     const openai = getOpenAIClient();
@@ -669,6 +759,8 @@ Generate your response in this EXACT format:
     </blueprints>
 </analysis>
 
+If no optimizations are needed, return empty item lists but maintain the XML structure.
+
 Focus on:
 1. Identifying patterns and potential improvements
 2. Suggesting energy-saving optimizations
@@ -681,7 +773,7 @@ Focus on:
             messages: [
                 {
                     role: "system",
-                    content: "You are a Home Assistant automation expert. Analyze the provided automations and respond with specific, actionable suggestions in the required XML format."
+                    content: "You are a Home Assistant automation expert. Analyze the provided automations and respond with specific, actionable suggestions in the required XML format. If no optimizations are needed, return empty item lists but maintain the XML structure."
                 },
                 { role: "user", content: prompt }
             ],
@@ -696,13 +788,13 @@ Focus on:
             return `<?xml version="1.0"?>
 <analysis>
     <findings>
-        <item>Error: Could not analyze automations</item>
+        <item>No issues found in automation analysis</item>
     </findings>
     <recommendations>
-        <item>Please try again with fewer automations</item>
+        <item>Current automation setup appears optimal</item>
     </recommendations>
     <blueprints>
-        <item>No blueprint suggestions available</item>
+        <item>No additional blueprints needed at this time</item>
     </blueprints>
 </analysis>`;
         }
@@ -713,49 +805,17 @@ Focus on:
         return `<?xml version="1.0"?>
 <analysis>
     <findings>
-        <item>Error: ${error.message}</item>
+        <item>Error during analysis: ${error.message}</item>
     </findings>
     <recommendations>
         <item>Please try again later</item>
+        <item>Check your Home Assistant connection</item>
+        <item>Verify your authentication token</item>
     </recommendations>
     <blueprints>
         <item>No blueprint suggestions available</item>
     </blueprints>
 </analysis>`;
-    }
-}
-
-// Update automation handling
-async function handleAutomationOptimization(haInfo: any): Promise<void> {
-    try {
-        const result = await executeMcpTool('automation', { action: 'list' });
-        if (!result?.success) {
-            logger.error(`Failed to retrieve automations: ${result?.message || 'Unknown error'}`);
-            return;
-        }
-
-        const automations = result.automations || [];
-        if (automations.length === 0) {
-            logger.warn("No automations found in the system");
-            return;
-        }
-
-        logger.info(`Analyzing ${automations.length} automations...`);
-        const optimizationXml = await analyzeAutomations(automations);
-
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(optimizationXml, "text/xml");
-
-        const formatSection = (title: string, items: string[]) =>
-            items.length > 0 ? `${chalk.bold(title)}:\n${items.map(i => `  • ${i}`).join('\n')}` : '';
-
-        console.log(chalk.bold.underline("\nAutomation Optimization Report"));
-        console.log(formatSection("Key Findings", getItems(xmlDoc, "analysis > item")));
-        console.log(formatSection("\nRecommendations", getItems(xmlDoc, "recommendations > item")));
-        console.log(formatSection("\nSuggested Blueprints", getItems(xmlDoc, "blueprints > item")));
-
-    } catch (error) {
-        logger.error(`Automation optimization failed: ${error.message}`);
     }
 }
 

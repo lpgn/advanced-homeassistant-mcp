@@ -250,29 +250,91 @@ TEST_HASS_TOKEN=test_token           # Test token
 2. **Production**: Copy `.env.example` to `.env.production`
 3. **Testing**: Copy `.env.example` to `.env.test`
 
-### Adding to Claude Desktop (or other clients)
+## Home Assistant Analyzer CLI
 
-To use your new Home Assistant MCP server, you can add Claude Desktop as a client. Add the following to the configuration. Note this will run the MCP within claude and does not work with the Docker method.
+The project includes a powerful command-line tool (`ha-analyzer-cli.ts`) for analyzing and optimizing your Home Assistant setup. This tool provides comprehensive system analysis, automation optimization, and custom querying capabilities.
 
+### Features
+
+- 🔍 **System Analysis**
+  - Device state monitoring
+  - Health checks
+  - Configuration analysis
+  - Integration status
+  - Performance metrics
+  - Security assessment
+
+- 🤖 **Automation Analysis**
+  - Inefficient automation detection
+  - Optimization suggestions
+  - Blueprint recommendations
+  - Condition optimizations
+
+- ⚡ **Performance Optimization**
+  - Resource usage analysis
+  - Response time monitoring
+  - Configuration optimization suggestions
+  - Integration improvement recommendations
+
+- 🔐 **Security Analysis**
+  - Current security measures assessment
+  - Vulnerability detection
+  - Security recommendations
+
+- 📊 **Entity Usage Analysis**
+  - Most active entities tracking
+  - Rarely used entity detection
+  - Potential duplicate identification
+
+- 💡 **Energy Management**
+  - High consumption detection
+  - Monitoring suggestions
+  - Tariff optimization recommendations
+
+### Configuration
+
+The analyzer requires the following environment variables:
+```env
+OPENAI_API_KEY=your_openai_api_key    # Required for analysis
+HASS_TOKEN=your_hass_token            # Home Assistant access token
+MCP_SERVER=http://localhost:3000      # MCP server URL (default)
+OPENAI_MODEL=gpt-4o                   # Default model (optional)
+MAX_RETRIES=3                         # Max retry attempts (optional)
+ANALYSIS_TIMEOUT=30000                # Analysis timeout in ms (optional)
 ```
-{
-  "homeassistant": {
-    "command": "node",
-    "args": [<path/to/your/dist/folder>]
-    "env": {
-      NODE_ENV=development
-      HASS_HOST=http://homeassistant.local:8123
-      HASS_TOKEN=your_home_assistant_token
-      PORT=3000
-      HASS_SOCKET_URL=ws://homeassistant.local:8123/api/websocket
-      LOG_LEVEL=debug
-    }
-  }
-}
 
+### Available Models
+
+The analyzer supports multiple language models:
+- GPT-4 Models:
+  - `gpt-4o`: Standard GPT-4
+  - `gpt-4-turbo`: GPT-4 Turbo
+  - `gpt-4`: Original GPT-4
+- GPT-3.5 Models:
+  - `gpt-3.5-turbo`: Standard GPT-3.5
+  - `gpt-3.5-turbo-16k`: Extended context GPT-3.5
+- DeepSeek Models (requires DEEPSEEK_API_KEY):
+  - `deepseek-v3`: DeepSeek v3
+  - `deepseek-r1`: DeepSeek R1
+
+### Usage
+
+1. **Standard Analysis**
+```bash
+npx ts-node ha-analyzer-cli.ts analyze
 ```
 
+2. **Custom Prompt Analysis**
+```bash
+npx ts-node ha-analyzer-cli.ts custom
+```
 
+3. **Automation Optimization**
+```bash
+npx ts-node ha-analyzer-cli.ts optimize
+```
+
+The analysis results will be displayed in a structured format, organized by categories such as system overview, performance, security, optimization suggestions, and more.
 
 ## API Reference
 
@@ -745,7 +807,7 @@ When using custom prompts, you can use these variables:
 
 To use the OpenAI integration, you need to set up your OpenAI API key in the `.env` file:
 ```env
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 ### Features
