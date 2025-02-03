@@ -69,3 +69,7 @@ bun.lockb
 
 coverage/*
 coverage/
+# Environment files
+.env
+.env.*
+!.env.*.template
