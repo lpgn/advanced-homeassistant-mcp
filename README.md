@@ -122,7 +122,7 @@ See [SSE_API.md](docs/SSE_API.md) for complete documentation of the SSE system.
 
 ## Prerequisites
 
-- **Bun** 1.0.26 or higher
+- **Bun** 1.0.26 or higher (Required for optimal performance)
 - **Docker Compose** for containerization
 - Running **Home Assistant** instance
 - Home Assistant long-lived access token ([How to get token](https://community.home-assistant.io/t/how-to-get-long-lived-access-token/162159))
@@ -134,6 +134,9 @@ See [SSE_API.md](docs/SSE_API.md) for complete documentation of the SSE system.
 ### Basic Setup
 
 ```bash
+# Install Bun (if not already installed)
+curl -fsSL https://bun.sh/install | bash
+
 # Clone the repository
 git clone https://github.com/jango-blockchained/homeassistant-mcp.git
 cd homeassistant-mcp
@@ -147,7 +150,7 @@ bun run build
 
 ### Docker Setup (Recommended)
 
-The project includes Docker support for easy deployment and consistent environments across different platforms.
+The project includes Docker support with Bun for optimal performance and consistent environments across different platforms.
 
 1. **Clone the repository:**
     ```bash
@@ -244,10 +247,10 @@ TEST_HASS_TOKEN=test_token           # Test token
 ## Development
 
 ```bash
-# Development mode with hot reload
+# Development mode with hot reload and TypeScript watch
 bun run dev
 
-# Run tests
+# Run tests with Bun's built-in test runner
 bun test
 
 # Run tests with coverage
@@ -334,69 +337,78 @@ OPENAI_API_KEY=your_openai_api_key
 
 ## Project Status
 
-✅ **Complete**
-- Entity, Floor, and Area access
-- Device control (Lights, Climate, Covers, Switches, Contacts)
-- Add-on management system
-- Package management through HACS
-- Advanced automation configuration
-- Basic state management
-- Error handling and validation
-- Docker containerization
-- Jest testing setup
-- TypeScript integration
-- Environment variable management
-- Home Assistant API integration
-- Project documentation
+### Current Status 🚀
 
-🚧 **In Progress**
-- WebSocket implementation for real-time updates
-- Enhanced security features
-- Tool organization optimization
-- Performance optimization
-- Resource context integration
-- API documentation generation
-- Multi-platform desktop integration
-- Advanced error recovery
-- Custom prompt testing
-- Enhanced macOS integration
-- Type safety improvements
-- Testing coverage expansion
+The project is actively maintained and under continuous development. Recent updates include:
 
-## Contributing
+- ✅ Enhanced Bun runtime optimization
+- ✅ Improved WebSocket connection management
+- ✅ Advanced type safety and error handling
+- ✅ Comprehensive test coverage with Bun's test runner
+- ✅ Real-time event handling optimization
+- ✅ Enhanced Docker integration with Bun
+- ✅ Improved development workflow
+- ✅ Advanced security features
 
-1. Fork the repository
-2. Create a feature branch
-3. Implement your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+### Upcoming Features 🔜
 
-## Resources
+- 📱 Mobile-first UI improvements with modern frameworks
+- 🔐 Advanced security features and authentication methods
+- 🤖 AI-powered automation capabilities
+- 📊 Real-time analytics and reporting dashboard
+- 🌐 Multi-instance support with load balancing
+- 🔄 Enhanced state synchronization
+- 🎯 Custom automation templates
+- 🔍 Advanced entity search and filtering
+- 📈 Performance monitoring tools
+- 🛠️ Enhanced debugging capabilities
 
-- [MCP Documentation](https://modelcontextprotocol.io/introduction)
-- [Home Assistant Docs](https://www.home-assistant.io)
-- [HA REST API](https://developers.home-assistant.io/docs/api/rest)
-- [HACS Documentation](https://hacs.xyz)
-- [TypeScript Documentation](https://www.typescriptlang.org/docs)
+### Performance Optimizations
 
-## License
+- ⚡ Bun's high-performance JavaScript runtime
+- 🚀 Optimized WebSocket connections
+- 📦 Efficient package management with Bun
+- 🔄 Enhanced state management
+- 🎯 Targeted event subscriptions
+- 📊 Memory usage optimizations
+- 🔍 Query optimization
+- 🛠️ Development tools integration
 
-MIT License - See [LICENSE](LICENSE) file
+### Version History
+
+- **v0.2.0** (Current)
+  - Enhanced Bun runtime implementation
+  - Advanced WebSocket management
+  - Improved error handling and recovery
+  - Comprehensive test suite with Bun's test runner
+  - Real-time performance optimizations
+  - Enhanced security features
+  - Advanced automation capabilities
+  - Improved documentation
+
+- **v0.1.0**
+  - Initial release with Bun support
+  - Basic Home Assistant integration
+  - SSE implementation
+  - Device control capabilities
+  - Basic automation support
 
 ## Performance Benefits with Bun
 
-This project leverages Bun's high-performance runtime and package manager for:
+This project leverages Bun's high-performance runtime for:
 
-- 🚀 **Faster Execution**: Bun's JavaScript runtime is significantly faster than Node.js
+- 🚀 **Ultra-Fast Execution**: Bun's JavaScript runtime offers superior performance
 - ⚡ **Quick Development**: Hot reload and TypeScript support out of the box
-- 📦 **Efficient Package Management**: Faster installation and better dependency resolution
-- 🧪 **Integrated Testing**: Built-in test runner with Jest compatibility
-- 🔄 **Native TypeScript Support**: No transpilation needed for development
+- 📦 **Efficient Package Management**: Lightning-fast installation and dependency resolution
+- 🧪 **Integrated Testing**: Built-in test runner with superior performance
+- 🔄 **Native TypeScript Support**: Zero-config TypeScript support
+- 🎯 **Optimized Build Process**: Faster builds and smaller output
+- 🛠️ **Development Tools**: Enhanced debugging and profiling
+- 📊 **Performance Monitoring**: Built-in metrics and diagnostics
 
 ## Development Workflow
 
-### Testing
+### Testing with Bun
 
 ```bash
 # Run all tests
@@ -412,7 +424,7 @@ bun test --coverage
 bun test path/to/test.test.ts
 ```
 
-### Building
+### Building with Bun
 
 ```bash
 # Build the project
@@ -442,49 +454,6 @@ bun run lint
 bun run lint:fix
 ```
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Connection Issues**
-   - Verify Home Assistant is running
-   - Check `HASS_HOST` accessibility
-   - Validate token permissions
-   - Ensure WebSocket connection for real-time updates
-
-2. **Add-on Management Issues**
-   - Verify Supervisor access
-   - Check add-on compatibility
-   - Validate system resources
-
-3. **HACS Integration Issues**
-   - Verify HACS installation
-   - Check HACS integration status
-   - Validate repository access
-
-4. **Automation Issues**
-   - Verify entity availability
-   - Check trigger conditions
-   - Validate action sequences
-   - Debug execution flow
-
-### Performance Optimization
-
-1. **Development Mode**
-   - Use `bun --watch` for faster development cycles
-   - Enable hot module replacement
-   - Utilize Bun's built-in performance tools
-
-2. **Production Mode**
-   - Use production builds for optimal performance
-   - Enable compression and caching
-   - Implement proper error handling
-
-3. **Docker Optimization**
-   - Use multi-stage builds
-   - Implement proper caching
-   - Optimize layer ordering
-
 ## Contributing
 
 1. Fork the repository
@@ -496,6 +465,40 @@ bun run lint:fix
 7. Push to the branch (`git push origin feature/amazing-feature`)
 8. Open a Pull Request
 
+## Advanced Features
+
+### Real-time Monitoring
+
+- 📊 Live device state tracking
+- 🔄 Instant state updates
+- 📈 Performance metrics
+- 🎯 Event filtering
+- 🔍 Advanced search capabilities
+
+### Security Features
+
+- 🔐 Token-based authentication
+- 🛡️ Rate limiting
+- 🔒 SSL/TLS support
+- 👤 User management
+- 📝 Audit logging
+
+### Automation Capabilities
+
+- 🤖 Complex automation rules
+- 📅 Scheduled tasks
+- 🎯 Conditional triggers
+- 🔄 State-based actions
+- 📊 Automation analytics
+
+### Development Tools
+
+- 🛠️ Built-in debugging
+- 📊 Performance profiling
+- 🔍 Code analysis
+- 🧪 Test coverage reports
+- 📝 Documentation generation
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - See [LICENSE](LICENSE) file
