@@ -5,9 +5,8 @@ The server uses the MCP protocol to share access to a local Home Assistant insta
 A powerful bridge between your Home Assistant instance and Language Learning Models (LLMs), enabling natural language control and monitoring of your smart home devices through the Model Context Protocol (MCP). This server provides a comprehensive API for managing your entire Home Assistant ecosystem, from device control to system administration.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Node.js](https://img.shields.io/badge/node-%3E%3D20.10.0-green.svg)
+![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.26-black)
 ![Docker Compose](https://img.shields.io/badge/docker-compose-%3E%3D1.27.0-blue.svg)
-![NPM](https://img.shields.io/badge/npm-%3E%3D7.0.0-orange.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-%5E5.0.0-blue.svg)
 ![Test Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)
 
@@ -123,8 +122,7 @@ See [SSE_API.md](docs/SSE_API.md) for complete documentation of the SSE system.
 
 ## Prerequisites
 
-- **Node.js** 20.10.0 or higher
-- **NPM** package manager
+- **Bun** 1.0.26 or higher
 - **Docker Compose** for containerization
 - Running **Home Assistant** instance
 - Home Assistant long-lived access token ([How to get token](https://community.home-assistant.io/t/how-to-get-long-lived-access-token/162159))
@@ -141,10 +139,10 @@ git clone https://github.com/jango-blockchained/homeassistant-mcp.git
 cd homeassistant-mcp
 
 # Install dependencies
-npm install
+bun install
 
 # Build the project
-npm run build
+bun run build
 ```
 
 ### Docker Setup (Recommended)
@@ -170,7 +168,7 @@ The project includes Docker support for easy deployment and consistent environme
 
     # Server Configuration
     PORT=3000
-    NODE_ENV=production
+    BUN_ENV=production
     DEBUG=false
     ```
 
@@ -201,7 +199,7 @@ The project includes Docker support for easy deployment and consistent environme
 #### Docker Configuration
 
 The Docker setup includes:
-- Multi-stage build for optimal image size
+- Multi-stage build using Bun for optimal performance
 - Health checks for container monitoring
 - Volume mounting for environment configuration
 - Automatic container restart on failure
@@ -214,7 +212,7 @@ All environment variables can be configured in the `.env` file. The following va
 - `HASS_TOKEN`: Long-lived access token for Home Assistant
 - `HASS_SOCKET_URL`: WebSocket URL for Home Assistant
 - `PORT`: Server port (default: 3000)
-- `NODE_ENV`: Environment (production/development)
+- `BUN_ENV`: Environment (production/development)
 - `DEBUG`: Enable debug mode (true/false)
 
 ## Configuration
@@ -229,7 +227,7 @@ HASS_SOCKET_URL=ws://homeassistant.local:8123/api/websocket  # WebSocket URL
 
 # Server Configuration
 PORT=3000                # Server port (default: 3000)
-NODE_ENV=production     # Environment (production/development)
+BUN_ENV=production     # Environment (production/development)
 DEBUG=false            # Enable debug mode
 
 # Test Configuration
@@ -247,25 +245,19 @@ TEST_HASS_TOKEN=test_token           # Test token
 
 ```bash
 # Development mode with hot reload
-npm run dev
-
-# Build project
-npm run build
-
-# Production mode
-npm run start
+bun run dev
 
 # Run tests
-npx jest --config=jest.config.cjs
+bun test
 
 # Run tests with coverage
-npx jest --coverage
+bun test --coverage
 
-# Lint code
-npm run lint
+# Build the project
+bun run build
 
-# Format code
-npm run format
+# Start the production server
+bun start
 ```
 
 ## API Reference
@@ -289,7 +281,7 @@ Performs a comprehensive system analysis including:
 
 ```bash
 # Run standard analysis
-npm run test:openai
+bun run test:openai
 # Select option 1 when prompted
 ```
 
@@ -303,7 +295,7 @@ Allows you to ask specific questions about your Home Assistant setup. The analys
 
 ```bash
 # Run custom analysis
-npm run test:openai
+bun run test:openai
 # Select option 2 when prompted
 ```
 
@@ -318,30 +310,23 @@ OPENAI_API_KEY=your_openai_api_key
 
 ### Common Issues
 
-1. **Node.js Version (`toSorted is not a function`)**
-   - **Solution:** Update to Node.js 20.10.0+
-   ```bash
-   nvm install 20.10.0
-   nvm use 20.10.0
-   ```
-
-2. **Connection Issues**
+1. **Connection Issues**
    - Verify Home Assistant is running
    - Check `HASS_HOST` accessibility
    - Validate token permissions
    - Ensure WebSocket connection for real-time updates
 
-3. **Add-on Management Issues**
+2. **Add-on Management Issues**
    - Verify Supervisor access
    - Check add-on compatibility
    - Validate system resources
 
-4. **HACS Integration Issues**
+3. **HACS Integration Issues**
    - Verify HACS installation
    - Check HACS integration status
    - Validate repository access
 
-5. **Automation Issues**
+4. **Automation Issues**
    - Verify entity availability
    - Check trigger conditions
    - Validate service calls
@@ -398,3 +383,119 @@ OPENAI_API_KEY=your_openai_api_key
 ## License
 
 MIT License - See [LICENSE](LICENSE) file
+
+## Performance Benefits with Bun
+
+This project leverages Bun's high-performance runtime and package manager for:
+
+- 🚀 **Faster Execution**: Bun's JavaScript runtime is significantly faster than Node.js
+- ⚡ **Quick Development**: Hot reload and TypeScript support out of the box
+- 📦 **Efficient Package Management**: Faster installation and better dependency resolution
+- 🧪 **Integrated Testing**: Built-in test runner with Jest compatibility
+- 🔄 **Native TypeScript Support**: No transpilation needed for development
+
+## Development Workflow
+
+### Testing
+
+```bash
+# Run all tests
+bun test
+
+# Run tests in watch mode
+bun test --watch
+
+# Run tests with coverage
+bun test --coverage
+
+# Run specific test file
+bun test path/to/test.test.ts
+```
+
+### Building
+
+```bash
+# Build the project
+bun run build
+
+# Clean and rebuild
+bun run clean && bun run build
+```
+
+### Type Checking
+
+```bash
+# Check types
+bun run types:check
+
+# Install type definitions
+bun run types:install
+```
+
+### Linting
+
+```bash
+# Run ESLint
+bun run lint
+
+# Fix linting issues
+bun run lint:fix
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Connection Issues**
+   - Verify Home Assistant is running
+   - Check `HASS_HOST` accessibility
+   - Validate token permissions
+   - Ensure WebSocket connection for real-time updates
+
+2. **Add-on Management Issues**
+   - Verify Supervisor access
+   - Check add-on compatibility
+   - Validate system resources
+
+3. **HACS Integration Issues**
+   - Verify HACS installation
+   - Check HACS integration status
+   - Validate repository access
+
+4. **Automation Issues**
+   - Verify entity availability
+   - Check trigger conditions
+   - Validate action sequences
+   - Debug execution flow
+
+### Performance Optimization
+
+1. **Development Mode**
+   - Use `bun --watch` for faster development cycles
+   - Enable hot module replacement
+   - Utilize Bun's built-in performance tools
+
+2. **Production Mode**
+   - Use production builds for optimal performance
+   - Enable compression and caching
+   - Implement proper error handling
+
+3. **Docker Optimization**
+   - Use multi-stage builds
+   - Implement proper caching
+   - Optimize layer ordering
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Install dependencies (`bun install`)
+4. Make your changes
+5. Run tests (`bun test`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
