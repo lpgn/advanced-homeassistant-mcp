@@ -47,6 +47,18 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 
+// Security configuration
+const SECURITY_CONFIG = {
+    TOKEN_EXPIRY: 24 * 60 * 60 * 1000, // 24 hours
+    MAX_TOKEN_AGE: 30 * 24 * 60 * 60 * 1000, // 30 days
+    MIN_TOKEN_LENGTH: 32,
+    MAX_FAILED_ATTEMPTS: 5,
+    LOCKOUT_DURATION: 15 * 60 * 1000, // 15 minutes
+};
+
+// Track failed authentication attempts
+const failedAttempts = new Map<string, { count: number; lastAttempt: number }>();
+
 export class TokenManager {
     /**
      * Encrypts a token using AES-256-GCM
@@ -114,44 +126,122 @@ export class TokenManager {
     }
 
     /**
-     * Validates a JWT token
+     * Validates a JWT token with enhanced security checks
      */
-    static validateToken(token: string): boolean {
+    static validateToken(token: string, ip?: string): { valid: boolean; error?: string } {
         if (!token || typeof token !== 'string') {
-            return false;
+            return { valid: false, error: 'Invalid token format' };
+        }
+
+        // Check for token length
+        if (token.length < SECURITY_CONFIG.MIN_TOKEN_LENGTH) {
+            return { valid: false, error: 'Token length below minimum requirement' };
+        }
+
+        // Check for rate limiting
+        if (ip) {
+            const attempts = failedAttempts.get(ip);
+            if (attempts) {
+                const timeSinceLastAttempt = Date.now() - attempts.lastAttempt;
+                if (attempts.count >= SECURITY_CONFIG.MAX_FAILED_ATTEMPTS) {
+                    if (timeSinceLastAttempt < SECURITY_CONFIG.LOCKOUT_DURATION) {
+                        return { valid: false, error: 'Too many failed attempts. Please try again later.' };
+                    }
+                    // Reset after lockout period
+                    failedAttempts.delete(ip);
+                }
+            }
         }
 
         try {
             const decoded = jwt.decode(token);
             if (!decoded || typeof decoded !== 'object') {
-                return false;
+                this.recordFailedAttempt(ip);
+                return { valid: false, error: 'Invalid token structure' };
             }
 
-            // Check for expiration
-            if (!decoded.exp) {
-                return false;
+            // Enhanced expiration checks
+            if (!decoded.exp || !decoded.iat) {
+                this.recordFailedAttempt(ip);
+                return { valid: false, error: 'Token missing required claims' };
             }
 
             const now = Math.floor(Date.now() / 1000);
             if (decoded.exp <= now) {
-                return false;
+                this.recordFailedAttempt(ip);
+                return { valid: false, error: 'Token has expired' };
             }
 
-            // Verify signature using the secret from environment variable
+            // Check token age
+            const tokenAge = (now - decoded.iat) * 1000;
+            if (tokenAge > SECURITY_CONFIG.MAX_TOKEN_AGE) {
+                this.recordFailedAttempt(ip);
+                return { valid: false, error: 'Token exceeds maximum age limit' };
+            }
+
+            // Verify signature
             const secret = process.env.JWT_SECRET;
             if (!secret) {
-                return false;
+                return { valid: false, error: 'JWT secret not configured' };
             }
 
             try {
                 jwt.verify(token, secret);
-                return true;
-            } catch {
-                return false;
+                // Reset failed attempts on successful validation
+                if (ip) {
+                    failedAttempts.delete(ip);
+                }
+                return { valid: true };
+            } catch (error) {
+                this.recordFailedAttempt(ip);
+                return { valid: false, error: 'Invalid token signature' };
             }
-        } catch {
-            return false;
+        } catch (error) {
+            this.recordFailedAttempt(ip);
+            return { valid: false, error: 'Token validation failed' };
         }
+    }
+
+    /**
+     * Records a failed authentication attempt
+     */
+    private static recordFailedAttempt(ip?: string): void {
+        if (!ip) return;
+
+        const attempts = failedAttempts.get(ip) || { count: 0, lastAttempt: 0 };
+        const now = Date.now();
+
+        // Reset count if last attempt was outside lockout period
+        if (now - attempts.lastAttempt > SECURITY_CONFIG.LOCKOUT_DURATION) {
+            attempts.count = 1;
+        } else {
+            attempts.count++;
+        }
+
+        attempts.lastAttempt = now;
+        failedAttempts.set(ip, attempts);
+    }
+
+    /**
+     * Generates a new JWT token with enhanced security
+     */
+    static generateToken(payload: object, expiresIn: number = SECURITY_CONFIG.TOKEN_EXPIRY): string {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            throw new Error('JWT secret not configured');
+        }
+
+        return jwt.sign(
+            {
+                ...payload,
+                iat: Math.floor(Date.now() / 1000),
+            },
+            secret,
+            {
+                expiresIn: Math.floor(expiresIn / 1000),
+                algorithm: 'HS256'
+            }
+        );
     }
 }
 

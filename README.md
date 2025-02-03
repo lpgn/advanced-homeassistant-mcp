@@ -499,6 +499,11 @@ bun run lint:fix
 - 🧪 Test coverage reports
 - 📝 Documentation generation
 
+## Author
+
+This project was initiated by [T T]() and is mainly developed by [Jango Blockchain](https://github.com/jango-blockchained).
+
+
 ## License
 
 MIT License - See [LICENSE](LICENSE) file

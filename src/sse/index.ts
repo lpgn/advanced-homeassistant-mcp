@@ -2,6 +2,12 @@ import { EventEmitter } from 'events';
 import { HassEntity, HassEvent } from '../interfaces/hass.js';
 import { TokenManager } from '../security/index.js';
 
+// Constants
+const DEFAULT_MAX_CLIENTS = 1000;
+const DEFAULT_PING_INTERVAL = 30000; // 30 seconds
+const DEFAULT_CLEANUP_INTERVAL = 60000; // 1 minute
+const DEFAULT_MAX_CONNECTION_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
 interface RateLimit {
     count: number;
     lastReset: number;
@@ -9,63 +15,80 @@ interface RateLimit {
 
 export interface SSEClient {
     id: string;
-    send: (data: string) => void;
-    subscriptions: {
-        entities: Set<string>;
-        events: Set<string>;
-        domains: Set<string>;
-    };
+    ip: string;
+    connectedAt: Date;
+    lastPingAt?: Date;
+    subscriptions: Set<string>;
     authenticated: boolean;
+    send: (data: string) => void;
     rateLimit: RateLimit;
-    lastPing: number;
     connectionTime: number;
+}
+
+interface ClientStats {
+    id: string;
+    ip: string;
+    connectedAt: Date;
+    lastPingAt?: Date;
+    subscriptionCount: number;
+    connectionDuration: number;
 }
 
 export class SSEManager extends EventEmitter {
     private clients: Map<string, SSEClient> = new Map();
     private static instance: SSEManager | null = null;
     private entityStates: Map<string, HassEntity> = new Map();
+    private readonly maxClients: number;
+    private readonly pingInterval: number;
+    private readonly cleanupInterval: number;
+    private readonly maxConnectionAge: number;
 
-    // Configuration
-    private readonly MAX_CLIENTS = 100;
-    private readonly RATE_LIMIT_WINDOW = 60000; // 1 minute
-    private readonly RATE_LIMIT_MAX_REQUESTS = 1000;
-    private readonly CLIENT_TIMEOUT = 300000; // 5 minutes
-    private readonly PING_INTERVAL = 30000; // 30 seconds
-
-    private constructor() {
+    constructor(options: {
+        maxClients?: number;
+        pingInterval?: number;
+        cleanupInterval?: number;
+        maxConnectionAge?: number;
+    } = {}) {
         super();
+        this.maxClients = options.maxClients || DEFAULT_MAX_CLIENTS;
+        this.pingInterval = options.pingInterval || DEFAULT_PING_INTERVAL;
+        this.cleanupInterval = options.cleanupInterval || DEFAULT_CLEANUP_INTERVAL;
+        this.maxConnectionAge = options.maxConnectionAge || DEFAULT_MAX_CONNECTION_AGE;
+
         console.log('Initializing SSE Manager...');
-        this.startMaintenanceInterval();
+        this.startMaintenanceTasks();
     }
 
-    private startMaintenanceInterval() {
+    private startMaintenanceTasks(): void {
+        // Send periodic pings to keep connections alive
         setInterval(() => {
-            this.performMaintenance();
-        }, 60000); // Run every minute
-    }
+            this.clients.forEach(client => {
+                try {
+                    client.send(JSON.stringify({
+                        type: 'ping',
+                        timestamp: new Date().toISOString()
+                    }));
+                    client.lastPingAt = new Date();
+                } catch (error) {
+                    console.error(`Failed to ping client ${client.id}:`, error);
+                    this.removeClient(client.id);
+                }
+            });
+        }, this.pingInterval);
 
-    private performMaintenance() {
-        const now = Date.now();
+        // Cleanup inactive or expired connections
+        setInterval(() => {
+            const now = Date.now();
+            this.clients.forEach((client, clientId) => {
+                const connectionAge = now - client.connectedAt.getTime();
+                const lastPingAge = client.lastPingAt ? now - client.lastPingAt.getTime() : 0;
 
-        // Check each client for timeouts and rate limits
-        for (const [clientId, client] of this.clients.entries()) {
-            // Remove inactive clients
-            if (now - client.lastPing > this.CLIENT_TIMEOUT) {
-                console.log(`Removing inactive client: ${clientId}`);
-                this.removeClient(clientId);
-                continue;
-            }
-
-            // Reset rate limits if window has passed
-            if (now - client.rateLimit.lastReset > this.RATE_LIMIT_WINDOW) {
-                client.rateLimit.count = 0;
-                client.rateLimit.lastReset = now;
-            }
-        }
-
-        // Log statistics
-        console.log(`Maintenance complete - Active clients: ${this.clients.size}`);
+                if (connectionAge > this.maxConnectionAge || lastPingAge > this.pingInterval * 2) {
+                    console.log(`Removing inactive client ${clientId}`);
+                    this.removeClient(clientId);
+                }
+            });
+        }, this.cleanupInterval);
     }
 
     static getInstance(): SSEManager {
@@ -75,47 +98,32 @@ export class SSEManager extends EventEmitter {
         return SSEManager.instance;
     }
 
-    addClient(client: { id: string; send: (data: string) => void }, token?: string): SSEClient | null {
-        // Check maximum client limit
-        if (this.clients.size >= this.MAX_CLIENTS) {
-            console.warn('Maximum client limit reached, rejecting new connection');
+    addClient(client: Omit<SSEClient, 'authenticated' | 'subscriptions'>, token: string): SSEClient | null {
+        // Validate token
+        const validationResult = TokenManager.validateToken(token, client.ip);
+        if (!validationResult.valid) {
+            console.warn(`Invalid token for client ${client.id} from IP ${client.ip}: ${validationResult.error}`);
             return null;
         }
 
-        const now = Date.now();
-        const sseClient: SSEClient = {
-            id: client.id,
-            send: client.send,
-            subscriptions: {
-                entities: new Set<string>(),
-                events: new Set<string>(),
-                domains: new Set<string>()
-            },
-            authenticated: this.validateToken(token),
-            rateLimit: {
-                count: 0,
-                lastReset: now
-            },
-            lastPing: now,
-            connectionTime: now
+        // Check client limit
+        if (this.clients.size >= this.maxClients) {
+            console.warn(`Maximum client limit (${this.maxClients}) reached`);
+            return null;
+        }
+
+        // Create new client with authentication and subscriptions
+        const newClient: SSEClient = {
+            ...client,
+            authenticated: true,
+            subscriptions: new Set(),
+            lastPingAt: new Date()
         };
 
-        this.clients.set(client.id, sseClient);
-        console.log(`SSE client connected: ${client.id} (authenticated: ${sseClient.authenticated})`);
+        this.clients.set(client.id, newClient);
+        console.log(`New client ${client.id} connected from IP ${client.ip}`);
 
-        // Start ping interval for this client
-        this.startClientPing(client.id);
-
-        // Send initial connection success message
-        this.sendToClient(sseClient, {
-            type: 'connection',
-            status: 'connected',
-            id: client.id,
-            authenticated: sseClient.authenticated,
-            timestamp: new Date().toISOString()
-        });
-
-        return sseClient;
+        return newClient;
     }
 
     private startClientPing(clientId: string) {
@@ -130,20 +138,24 @@ export class SSEManager extends EventEmitter {
                 type: 'ping',
                 timestamp: new Date().toISOString()
             });
-        }, this.PING_INTERVAL);
+        }, this.pingInterval);
     }
 
     removeClient(clientId: string) {
         if (this.clients.has(clientId)) {
             this.clients.delete(clientId);
             console.log(`SSE client disconnected: ${clientId}`);
+            this.emit('client_disconnected', {
+                clientId,
+                timestamp: new Date().toISOString()
+            });
         }
     }
 
     subscribeToEntity(clientId: string, entityId: string) {
         const client = this.clients.get(clientId);
         if (client?.authenticated) {
-            client.subscriptions.entities.add(entityId);
+            client.subscriptions.add(`entity:${entityId}`);
             console.log(`Client ${clientId} subscribed to entity: ${entityId}`);
 
             // Send current state if available
@@ -166,7 +178,7 @@ export class SSEManager extends EventEmitter {
     subscribeToDomain(clientId: string, domain: string) {
         const client = this.clients.get(clientId);
         if (client?.authenticated) {
-            client.subscriptions.domains.add(domain);
+            client.subscriptions.add(`domain:${domain}`);
             console.log(`Client ${clientId} subscribed to domain: ${domain}`);
         }
     }
@@ -174,7 +186,7 @@ export class SSEManager extends EventEmitter {
     subscribeToEvent(clientId: string, eventType: string) {
         const client = this.clients.get(clientId);
         if (client?.authenticated) {
-            client.subscriptions.events.add(eventType);
+            client.subscriptions.add(`event:${eventType}`);
             console.log(`Client ${clientId} subscribed to event: ${eventType}`);
         }
     }
@@ -203,9 +215,9 @@ export class SSEManager extends EventEmitter {
             if (!client.authenticated) continue;
 
             if (
-                client.subscriptions.entities.has(entity.entity_id) ||
-                client.subscriptions.domains.has(domain) ||
-                client.subscriptions.events.has('state_changed')
+                client.subscriptions.has(`entity:${entity.entity_id}`) ||
+                client.subscriptions.has(`domain:${domain}`) ||
+                client.subscriptions.has('event:state_changed')
             ) {
                 this.sendToClient(client, message);
             }
@@ -228,7 +240,7 @@ export class SSEManager extends EventEmitter {
         for (const client of this.clients.values()) {
             if (!client.authenticated) continue;
 
-            if (client.subscriptions.events.has(event.event_type)) {
+            if (client.subscriptions.has(`event:${event.event_type}`)) {
                 this.sendToClient(client, message);
             }
         }
@@ -238,12 +250,12 @@ export class SSEManager extends EventEmitter {
         try {
             // Check rate limit
             const now = Date.now();
-            if (now - client.rateLimit.lastReset > this.RATE_LIMIT_WINDOW) {
+            if (now - client.rateLimit.lastReset > this.cleanupInterval) {
                 client.rateLimit.count = 0;
                 client.rateLimit.lastReset = now;
             }
 
-            if (client.rateLimit.count >= this.RATE_LIMIT_MAX_REQUESTS) {
+            if (client.rateLimit.count >= 1000) {
                 console.warn(`Rate limit exceeded for client ${client.id}`);
                 this.sendToClient(client, {
                     type: 'error',
@@ -255,7 +267,7 @@ export class SSEManager extends EventEmitter {
             }
 
             client.rateLimit.count++;
-            client.lastPing = now;
+            client.lastPingAt = new Date();
             client.send(JSON.stringify(data));
         } catch (error) {
             console.error(`Error sending message to client ${client.id}:`, error);
@@ -265,7 +277,8 @@ export class SSEManager extends EventEmitter {
 
     private validateToken(token?: string): boolean {
         if (!token) return false;
-        return TokenManager.validateToken(token);
+        const validationResult = TokenManager.validateToken(token);
+        return validationResult.valid;
     }
 
     // Utility methods
@@ -326,63 +339,48 @@ export class SSEManager extends EventEmitter {
         for (const client of this.clients.values()) {
             if (!client.authenticated) continue;
 
-            if (client.subscriptions.events.has(eventType)) {
+            if (client.subscriptions.has(`event:${eventType}`) ||
+                client.subscriptions.has(`entity:${eventType}`) ||
+                client.subscriptions.has(`domain:${eventType.split('.')[0]}`)) {
                 this.sendToClient(client, message);
             }
         }
     }
 
     // Add statistics methods
-    getStatistics() {
+    getStatistics(): {
+        totalClients: number;
+        authenticatedClients: number;
+        clientStats: ClientStats[];
+        subscriptionStats: { [key: string]: number };
+    } {
         const now = Date.now();
-        const stats = {
-            total_clients: this.clients.size,
-            authenticated_clients: 0,
-            total_subscriptions: 0,
-            clients_by_connection_time: {
-                less_than_1m: 0,
-                less_than_5m: 0,
-                less_than_1h: 0,
-                more_than_1h: 0
-            },
-            total_entities_tracked: this.entityStates.size,
-            subscriptions: {
-                entities: new Set<string>(),
-                events: new Set<string>(),
-                domains: new Set<string>()
-            }
-        };
+        const clientStats: ClientStats[] = [];
+        const subscriptionCounts: { [key: string]: number } = {};
 
-        for (const client of this.clients.values()) {
-            if (client.authenticated) stats.authenticated_clients++;
+        this.clients.forEach(client => {
+            // Collect client statistics
+            clientStats.push({
+                id: client.id,
+                ip: client.ip,
+                connectedAt: client.connectedAt,
+                lastPingAt: client.lastPingAt,
+                subscriptionCount: client.subscriptions.size,
+                connectionDuration: now - client.connectedAt.getTime()
+            });
 
-            // Count subscriptions
-            stats.total_subscriptions +=
-                client.subscriptions.entities.size +
-                client.subscriptions.events.size +
-                client.subscriptions.domains.size;
+            // Count subscriptions by type
+            client.subscriptions.forEach(sub => {
+                const [type] = sub.split(':');
+                subscriptionCounts[type] = (subscriptionCounts[type] || 0) + 1;
+            });
+        });
 
-            // Add to subscription sets
-            client.subscriptions.entities.forEach(entity => stats.subscriptions.entities.add(entity));
-            client.subscriptions.events.forEach(event => stats.subscriptions.events.add(event));
-            client.subscriptions.domains.forEach(domain => stats.subscriptions.domains.add(domain));
-
-            // Calculate connection duration
-            const connectionDuration = now - client.connectionTime;
-            if (connectionDuration < 60000) stats.clients_by_connection_time.less_than_1m++;
-            else if (connectionDuration < 300000) stats.clients_by_connection_time.less_than_5m++;
-            else if (connectionDuration < 3600000) stats.clients_by_connection_time.less_than_1h++;
-            else stats.clients_by_connection_time.more_than_1h++;
-        }
-
-        // Convert Sets to Arrays for JSON serialization
         return {
-            ...stats,
-            subscriptions: {
-                entities: Array.from(stats.subscriptions.entities),
-                events: Array.from(stats.subscriptions.events),
-                domains: Array.from(stats.subscriptions.domains)
-            }
+            totalClients: this.clients.size,
+            authenticatedClients: Array.from(this.clients.values()).filter(c => c.authenticated).length,
+            clientStats,
+            subscriptionStats: subscriptionCounts
         };
     }
 }
