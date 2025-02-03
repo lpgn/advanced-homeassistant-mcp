@@ -15,7 +15,9 @@ config({ path: resolve(process.cwd(), envFile) });
 export const HASS_CONFIG = {
     HOST: process.env.HASS_HOST || 'http://homeassistant.local:8123',
     TOKEN: process.env.HASS_TOKEN,
-    SOCKET_URL: process.env.HASS_SOCKET_URL || 'ws://homeassistant.local:8123/api/websocket'
+    SOCKET_URL: process.env.HASS_SOCKET_URL || 'ws://homeassistant.local:8123/api/websocket',
+    BASE_URL: process.env.HASS_HOST || 'http://homeassistant.local:8123',
+    SOCKET_TOKEN: process.env.HASS_TOKEN
 };
 
 // Server Configuration

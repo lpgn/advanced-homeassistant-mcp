@@ -173,12 +173,7 @@ router.get('/subscribe_events', middleware.wsRateLimiter, (req, res) => {
 
 // SSE stats endpoint
 router.get('/get_sse_stats', middleware.authenticate, (_req, res) => {
-    const stats = {
-        clients: sseManager.getClientCount(),
-        events: sseManager.getEventSubscriptions(),
-        entities: sseManager.getEntitySubscriptions(),
-        domains: sseManager.getDomainSubscriptions()
-    };
+    const stats = sseManager.getStatistics();
     res.json(stats);
 });
 

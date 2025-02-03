@@ -286,7 +286,79 @@ export class HassInstanceImpl implements HassInstance {
   public readonly token: string;
   public wsClient: HassWebSocketClient | undefined;
 
-  public services!: HassServices;
+  public readonly services: HassInstance['services'];
+  public readonly states: HassInstance['states'];
+  public readonly connection: HassInstance['connection'];
+
+  constructor(baseUrl: string, token: string) {
+    this.baseUrl = baseUrl;
+    this.token = token;
+
+    // Initialize services
+    this.services = {
+      get: async () => {
+        const response = await fetch(`${this.baseUrl}/api/services`, {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch services: ${response.statusText}`);
+        }
+        return response.json();
+      },
+      call: async (domain: string, service: string, serviceData?: Record<string, any>) => {
+        const response = await fetch(`${this.baseUrl}/api/services/${domain}/${service}`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(serviceData),
+        });
+        if (!response.ok) {
+          throw new Error(`Service call failed: ${response.statusText}`);
+        }
+      }
+    };
+
+    // Initialize states
+    this.states = {
+      get: async () => {
+        const response = await fetch(`${this.baseUrl}/api/states`, {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch states: ${response.statusText}`);
+        }
+        return response.json();
+      },
+      subscribe: async (callback: (states: HassEntity[]) => void) => {
+        return this.subscribeEvents((event: HassEvent) => {
+          if (event.event_type === 'state_changed') {
+            this.states.get().then(callback);
+          }
+        }, 'state_changed');
+      },
+      unsubscribe: (subscription: number) => {
+        this.unsubscribeEvents(subscription);
+      }
+    };
+
+    // Initialize connection
+    this.connection = {
+      socket: new WebSocket(this.baseUrl.replace(/^http/, 'ws') + '/api/websocket'),
+      subscribeEvents: this.subscribeEvents.bind(this),
+      unsubscribeEvents: this.unsubscribeEvents.bind(this)
+    };
+
+    this.initialize();
+  }
+
   public als!: AlsExtension;
   public context!: TContext;
   public event!: EventEmitter<[never]>;
@@ -315,15 +387,8 @@ export class HassInstanceImpl implements HassInstance {
     zone: typeof Zone;
   }>;
 
-  constructor(baseUrl: string, token: string) {
-    this.baseUrl = baseUrl;
-    this.token = token;
-    this.initialize();
-  }
-
   private initialize() {
     // Initialize all required properties with proper type instantiation
-    this.services = {} as HassServices;
     this.als = {} as AlsExtension;
     this.context = {} as TContext;
     this.event = new EventEmitter();
@@ -383,7 +448,7 @@ export class HassInstanceImpl implements HassInstance {
     }
   }
 
-  async subscribeEvents(callback: (event: HomeAssistant.Event) => void, eventType?: string): Promise<number> {
+  async subscribeEvents(callback: (event: HassEvent) => void, eventType?: string): Promise<number> {
     if (!this.wsClient) {
       this.wsClient = new HassWebSocketClient(
         this.baseUrl.replace(/^http/, 'ws') + '/api/websocket',
@@ -392,7 +457,20 @@ export class HassInstanceImpl implements HassInstance {
       await this.wsClient.connect();
     }
 
-    return this.wsClient.subscribeEvents(callback, eventType);
+    return this.wsClient.subscribeEvents((data: any) => {
+      const hassEvent: HassEvent = {
+        event_type: data.event_type,
+        data: data.data,
+        origin: data.origin,
+        time_fired: data.time_fired,
+        context: {
+          id: data.context.id,
+          parent_id: data.context.parent_id,
+          user_id: data.context.user_id
+        }
+      };
+      callback(hassEvent);
+    }, eventType);
   }
 
   async unsubscribeEvents(subscriptionId: number): Promise<void> {

@@ -77,7 +77,4 @@ export interface HassEvent {
         parent_id?: string;
         user_id?: string;
     };
-}
-
-// Re-export entity types from index.ts
-export { HassEntity, HassState } from './index.js'; 
+} 

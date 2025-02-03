@@ -181,5 +181,5 @@ export interface AutomationConfigParams {
     };
 }
 
-// Re-export Home Assistant types
+// Re-export all Home Assistant types
 export * from './hass.js'; 
