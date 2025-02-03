@@ -1,8 +1,9 @@
 import { SSEManager } from '../index';
 import { TokenManager } from '../../security/index';
 import { EventEmitter } from 'events';
-import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
-import type { SSEClient, SSEEvent, MockSend, MockSendFn } from '../types';
+import { describe, it, expect, beforeEach, afterEach, mock, Mock } from 'bun:test';
+import type { SSEClient, SSEEvent, MockSend, MockSendFn, ValidateTokenFn } from '../types';
+import { isMockFunction } from '../types';
 
 describe('SSE Security Features', () => {
     let sseManager: SSEManager;
@@ -28,19 +29,20 @@ describe('SSE Security Features', () => {
             cleanupInterval: 200,
             maxConnectionAge: 1000
         });
-        TokenManager.validateToken = mock(() => ({ valid: true }));
+        TokenManager.validateToken = mock<ValidateTokenFn>(() => ({ valid: true }));
     });
 
     afterEach(() => {
         // Clear all mock function calls
-        const mocks = Object.values(mock).filter(
-            (value): value is MockSend => typeof value === 'function' && 'mock' in value
-        );
+        const mocks = Object.values(mock).filter(isMockFunction);
         mocks.forEach(mockFn => {
-            mockFn.mock.calls = [];
-            mockFn.mock.results = [];
-            mockFn.mock.instances = [];
-            mockFn.mock.lastCall = undefined;
+            if ('mock' in mockFn) {
+                const m = mockFn as Mock<unknown>;
+                m.mock.calls = [];
+                m.mock.results = [];
+                m.mock.instances = [];
+                m.mock.lastCall = undefined;
+            }
         });
     });
 
@@ -50,11 +52,13 @@ describe('SSE Security Features', () => {
             const result = sseManager.addClient(client, validToken);
 
             expect(result).toBeTruthy();
-            expect(TokenManager.validateToken).toHaveBeenCalledWith(validToken, testIp);
+            const validateToken = TokenManager.validateToken as Mock<ValidateTokenFn>;
+            const calls = validateToken.mock.calls;
+            expect(calls[0].args).toEqual([validToken, testIp]);
         });
 
         it('should reject invalid tokens', () => {
-            const validateTokenMock = mock(() => ({
+            const validateTokenMock = mock<ValidateTokenFn>(() => ({
                 valid: false,
                 error: 'Invalid token'
             }));
@@ -64,7 +68,7 @@ describe('SSE Security Features', () => {
             const result = sseManager.addClient(client, 'invalid_token');
 
             expect(result).toBeNull();
-            expect(validateTokenMock).toHaveBeenCalledWith('invalid_token', testIp);
+            expect(validateTokenMock.mock.calls[0].args).toEqual(['invalid_token', testIp]);
         });
 
         it('should enforce maximum client limit', () => {
@@ -133,11 +137,11 @@ describe('SSE Security Features', () => {
 
             // Send messages up to rate limit
             for (let i = 0; i < 10; i++) {
-                sseManager['sendToClient'](sseClient!, { type: 'test', data: i });
+                sseManager['sendToClient'](sseClient!, { type: 'test', data: { value: i } });
             }
 
             // Next message should trigger rate limit
-            sseManager['sendToClient'](sseClient!, { type: 'test', data: 'overflow' });
+            sseManager['sendToClient'](sseClient!, { type: 'test', data: { value: 'overflow' } });
 
             const lastCall = client.send.mock.calls[client.send.mock.calls.length - 1];
             const lastMessage = JSON.parse(lastCall.args[0] as string);
@@ -154,19 +158,19 @@ describe('SSE Security Features', () => {
 
             // Send messages up to rate limit
             for (let i = 0; i < 10; i++) {
-                sseManager['sendToClient'](sseClient!, { type: 'test', data: i });
+                sseManager['sendToClient'](sseClient!, { type: 'test', data: { value: i } });
             }
 
             // Wait for rate limit window to expire
             await new Promise(resolve => setTimeout(resolve, 1100));
 
             // Should be able to send messages again
-            sseManager['sendToClient'](sseClient!, { type: 'test', data: 'new message' });
+            sseManager['sendToClient'](sseClient!, { type: 'test', data: { value: 'new message' } });
             const lastCall = client.send.mock.calls[client.send.mock.calls.length - 1];
             const lastMessage = JSON.parse(lastCall.args[0] as string);
             expect(lastMessage).toEqual({
                 type: 'test',
-                data: 'new message'
+                data: { value: 'new message' }
             });
         });
     });
@@ -177,7 +181,7 @@ describe('SSE Security Features', () => {
             const client2 = createTestClient('client2');
 
             const sseClient1 = sseManager.addClient(client1, validToken);
-            TokenManager.validateToken = mock(() => ({ valid: false }));
+            TokenManager.validateToken = mock<ValidateTokenFn>(() => ({ valid: false }));
             const sseClient2 = sseManager.addClient(client2, 'invalid_token');
 
             expect(sseClient1).toBeTruthy();
