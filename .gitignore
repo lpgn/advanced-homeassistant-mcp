@@ -73,3 +73,6 @@ coverage/
 .env
 .env.*
 !.env.*.template
+
+.cursor/
+.cursor/*
