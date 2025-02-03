@@ -1,19 +1,49 @@
+/**
+ * MCP Routes Module
+ * 
+ * This module provides routes for accessing and executing MCP functionality.
+ * It includes endpoints for retrieving the MCP schema and executing MCP tools.
+ * 
+ * @module mcp-routes
+ */
+
 import { Router } from 'express';
 import { MCP_SCHEMA } from '../mcp/schema.js';
 import { APP_CONFIG } from '../config/app.config.js';
 import { Tool } from '../types/index.js';
 
+/**
+ * Create router instance for MCP routes
+ */
 const router = Router();
 
-// Array to track tools
+/**
+ * Array to track registered tools
+ * Tools are added to this array when they are registered with the MCP
+ */
 const tools: Tool[] = [];
 
-// MCP schema endpoint - no auth required as it's just the schema
+/**
+ * GET /mcp
+ * Returns the MCP schema without requiring authentication
+ * This endpoint allows clients to discover available tools and their parameters
+ */
 router.get('/', (_req, res) => {
     res.json(MCP_SCHEMA);
 });
 
-// MCP execute endpoint - requires authentication
+/**
+ * POST /mcp/execute
+ * Execute a tool with the provided parameters
+ * Requires authentication via Bearer token
+ * 
+ * @param {Object} req.body.tool - Name of the tool to execute
+ * @param {Object} req.body.parameters - Parameters for the tool
+ * @returns {Object} Tool execution result
+ * @throws {401} If authentication fails
+ * @throws {404} If tool is not found
+ * @throws {500} If execution fails
+ */
 router.post('/execute', async (req, res) => {
     try {
         // Get token from Authorization header
@@ -48,4 +78,8 @@ router.post('/execute', async (req, res) => {
     }
 });
 
+/**
+ * Export the configured router
+ * This will be mounted under /api/mcp in the main application
+ */
 export { router as mcpRoutes }; 

@@ -13,16 +13,22 @@ import express from 'express';
 import { APP_CONFIG } from './config/app.config.js';
 import { apiRoutes } from './routes/index.js';
 import { securityHeaders, rateLimiter, validateRequest, sanitizeInput, errorHandler } from './security/index.js';
+import { requestLogger, errorLogger } from './middleware/logging.middleware.js';
 import { get_hass } from './hass/index.js';
 import { LiteMCP } from 'litemcp';
+import { logger } from './utils/logger.js';
 
-console.log('Initializing Home Assistant connection...');
+logger.info('Starting Home Assistant MCP...');
+logger.info('Initializing Home Assistant connection...');
 
 /**
  * Initialize Express application with security middleware
  * and route handlers
  */
 const app = express();
+
+// Apply logging middleware first to catch all requests
+app.use(requestLogger);
 
 // Apply security middleware
 app.use(securityHeaders);
@@ -47,6 +53,7 @@ app.use('/api', apiRoutes);
  * Apply error handling middleware
  * This should be the last middleware in the chain
  */
+app.use(errorLogger);
 app.use(errorHandler);
 
 /**
@@ -54,5 +61,5 @@ app.use(errorHandler);
  * The port is configured in the environment variables
  */
 app.listen(APP_CONFIG.PORT, () => {
-  console.log(`Server is running on port ${APP_CONFIG.PORT}`);
+  logger.info(`Server is running on port ${APP_CONFIG.PORT}`);
 });

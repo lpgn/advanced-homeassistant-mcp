@@ -46,6 +46,24 @@ export const APP_CONFIG = {
         PING_INTERVAL: 30000 // 30 seconds
     },
 
+    /** Logging Configuration */
+    LOGGING: {
+        /** Log level (error, warn, info, http, debug) */
+        LEVEL: process.env.LOG_LEVEL || 'info',
+        /** Directory for log files */
+        DIR: process.env.LOG_DIR || 'logs',
+        /** Maximum log file size before rotation */
+        MAX_SIZE: process.env.LOG_MAX_SIZE || '20m',
+        /** Maximum number of days to keep log files */
+        MAX_DAYS: process.env.LOG_MAX_DAYS || '14d',
+        /** Whether to compress rotated logs */
+        COMPRESS: process.env.LOG_COMPRESS === 'true',
+        /** Format for timestamps in logs */
+        TIMESTAMP_FORMAT: 'YYYY-MM-DD HH:mm:ss:ms',
+        /** Whether to include request logging */
+        LOG_REQUESTS: process.env.LOG_REQUESTS === 'true',
+    },
+
     /** Application Version */
     VERSION: '0.1.0'
 } as const;
