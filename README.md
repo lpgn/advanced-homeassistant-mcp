@@ -501,8 +501,7 @@ bun run lint:fix
 
 ## Author
 
-This project was initiated by [T T]() and is mainly developed by [Jango Blockchain](https://github.com/jango-blockchained).
-
+This project was initiated by [Tevon Strand-Brown](https://github.com/tevonsb) and is mainly developed by [Jango Blockchain](https://github.com/jango-blockchained).
 
 ## License
 

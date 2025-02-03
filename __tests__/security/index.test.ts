@@ -1,27 +1,38 @@
 import { TokenManager, validateRequest, sanitizeInput, errorHandler } from '../../src/security/index.js';
 import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
 
 describe('Security Module', () => {
     describe('TokenManager', () => {
-        const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZXhwIjoxNzE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-        const encryptionKey = 'test_encryption_key';
+        const testToken = 'test-token';
+        const encryptionKey = 'test-encryption-key-that-is-long-enough';
 
         it('should encrypt and decrypt tokens', () => {
             const encrypted = TokenManager.encryptToken(testToken, encryptionKey);
-            const decrypted = TokenManager.decryptToken(encrypted, encryptionKey);
+            expect(encrypted).toContain('aes-256-gcm:');
 
+            const decrypted = TokenManager.decryptToken(encrypted, encryptionKey);
             expect(decrypted).toBe(testToken);
         });
 
         it('should validate tokens correctly', () => {
-            expect(TokenManager.validateToken(testToken)).toBe(true);
-            expect(TokenManager.validateToken('invalid_token')).toBe(false);
-            expect(TokenManager.validateToken('')).toBe(false);
+            const validToken = jwt.sign({ data: 'test' }, process.env.JWT_SECRET || 'test-secret', { expiresIn: '1h' });
+            const result = TokenManager.validateToken(validToken);
+            expect(result.valid).toBe(true);
+            expect(result.error).toBeUndefined();
+        });
+
+        it('should handle empty tokens', () => {
+            const result = TokenManager.validateToken('');
+            expect(result.valid).toBe(false);
+            expect(result.error).toBe('Invalid token format');
         });
 
         it('should handle expired tokens', () => {
             const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZXhwIjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-            expect(TokenManager.validateToken(expiredToken)).toBe(false);
+            const result = TokenManager.validateToken(expiredToken);
+            expect(result.valid).toBe(false);
+            expect(result.error).toBe('Token has expired');
         });
     });
 

@@ -152,7 +152,11 @@ export class TokenManager {
 
         try {
             // Verify token signature and decode
-            const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
+            const decoded = jwt.verify(token, secret, {
+                algorithms: ['HS256'],
+                clockTolerance: 0, // No clock skew tolerance
+                ignoreExpiration: false // Always check expiration
+            }) as jwt.JwtPayload;
 
             // Verify token structure
             if (!decoded || typeof decoded !== 'object') {
@@ -189,108 +193,129 @@ export class TokenManager {
             return { valid: true };
         } catch (error) {
             this.recordFailedAttempt(ip);
-            if (error instanceof jwt.JsonWebTokenError) {
-                return { valid: false, error: 'Invalid token signature' };
-            }
             if (error instanceof jwt.TokenExpiredError) {
                 return { valid: false, error: 'Token has expired' };
+            }
+            if (error instanceof jwt.JsonWebTokenError) {
+                return { valid: false, error: 'Invalid token signature' };
             }
             return { valid: false, error: 'Token validation failed' };
         }
     }
 
     /**
-     * Checks if an IP is rate limited
-     */
-    private static isRateLimited(ip: string): boolean {
-        const attempts = failedAttempts.get(ip);
-        if (!attempts) return false;
-
-        const now = Date.now();
-        const timeSinceLastAttempt = now - attempts.lastAttempt;
-
-        // Reset if outside lockout period
-        if (timeSinceLastAttempt >= SECURITY_CONFIG.LOCKOUT_DURATION) {
-            failedAttempts.delete(ip);
-            return false;
-        }
-
-        return attempts.count >= SECURITY_CONFIG.MAX_FAILED_ATTEMPTS;
-    }
-
-    /**
-     * Records a failed authentication attempt
+     * Records a failed authentication attempt for rate limiting
      */
     private static recordFailedAttempt(ip?: string): void {
         if (!ip) return;
 
-        const now = Date.now();
-        const attempts = failedAttempts.get(ip);
-
-        if (!attempts || (now - attempts.lastAttempt) >= SECURITY_CONFIG.LOCKOUT_DURATION) {
-            // First attempt or reset after lockout
-            failedAttempts.set(ip, { count: 1, lastAttempt: now });
-        } else {
-            // Increment existing attempts
-            attempts.count++;
-            attempts.lastAttempt = now;
-            failedAttempts.set(ip, attempts);
-        }
+        const attempt = failedAttempts.get(ip) || { count: 0, lastAttempt: Date.now() };
+        attempt.count++;
+        attempt.lastAttempt = Date.now();
+        failedAttempts.set(ip, attempt);
     }
 
     /**
-     * Generates a new JWT token with enhanced security
+     * Checks if an IP is rate limited due to too many failed attempts
      */
-    static generateToken(payload: object, expiresIn: number = SECURITY_CONFIG.TOKEN_EXPIRY): string {
+    private static isRateLimited(ip: string): boolean {
+        const attempt = failedAttempts.get(ip);
+        if (!attempt) return false;
+
+        // Reset if lockout duration has passed
+        if (Date.now() - attempt.lastAttempt >= SECURITY_CONFIG.LOCKOUT_DURATION) {
+            failedAttempts.delete(ip);
+            return false;
+        }
+
+        return attempt.count >= SECURITY_CONFIG.MAX_FAILED_ATTEMPTS;
+    }
+
+    /**
+     * Generates a new JWT token
+     */
+    static generateToken(payload: Record<string, any>): string {
         const secret = process.env.JWT_SECRET;
         if (!secret) {
             throw new Error('JWT secret not configured');
         }
 
-        // Ensure we don't override system claims
-        const sanitizedPayload = { ...payload };
-        delete (sanitizedPayload as any).iat;
-        delete (sanitizedPayload as any).exp;
+        // Add required claims
+        const now = Math.floor(Date.now() / 1000);
+        const tokenPayload = {
+            ...payload,
+            iat: now,
+            exp: now + Math.floor(TOKEN_EXPIRY / 1000)
+        };
 
-        return jwt.sign(
-            sanitizedPayload,
-            secret,
-            {
-                expiresIn: Math.floor(expiresIn / 1000),
-                algorithm: 'HS256',
-                notBefore: 0 // Token is valid immediately
-            }
-        );
+        return jwt.sign(tokenPayload, secret, {
+            algorithm: 'HS256'
+        });
     }
 }
 
 // Request validation middleware
-export function validateRequest(req: Request, res: Response, next: NextFunction) {
+export function validateRequest(req: Request, res: Response, next: NextFunction): Response | void {
     // Skip validation for health and MCP schema endpoints
     if (req.path === '/health' || req.path === '/mcp') {
         return next();
     }
 
-    // Validate content type
-    if (req.method !== 'GET' && !req.is('application/json')) {
+    // Validate content type for non-GET requests
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && !req.is('application/json')) {
         return res.status(415).json({
-            error: 'Unsupported Media Type - Content-Type must be application/json'
+            success: false,
+            message: 'Unsupported Media Type',
+            error: 'Content-Type must be application/json',
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    // Validate authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized',
+            error: 'Missing or invalid authorization header',
+            timestamp: new Date().toISOString()
         });
     }
 
     // Validate token
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token || !TokenManager.validateToken(token)) {
+    const token = authHeader.replace('Bearer ', '');
+    const validationResult = TokenManager.validateToken(token, req.ip);
+    if (!validationResult.valid) {
         return res.status(401).json({
-            error: 'Invalid or expired token'
+            success: false,
+            message: 'Unauthorized',
+            error: validationResult.error || 'Invalid token',
+            timestamp: new Date().toISOString()
         });
     }
 
-    // Validate request body
-    if (req.method !== 'GET' && (!req.body || typeof req.body !== 'object')) {
-        return res.status(400).json({
-            error: 'Invalid request body'
-        });
+    // Validate request body for non-GET requests
+    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bad Request',
+                error: 'Invalid request body structure',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // Check request body size
+        const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+        const maxSize = 1024 * 1024; // 1MB limit
+        if (contentLength > maxSize) {
+            return res.status(413).json({
+                success: false,
+                message: 'Payload Too Large',
+                error: `Request body must not exceed ${maxSize} bytes`,
+                timestamp: new Date().toISOString()
+            });
+        }
     }
 
     next();
@@ -298,12 +323,29 @@ export function validateRequest(req: Request, res: Response, next: NextFunction)
 
 // Input sanitization middleware
 export function sanitizeInput(req: Request, res: Response, next: NextFunction) {
-    if (req.body && typeof req.body === 'object') {
-        const sanitized = JSON.parse(
-            JSON.stringify(req.body).replace(/[<>]/g, '')
-        );
-        req.body = sanitized;
+    if (!req.body) {
+        return next();
     }
+
+    function sanitizeValue(value: unknown): unknown {
+        if (typeof value === 'string') {
+            // Remove HTML tags and scripts
+            return value.replace(/<[^>]*>/g, '');
+        }
+        if (Array.isArray(value)) {
+            return value.map(item => sanitizeValue(item));
+        }
+        if (typeof value === 'object' && value !== null) {
+            const sanitized: Record<string, unknown> = {};
+            for (const [key, val] of Object.entries(value)) {
+                sanitized[key] = sanitizeValue(val);
+            }
+            return sanitized;
+        }
+        return value;
+    }
+
+    req.body = sanitizeValue(req.body) as Record<string, unknown>;
     next();
 }
 

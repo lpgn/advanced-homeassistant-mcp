@@ -1,6 +1,17 @@
 import { TokenManager } from '../../src/security/index.js';
+import jwt from 'jsonwebtoken';
+
+const TEST_SECRET = 'test-secret-that-is-long-enough-for-testing-purposes';
 
 describe('TokenManager', () => {
+    beforeAll(() => {
+        process.env.JWT_SECRET = TEST_SECRET;
+    });
+
+    afterAll(() => {
+        delete process.env.JWT_SECRET;
+    });
+
     const encryptionKey = 'test-encryption-key-32-chars-long!!';
     const validToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZXhwIjoxNjE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
 
@@ -35,27 +46,41 @@ describe('TokenManager', () => {
 
     describe('Token Validation', () => {
         it('should validate correct tokens', () => {
-            const validJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZXhwIjoxNjcyNTI3OTk5fQ.Q6cm_sZS6uqfGqO3LQ-0VqNXhqXR6mFh6IP7s0NPnSQ';
-            expect(TokenManager.validateToken(validJwt)).toBe(true);
+            const payload = { sub: '123', name: 'Test User' };
+            const token = jwt.sign(payload, TEST_SECRET, { expiresIn: '1h' });
+            const result = TokenManager.validateToken(token);
+            expect(result.valid).toBe(true);
+            expect(result.error).toBeUndefined();
         });
 
         it('should reject expired tokens', () => {
-            const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiZXhwIjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-            expect(TokenManager.validateToken(expiredToken)).toBe(false);
+            const payload = { sub: '123', name: 'Test User' };
+            const token = jwt.sign(payload, TEST_SECRET, { expiresIn: -1 });
+            const result = TokenManager.validateToken(token);
+            expect(result.valid).toBe(false);
+            expect(result.error).toBe('Token has expired');
         });
 
         it('should reject malformed tokens', () => {
-            expect(TokenManager.validateToken('invalid-token')).toBe(false);
+            const result = TokenManager.validateToken('invalid-token');
+            expect(result.valid).toBe(false);
+            expect(result.error).toBe('Token length below minimum requirement');
         });
 
         it('should reject tokens with invalid signature', () => {
-            const tamperedToken = validToken.slice(0, -5) + 'xxxxx';
-            expect(TokenManager.validateToken(tamperedToken)).toBe(false);
+            const payload = { sub: '123', name: 'Test User' };
+            const token = jwt.sign(payload, 'different-secret', { expiresIn: '1h' });
+            const result = TokenManager.validateToken(token);
+            expect(result.valid).toBe(false);
+            expect(result.error).toBe('Invalid token signature');
         });
 
         it('should handle tokens with missing expiration', () => {
-            const noExpToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.Q6cm_sZS6uqfGqO3LQ-0VqNXhqXR6mFh6IP7s0NPnSQ';
-            expect(TokenManager.validateToken(noExpToken)).toBe(false);
+            const payload = { sub: '123', name: 'Test User' };
+            const token = jwt.sign(payload, TEST_SECRET);
+            const result = TokenManager.validateToken(token);
+            expect(result.valid).toBe(false);
+            expect(result.error).toBe('Token missing required claims');
         });
     });
 

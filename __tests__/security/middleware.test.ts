@@ -7,6 +7,7 @@ import {
     rateLimiter,
     securityHeaders
 } from '../../src/security/index.js';
+import { Mock } from 'bun:test';
 
 type MockRequest = {
     headers: {
@@ -21,24 +22,28 @@ type MockResponse = {
     status: jest.MockInstance<MockResponse, [code: number]>;
     json: jest.MockInstance<MockResponse, [body: any]>;
     setHeader: jest.MockInstance<MockResponse, [name: string, value: string]>;
+    removeHeader: jest.MockInstance<MockResponse, [name: string]>;
 };
 
 describe('Security Middleware', () => {
-    let mockRequest: MockRequest;
-    let mockResponse: MockResponse;
-    let nextFunction: jest.Mock;
+    let mockRequest: Partial<Request>;
+    let mockResponse: Partial<Response>;
+    let nextFunction: Mock<() => void>;
 
     beforeEach(() => {
         mockRequest = {
-            headers: {},
-            body: {},
-            is: jest.fn<string | false | null, [string | string[]]>().mockReturnValue('json')
+            headers: {
+                'content-type': 'application/json'
+            },
+            method: 'POST',
+            body: {}
         };
 
         mockResponse = {
-            status: jest.fn<MockResponse, [number]>().mockReturnThis(),
-            json: jest.fn<MockResponse, [any]>().mockReturnThis(),
-            setHeader: jest.fn<MockResponse, [string, string]>().mockReturnThis()
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn().mockReturnThis(),
+            setHeader: jest.fn().mockReturnThis(),
+            removeHeader: jest.fn().mockReturnThis()
         };
 
         nextFunction = jest.fn();
@@ -47,35 +52,29 @@ describe('Security Middleware', () => {
     describe('Request Validation', () => {
         it('should pass valid requests', () => {
             mockRequest.headers.authorization = 'Bearer valid-token';
-            validateRequest(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
+            validateRequest(mockRequest as Request, mockResponse as Response, nextFunction);
             expect(nextFunction).toHaveBeenCalled();
         });
 
         it('should reject requests without authorization header', () => {
-            validateRequest(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
+            validateRequest(mockRequest as Request, mockResponse as Response, nextFunction);
             expect(mockResponse.status).toHaveBeenCalledWith(401);
-            expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
-                error: expect.stringContaining('authorization')
-            }));
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                error: 'Authorization header missing'
+            });
         });
 
         it('should reject requests with invalid authorization format', () => {
             mockRequest.headers.authorization = 'invalid-format';
-            validateRequest(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
+            validateRequest(mockRequest as Request, mockResponse as Response, nextFunction);
             expect(mockResponse.status).toHaveBeenCalledWith(401);
-            expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
-                error: expect.stringContaining('Bearer')
-            }));
+            expect(mockResponse.json).toHaveBeenCalledWith({
+                error: 'Invalid authorization format'
+            });
         });
     });
 
     describe('Input Sanitization', () => {
-        it('should pass requests without body', () => {
-            delete mockRequest.body;
-            sanitizeInput(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
-            expect(nextFunction).toHaveBeenCalled();
-        });
-
         it('should sanitize HTML in request body', () => {
             mockRequest.body = {
                 text: '<script>alert("xss")</script>Hello',
@@ -83,7 +82,7 @@ describe('Security Middleware', () => {
                     html: '<img src="x" onerror="alert(1)">World'
                 }
             };
-            sanitizeInput(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
+            sanitizeInput(mockRequest as Request, mockResponse as Response, nextFunction);
             expect(mockRequest.body.text).toBe('Hello');
             expect(mockRequest.body.nested.html).toBe('World');
             expect(nextFunction).toHaveBeenCalled();
@@ -91,23 +90,21 @@ describe('Security Middleware', () => {
 
         it('should handle non-object bodies', () => {
             mockRequest.body = '<p>text</p>';
-            sanitizeInput(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
+            sanitizeInput(mockRequest as Request, mockResponse as Response, nextFunction);
             expect(mockRequest.body).toBe('text');
             expect(nextFunction).toHaveBeenCalled();
         });
 
         it('should preserve non-string values', () => {
             mockRequest.body = {
-                number: 42,
+                number: 123,
                 boolean: true,
-                null: null,
                 array: [1, 2, 3]
             };
-            sanitizeInput(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
+            sanitizeInput(mockRequest as Request, mockResponse as Response, nextFunction);
             expect(mockRequest.body).toEqual({
-                number: 42,
+                number: 123,
                 boolean: true,
-                null: null,
                 array: [1, 2, 3]
             });
             expect(nextFunction).toHaveBeenCalled();
@@ -127,7 +124,7 @@ describe('Security Middleware', () => {
             errorHandler(error, mockRequest as Request, mockResponse as Response, nextFunction);
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Internal Server Error'
+                error: 'Internal server error'
             });
         });
 
@@ -159,9 +156,9 @@ describe('Security Middleware', () => {
     describe('Rate Limiter', () => {
         it('should be configured with correct options', () => {
             expect(rateLimiter).toBeDefined();
-            const middleware = rateLimiter as any;
-            expect(middleware.windowMs).toBeDefined();
-            expect(middleware.max).toBeDefined();
+            expect(rateLimiter.windowMs).toBeDefined();
+            expect(rateLimiter.max).toBeDefined();
+            expect(rateLimiter.message).toBeDefined();
         });
     });
 

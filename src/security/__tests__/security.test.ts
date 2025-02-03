@@ -16,21 +16,22 @@ describe('TokenManager', () => {
     describe('Token Validation', () => {
         it('should validate a properly formatted token', () => {
             const payload = { userId: '123', role: 'user' };
-            const token = TokenManager.generateToken(payload);
+            const token = jwt.sign(payload, validSecret, { expiresIn: '1h' });
             const result = TokenManager.validateToken(token, testIp);
             expect(result.valid).toBe(true);
+            expect(result.error).toBeUndefined();
         });
 
         it('should reject an invalid token', () => {
             const result = TokenManager.validateToken('invalid_token', testIp);
             expect(result.valid).toBe(false);
-            expect(result.error).toBeDefined();
+            expect(result.error).toBe('Token length below minimum requirement');
         });
 
         it('should reject a token that is too short', () => {
             const result = TokenManager.validateToken('short', testIp);
             expect(result.valid).toBe(false);
-            expect(result.error).toContain('minimum requirement');
+            expect(result.error).toBe('Token length below minimum requirement');
         });
 
         it('should reject an expired token', () => {
@@ -38,19 +39,20 @@ describe('TokenManager', () => {
             const token = jwt.sign(payload, validSecret, { expiresIn: -1 });
             const result = TokenManager.validateToken(token, testIp);
             expect(result.valid).toBe(false);
-            expect(result.error).toContain('expired');
+            expect(result.error).toBe('Token has expired');
         });
 
         it('should implement rate limiting for failed attempts', async () => {
             // Simulate multiple failed attempts
-            for (let i = 0; i < SECURITY_CONFIG.MAX_FAILED_ATTEMPTS; i++) {
-                TokenManager.validateToken('invalid_token', testIp);
+            for (let i = 0; i < 5; i++) {
+                const result = TokenManager.validateToken('invalid_token', testIp);
+                expect(result.valid).toBe(false);
             }
 
-            // Next attempt should be blocked
+            // Next attempt should be blocked by rate limiting
             const result = TokenManager.validateToken('invalid_token', testIp);
             expect(result.valid).toBe(false);
-            expect(result.error).toContain('Too many failed attempts');
+            expect(result.error).toBe('Too many failed attempts. Please try again later.');
 
             // Wait for rate limit to expire
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -78,7 +80,7 @@ describe('TokenManager', () => {
             expect(decoded.iat).toBeDefined();
             expect(decoded.exp).toBeDefined();
             expect(decoded.exp - decoded.iat).toBe(
-                Math.floor(SECURITY_CONFIG.JWT_EXPIRY / 1000)
+                Math.floor(24 * 60 * 60) // 24 hours in seconds
             );
         });
 
@@ -101,7 +103,7 @@ describe('TokenManager', () => {
 
         it('should throw error for invalid encryption inputs', () => {
             expect(() => TokenManager.encryptToken('', encryptionKey)).toThrow('Invalid token');
-            expect(() => TokenManager.encryptToken(validToken, '')).toThrow('Invalid encryption key');
+            expect(() => TokenManager.encryptToken('valid_token', '')).toThrow('Invalid encryption key');
         });
 
         it('should throw error for invalid decryption inputs', () => {
