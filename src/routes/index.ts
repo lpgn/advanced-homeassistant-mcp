@@ -1,18 +1,18 @@
 /**
  * API Routes Module
- * 
+ *
  * This module exports the main router that combines all API routes
  * into a single router instance. Each route group is mounted under
  * its respective path prefix.
- * 
+ *
  * @module routes
  */
 
-import { Router } from 'express';
-import { mcpRoutes } from './mcp.routes.js';
-import { sseRoutes } from './sse.routes.js';
-import { toolRoutes } from './tool.routes.js';
-import { healthRoutes } from './health.routes.js';
+import { Router } from "express";
+import { mcpRoutes } from "./mcp.routes.js";
+import { sseRoutes } from "./sse.routes.js";
+import { toolRoutes } from "./tool.routes.js";
+import { healthRoutes } from "./health.routes.js";
 
 /**
  * Create main router instance
@@ -27,13 +27,13 @@ const router = Router();
  * - /tools: Tool management endpoints
  * - /health: Health check endpoint
  */
-router.use('/mcp', mcpRoutes);
-router.use('/sse', sseRoutes);
-router.use('/tools', toolRoutes);
-router.use('/health', healthRoutes);
+router.use("/mcp", mcpRoutes);
+router.use("/sse", sseRoutes);
+router.use("/tools", toolRoutes);
+router.use("/health", healthRoutes);
 
 /**
  * Export the configured router
  * This will be mounted in the main application
  */
-export { router as apiRoutes }; 
+export { router as apiRoutes };

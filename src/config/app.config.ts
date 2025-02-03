@@ -1,5 +1,6 @@
-import { config } from 'dotenv';
-import { resolve } from 'path';
+import { config } from "dotenv";
+import { resolve } from "path";
+import { z } from "zod";
 
 /**
  * Load environment variables based on NODE_ENV
@@ -7,11 +8,12 @@ import { resolve } from 'path';
  * Test: .env.test
  * Production: .env
  */
-const envFile = process.env.NODE_ENV === 'production'
-    ? '.env'
-    : process.env.NODE_ENV === 'test'
-        ? '.env.test'
-        : '.env.development';
+const envFile =
+  process.env.NODE_ENV === "production"
+    ? ".env"
+    : process.env.NODE_ENV === "test"
+      ? ".env.test"
+      : ".env.development";
 
 console.log(`Loading environment from ${envFile}`);
 config({ path: resolve(process.cwd(), envFile) });
@@ -20,66 +22,95 @@ config({ path: resolve(process.cwd(), envFile) });
  * Application configuration object
  * Contains all configuration settings for the application
  */
-export const APP_CONFIG = {
-    /** Server Configuration */
-    PORT: process.env.PORT || 3000,
-    NODE_ENV: process.env.NODE_ENV || 'development',
+export const AppConfigSchema = z.object({
+  /** Server Configuration */
+  PORT: z.number().default(4000),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 
-    /** Home Assistant Configuration */
-    HASS_HOST: process.env.HASS_HOST || 'http://192.168.178.63:8123',
-    HASS_TOKEN: process.env.HASS_TOKEN,
+  /** Home Assistant Configuration */
+  HASS_HOST: z.string().default("http://192.168.178.63:8123"),
+  HASS_TOKEN: z.string().optional(),
 
-    /** Security Configuration */
-    JWT_SECRET: process.env.JWT_SECRET || 'your-secret-key',
-    RATE_LIMIT: {
-        /** Time window for rate limiting in milliseconds */
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        /** Maximum number of requests per window */
-        max: 100 // limit each IP to 100 requests per windowMs
-    },
+  /** Security Configuration */
+  JWT_SECRET: z.string().default("your-secret-key"),
+  RATE_LIMIT: z.object({
+    /** Time window for rate limiting in milliseconds */
+    windowMs: z.number().default(15 * 60 * 1000), // 15 minutes
+    /** Maximum number of requests per window */
+    max: z.number().default(100), // limit each IP to 100 requests per windowMs
+  }),
 
-    /** Server-Sent Events Configuration */
-    SSE: {
-        /** Maximum number of concurrent SSE clients */
-        MAX_CLIENTS: 1000,
-        /** Ping interval in milliseconds to keep connections alive */
-        PING_INTERVAL: 30000 // 30 seconds
-    },
+  /** Server-Sent Events Configuration */
+  SSE: z.object({
+    /** Maximum number of concurrent SSE clients */
+    MAX_CLIENTS: z.number().default(1000),
+    /** Ping interval in milliseconds to keep connections alive */
+    PING_INTERVAL: z.number().default(30000), // 30 seconds
+  }),
 
-    /** Logging Configuration */
-    LOGGING: {
-        /** Log level (error, warn, info, http, debug) */
-        LEVEL: process.env.LOG_LEVEL || 'info',
-        /** Directory for log files */
-        DIR: process.env.LOG_DIR || 'logs',
-        /** Maximum log file size before rotation */
-        MAX_SIZE: process.env.LOG_MAX_SIZE || '20m',
-        /** Maximum number of days to keep log files */
-        MAX_DAYS: process.env.LOG_MAX_DAYS || '14d',
-        /** Whether to compress rotated logs */
-        COMPRESS: process.env.LOG_COMPRESS === 'true',
-        /** Format for timestamps in logs */
-        TIMESTAMP_FORMAT: 'YYYY-MM-DD HH:mm:ss:ms',
-        /** Whether to include request logging */
-        LOG_REQUESTS: process.env.LOG_REQUESTS === 'true',
-    },
+  /** Logging Configuration */
+  LOGGING: z.object({
+    /** Log level (error, warn, info, http, debug) */
+    LEVEL: z.enum(["error", "warn", "info", "debug", "trace"]).default("info"),
+    /** Directory for log files */
+    DIR: z.string().default("logs"),
+    /** Maximum log file size before rotation */
+    MAX_SIZE: z.string().default("20m"),
+    /** Maximum number of days to keep log files */
+    MAX_DAYS: z.string().default("14d"),
+    /** Whether to compress rotated logs */
+    COMPRESS: z.boolean().default(false),
+    /** Format for timestamps in logs */
+    TIMESTAMP_FORMAT: z.string().default("YYYY-MM-DD HH:mm:ss:ms"),
+    /** Whether to include request logging */
+    LOG_REQUESTS: z.boolean().default(false),
+  }),
 
-    /** Application Version */
-    VERSION: '0.1.0'
-} as const;
+  /** Application Version */
+  VERSION: z.string().default("0.1.0"),
+});
 
 /** Type definition for the configuration object */
-export type AppConfig = typeof APP_CONFIG;
+export type AppConfig = z.infer<typeof AppConfigSchema>;
 
 /** Required environment variables that must be set */
-const requiredEnvVars = ['HASS_TOKEN'] as const;
+const requiredEnvVars = ["HASS_TOKEN"] as const;
 
 /**
  * Validate that all required environment variables are set
  * Throws an error if any required variable is missing
  */
 for (const envVar of requiredEnvVars) {
-    if (!process.env[envVar]) {
-        throw new Error(`Missing required environment variable: ${envVar}`);
-    }
-} 
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
+// Load and validate configuration
+export const APP_CONFIG = AppConfigSchema.parse({
+  PORT: process.env.PORT || 4000,
+  NODE_ENV: process.env.NODE_ENV || "development",
+  HASS_HOST: process.env.HASS_HOST || "http://192.168.178.63:8123",
+  HASS_TOKEN: process.env.HASS_TOKEN,
+  JWT_SECRET: process.env.JWT_SECRET || "your-secret-key",
+  RATE_LIMIT: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+  },
+  SSE: {
+    MAX_CLIENTS: 1000,
+    PING_INTERVAL: 30000, // 30 seconds
+  },
+  LOGGING: {
+    LEVEL: process.env.LOG_LEVEL || "info",
+    DIR: process.env.LOG_DIR || "logs",
+    MAX_SIZE: process.env.LOG_MAX_SIZE || "20m",
+    MAX_DAYS: process.env.LOG_MAX_DAYS || "14d",
+    COMPRESS: process.env.LOG_COMPRESS === "true",
+    TIMESTAMP_FORMAT: "YYYY-MM-DD HH:mm:ss:ms",
+    LOG_REQUESTS: process.env.LOG_REQUESTS === "true",
+  },
+  VERSION: "0.1.0",
+});

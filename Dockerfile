@@ -1,20 +1,23 @@
 # Use Bun as the base image
-FROM oven/bun:1.0.26
+FROM oven/bun:1.0.25
 
 # Set working directory
 WORKDIR /app
 
-# Copy source code
-COPY . .
+# Copy package files
+COPY package.json bun.lockb ./
 
 # Install dependencies
 RUN bun install
 
+# Copy source code
+COPY . .
+
 # Build TypeScript
 RUN bun run build
 
-# Expose the port the app runs on
-EXPOSE 3000
+# Expose port
+EXPOSE 4000
 
 # Start the application
 CMD ["bun", "run", "start"] 

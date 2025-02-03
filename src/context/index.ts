@@ -1,226 +1,239 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 // Resource types
 export enum ResourceType {
-    DEVICE = 'device',
-    AREA = 'area',
-    USER = 'user',
-    AUTOMATION = 'automation',
-    SCENE = 'scene',
-    SCRIPT = 'script',
-    GROUP = 'group'
+  DEVICE = "device",
+  AREA = "area",
+  USER = "user",
+  AUTOMATION = "automation",
+  SCENE = "scene",
+  SCRIPT = "script",
+  GROUP = "group",
 }
 
 // Resource state interface
 export interface ResourceState {
-    id: string;
-    type: ResourceType;
-    state: any;
-    attributes: Record<string, any>;
-    lastUpdated: number;
-    context?: Record<string, any>;
+  id: string;
+  type: ResourceType;
+  state: any;
+  attributes: Record<string, any>;
+  lastUpdated: number;
+  context?: Record<string, any>;
 }
 
 // Resource relationship types
 export enum RelationType {
-    CONTAINS = 'contains',
-    CONTROLS = 'controls',
-    TRIGGERS = 'triggers',
-    DEPENDS_ON = 'depends_on',
-    GROUPS = 'groups'
+  CONTAINS = "contains",
+  CONTROLS = "controls",
+  TRIGGERS = "triggers",
+  DEPENDS_ON = "depends_on",
+  GROUPS = "groups",
 }
 
 // Resource relationship interface
 export interface ResourceRelationship {
-    sourceId: string;
-    targetId: string;
-    type: RelationType;
-    metadata?: Record<string, any>;
+  sourceId: string;
+  targetId: string;
+  type: RelationType;
+  metadata?: Record<string, any>;
 }
 
 // Context manager class
 export class ContextManager extends EventEmitter {
-    private resources: Map<string, ResourceState> = new Map();
-    private relationships: ResourceRelationship[] = [];
-    private stateHistory: Map<string, ResourceState[]> = new Map();
-    private historyLimit = 100;
+  private resources: Map<string, ResourceState> = new Map();
+  private relationships: ResourceRelationship[] = [];
+  private stateHistory: Map<string, ResourceState[]> = new Map();
+  private historyLimit = 100;
 
-    constructor() {
-        super();
+  constructor() {
+    super();
+  }
+
+  // Resource management
+  public addResource(resource: ResourceState): void {
+    this.resources.set(resource.id, resource);
+    this.emit("resource_added", resource);
+  }
+
+  public updateResource(id: string, update: Partial<ResourceState>): void {
+    const resource = this.resources.get(id);
+    if (resource) {
+      // Store current state in history
+      this.addToHistory(resource);
+
+      // Update resource
+      const updatedResource = {
+        ...resource,
+        ...update,
+        lastUpdated: Date.now(),
+      };
+      this.resources.set(id, updatedResource);
+      this.emit("resource_updated", updatedResource);
     }
+  }
 
-    // Resource management
-    public addResource(resource: ResourceState): void {
-        this.resources.set(resource.id, resource);
-        this.emit('resource_added', resource);
+  public removeResource(id: string): void {
+    const resource = this.resources.get(id);
+    if (resource) {
+      this.resources.delete(id);
+      // Remove related relationships
+      this.relationships = this.relationships.filter(
+        (rel) => rel.sourceId !== id && rel.targetId !== id,
+      );
+      this.emit("resource_removed", resource);
     }
+  }
 
-    public updateResource(id: string, update: Partial<ResourceState>): void {
-        const resource = this.resources.get(id);
-        if (resource) {
-            // Store current state in history
-            this.addToHistory(resource);
+  // Relationship management
+  public addRelationship(relationship: ResourceRelationship): void {
+    this.relationships.push(relationship);
+    this.emit("relationship_added", relationship);
+  }
 
-            // Update resource
-            const updatedResource = {
-                ...resource,
-                ...update,
-                lastUpdated: Date.now()
-            };
-            this.resources.set(id, updatedResource);
-            this.emit('resource_updated', updatedResource);
-        }
+  public removeRelationship(
+    sourceId: string,
+    targetId: string,
+    type: RelationType,
+  ): void {
+    const index = this.relationships.findIndex(
+      (rel) =>
+        rel.sourceId === sourceId &&
+        rel.targetId === targetId &&
+        rel.type === type,
+    );
+    if (index !== -1) {
+      const removed = this.relationships.splice(index, 1)[0];
+      this.emit("relationship_removed", removed);
     }
+  }
 
-    public removeResource(id: string): void {
-        const resource = this.resources.get(id);
-        if (resource) {
-            this.resources.delete(id);
-            // Remove related relationships
-            this.relationships = this.relationships.filter(
-                rel => rel.sourceId !== id && rel.targetId !== id
-            );
-            this.emit('resource_removed', resource);
-        }
+  // History management
+  private addToHistory(state: ResourceState): void {
+    const history = this.stateHistory.get(state.id) || [];
+    history.push({ ...state });
+    if (history.length > this.historyLimit) {
+      history.shift();
     }
+    this.stateHistory.set(state.id, history);
+  }
 
-    // Relationship management
-    public addRelationship(relationship: ResourceRelationship): void {
-        this.relationships.push(relationship);
-        this.emit('relationship_added', relationship);
-    }
+  public getHistory(id: string): ResourceState[] {
+    return this.stateHistory.get(id) || [];
+  }
 
-    public removeRelationship(sourceId: string, targetId: string, type: RelationType): void {
-        const index = this.relationships.findIndex(
-            rel => rel.sourceId === sourceId && rel.targetId === targetId && rel.type === type
-        );
-        if (index !== -1) {
-            const removed = this.relationships.splice(index, 1)[0];
-            this.emit('relationship_removed', removed);
-        }
-    }
+  // Context queries
+  public getResource(id: string): ResourceState | undefined {
+    return this.resources.get(id);
+  }
 
-    // History management
-    private addToHistory(state: ResourceState): void {
-        const history = this.stateHistory.get(state.id) || [];
-        history.push({ ...state });
-        if (history.length > this.historyLimit) {
-            history.shift();
-        }
-        this.stateHistory.set(state.id, history);
-    }
+  public getResourcesByType(type: ResourceType): ResourceState[] {
+    return Array.from(this.resources.values()).filter(
+      (resource) => resource.type === type,
+    );
+  }
 
-    public getHistory(id: string): ResourceState[] {
-        return this.stateHistory.get(id) || [];
-    }
+  public getRelatedResources(
+    id: string,
+    type?: RelationType,
+    depth: number = 1,
+  ): ResourceState[] {
+    const related = new Set<ResourceState>();
+    const visited = new Set<string>();
 
-    // Context queries
-    public getResource(id: string): ResourceState | undefined {
-        return this.resources.get(id);
-    }
+    const traverse = (currentId: string, currentDepth: number) => {
+      if (currentDepth > depth || visited.has(currentId)) return;
+      visited.add(currentId);
 
-    public getResourcesByType(type: ResourceType): ResourceState[] {
-        return Array.from(this.resources.values()).filter(
-            resource => resource.type === type
-        );
-    }
+      this.relationships
+        .filter(
+          (rel) =>
+            (rel.sourceId === currentId || rel.targetId === currentId) &&
+            (!type || rel.type === type),
+        )
+        .forEach((rel) => {
+          const relatedId =
+            rel.sourceId === currentId ? rel.targetId : rel.sourceId;
+          const relatedResource = this.resources.get(relatedId);
+          if (relatedResource) {
+            related.add(relatedResource);
+            traverse(relatedId, currentDepth + 1);
+          }
+        });
+    };
 
-    public getRelatedResources(
-        id: string,
-        type?: RelationType,
-        depth: number = 1
-    ): ResourceState[] {
-        const related = new Set<ResourceState>();
-        const visited = new Set<string>();
+    traverse(id, 0);
+    return Array.from(related);
+  }
 
-        const traverse = (currentId: string, currentDepth: number) => {
-            if (currentDepth > depth || visited.has(currentId)) return;
-            visited.add(currentId);
+  // Context analysis
+  public analyzeResourceUsage(id: string): {
+    dependencies: string[];
+    dependents: string[];
+    groups: string[];
+    usage: {
+      triggerCount: number;
+      controlCount: number;
+      groupCount: number;
+    };
+  } {
+    const dependencies = this.relationships
+      .filter(
+        (rel) => rel.sourceId === id && rel.type === RelationType.DEPENDS_ON,
+      )
+      .map((rel) => rel.targetId);
 
-            this.relationships
-                .filter(rel =>
-                    (rel.sourceId === currentId || rel.targetId === currentId) &&
-                    (!type || rel.type === type)
-                )
-                .forEach(rel => {
-                    const relatedId = rel.sourceId === currentId ? rel.targetId : rel.sourceId;
-                    const relatedResource = this.resources.get(relatedId);
-                    if (relatedResource) {
-                        related.add(relatedResource);
-                        traverse(relatedId, currentDepth + 1);
-                    }
-                });
-        };
+    const dependents = this.relationships
+      .filter(
+        (rel) => rel.targetId === id && rel.type === RelationType.DEPENDS_ON,
+      )
+      .map((rel) => rel.sourceId);
 
-        traverse(id, 0);
-        return Array.from(related);
-    }
+    const groups = this.relationships
+      .filter((rel) => rel.targetId === id && rel.type === RelationType.GROUPS)
+      .map((rel) => rel.sourceId);
 
-    // Context analysis
-    public analyzeResourceUsage(id: string): {
-        dependencies: string[];
-        dependents: string[];
-        groups: string[];
-        usage: {
-            triggerCount: number;
-            controlCount: number;
-            groupCount: number;
-        };
-    } {
-        const dependencies = this.relationships
-            .filter(rel => rel.sourceId === id && rel.type === RelationType.DEPENDS_ON)
-            .map(rel => rel.targetId);
+    const usage = {
+      triggerCount: this.relationships.filter(
+        (rel) => rel.sourceId === id && rel.type === RelationType.TRIGGERS,
+      ).length,
+      controlCount: this.relationships.filter(
+        (rel) => rel.sourceId === id && rel.type === RelationType.CONTROLS,
+      ).length,
+      groupCount: groups.length,
+    };
 
-        const dependents = this.relationships
-            .filter(rel => rel.targetId === id && rel.type === RelationType.DEPENDS_ON)
-            .map(rel => rel.sourceId);
+    return { dependencies, dependents, groups, usage };
+  }
 
-        const groups = this.relationships
-            .filter(rel => rel.targetId === id && rel.type === RelationType.GROUPS)
-            .map(rel => rel.sourceId);
+  // Event subscriptions
+  public subscribeToResource(
+    id: string,
+    callback: (state: ResourceState) => void,
+  ): () => void {
+    const handler = (resource: ResourceState) => {
+      if (resource.id === id) {
+        callback(resource);
+      }
+    };
 
-        const usage = {
-            triggerCount: this.relationships.filter(
-                rel => rel.sourceId === id && rel.type === RelationType.TRIGGERS
-            ).length,
-            controlCount: this.relationships.filter(
-                rel => rel.sourceId === id && rel.type === RelationType.CONTROLS
-            ).length,
-            groupCount: groups.length
-        };
+    this.on("resource_updated", handler);
+    return () => this.off("resource_updated", handler);
+  }
 
-        return { dependencies, dependents, groups, usage };
-    }
+  public subscribeToType(
+    type: ResourceType,
+    callback: (state: ResourceState) => void,
+  ): () => void {
+    const handler = (resource: ResourceState) => {
+      if (resource.type === type) {
+        callback(resource);
+      }
+    };
 
-    // Event subscriptions
-    public subscribeToResource(
-        id: string,
-        callback: (state: ResourceState) => void
-    ): () => void {
-        const handler = (resource: ResourceState) => {
-            if (resource.id === id) {
-                callback(resource);
-            }
-        };
-
-        this.on('resource_updated', handler);
-        return () => this.off('resource_updated', handler);
-    }
-
-    public subscribeToType(
-        type: ResourceType,
-        callback: (state: ResourceState) => void
-    ): () => void {
-        const handler = (resource: ResourceState) => {
-            if (resource.type === type) {
-                callback(resource);
-            }
-        };
-
-        this.on('resource_updated', handler);
-        return () => this.off('resource_updated', handler);
-    }
+    this.on("resource_updated", handler);
+    return () => this.off("resource_updated", handler);
+  }
 }
 
 // Export context manager instance
-export const contextManager = new ContextManager(); 
+export const contextManager = new ContextManager();
