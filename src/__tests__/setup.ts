@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import path from 'path';
 import { TEST_CONFIG } from '../config/__tests__/test.config';
+import { beforeAll, afterAll, beforeEach, describe, expect, it, mock, test } from 'bun:test';
 
 // Load test environment variables
 config({ path: path.resolve(process.cwd(), '.env.test') });
@@ -19,9 +20,9 @@ beforeAll(() => {
 
     // Suppress console output during tests unless explicitly enabled
     if (!process.env.DEBUG) {
-        console.error = jest.fn();
-        console.warn = jest.fn();
-        console.log = jest.fn();
+        console.error = mock(() => { });
+        console.warn = mock(() => { });
+        console.log = mock(() => { });
     }
 
     // Store original console methods for cleanup
@@ -46,8 +47,16 @@ afterAll(() => {
 
 // Reset mocks between tests
 beforeEach(() => {
-    jest.resetModules();
-    jest.clearAllMocks();
+    // Clear all mock function calls
+    const mockFns = Object.values(mock).filter(value => typeof value === 'function');
+    mockFns.forEach(mockFn => {
+        if (mockFn.mock) {
+            mockFn.mock.calls = [];
+            mockFn.mock.results = [];
+            mockFn.mock.instances = [];
+            mockFn.mock.lastCall = undefined;
+        }
+    });
 });
 
 // Custom test environment setup
@@ -56,9 +65,9 @@ const setupTestEnvironment = () => {
         // Mock WebSocket for SSE tests
         mockWebSocket: () => {
             const mockWs = {
-                on: jest.fn(),
-                send: jest.fn(),
-                close: jest.fn()
+                on: mock(() => { }),
+                send: mock(() => { }),
+                close: mock(() => { })
             };
             return mockWs;
         },
@@ -66,13 +75,14 @@ const setupTestEnvironment = () => {
         // Mock HTTP response for API tests
         mockResponse: () => {
             const res: any = {};
-            res.status = jest.fn().mockReturnValue(res);
-            res.json = jest.fn().mockReturnValue(res);
-            res.send = jest.fn().mockReturnValue(res);
-            res.end = jest.fn().mockReturnValue(res);
-            res.setHeader = jest.fn().mockReturnValue(res);
-            res.writeHead = jest.fn().mockReturnValue(res);
-            res.write = jest.fn().mockReturnValue(true);
+            res.status = mock(() => res);
+            res.json = mock(() => res);
+            res.send = mock(() => res);
+            res.end = mock(() => res);
+            res.setHeader = mock(() => res);
+            res.writeHead = mock(() => res);
+            res.write = mock(() => true);
+            res.removeHeader = mock(() => res);
             return res;
         },
 
@@ -86,7 +96,7 @@ const setupTestEnvironment = () => {
                 ip: TEST_CONFIG.TEST_CLIENT_IP,
                 method: 'GET',
                 path: '/api/test',
-                is: jest.fn(type => type === 'application/json'),
+                is: mock((type: string) => type === 'application/json'),
                 ...overrides
             };
         },
@@ -96,7 +106,7 @@ const setupTestEnvironment = () => {
             id,
             ip: TEST_CONFIG.TEST_CLIENT_IP,
             connectedAt: new Date(),
-            send: jest.fn(),
+            send: mock(() => { }),
             rateLimit: {
                 count: 0,
                 lastReset: Date.now()
@@ -130,5 +140,16 @@ const setupTestEnvironment = () => {
 // Export test utilities
 export const testUtils = setupTestEnvironment();
 
+// Export Bun test utilities
+export { beforeAll, afterAll, beforeEach, describe, expect, it, mock, test };
+
 // Make test utilities available globally
-(global as any).testUtils = testUtils; 
+(global as any).testUtils = testUtils;
+(global as any).describe = describe;
+(global as any).it = it;
+(global as any).test = test;
+(global as any).expect = expect;
+(global as any).beforeAll = beforeAll;
+(global as any).afterAll = afterAll;
+(global as any).beforeEach = beforeEach;
+(global as any).mock = mock; 

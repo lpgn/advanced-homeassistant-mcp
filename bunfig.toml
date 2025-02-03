@@ -1,0 +1,23 @@
+[test]
+preload = ["./src/__tests__/setup.ts"]
+coverage = true
+timeout = 30000
+testMatch = ["**/__tests__/**/*.test.ts"]
+
+[build]
+target = "node"
+outdir = "./dist"
+minify = true
+sourcemap = "external"
+
+[install]
+production = false
+frozen = true
+peer = false
+
+[install.cache]
+dir = ".bun"
+disable = false
+
+[debug]
+port = 9229 

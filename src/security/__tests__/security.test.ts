@@ -1,6 +1,7 @@
 import { TokenManager } from '../index';
 import { SECURITY_CONFIG } from '../../config/security.config';
 import jwt from 'jsonwebtoken';
+import { jest } from '@jest/globals';
 
 describe('TokenManager', () => {
     const validSecret = 'test_secret_key_that_is_at_least_32_chars_long';
@@ -9,8 +10,7 @@ describe('TokenManager', () => {
 
     beforeEach(() => {
         process.env.JWT_SECRET = validSecret;
-        // Reset rate limiting
-        jest.resetModules();
+        jest.clearAllMocks();
     });
 
     describe('Token Validation', () => {
@@ -41,7 +41,7 @@ describe('TokenManager', () => {
             expect(result.error).toContain('expired');
         });
 
-        it('should implement rate limiting for failed attempts', () => {
+        it('should implement rate limiting for failed attempts', async () => {
             // Simulate multiple failed attempts
             for (let i = 0; i < SECURITY_CONFIG.MAX_FAILED_ATTEMPTS; i++) {
                 TokenManager.validateToken('invalid_token', testIp);
@@ -51,6 +51,9 @@ describe('TokenManager', () => {
             const result = TokenManager.validateToken('invalid_token', testIp);
             expect(result.valid).toBe(false);
             expect(result.error).toContain('Too many failed attempts');
+
+            // Wait for rate limit to expire
+            await new Promise(resolve => setTimeout(resolve, 100));
         });
     });
 

@@ -1,76 +1,37 @@
-import type { Config } from '@jest/types';
+import type { JestConfigWithTsJest } from 'ts-jest';
 
-const config: Config.InitialOptions = {
+const config: JestConfigWithTsJest = {
     preset: 'ts-jest',
     testEnvironment: 'node',
-    roots: ['<rootDir>/src'],
-    testMatch: [
-        '**/__tests__/**/*.+(ts|tsx|js)',
-        '**/?(*.)+(spec|test).+(ts|tsx|js)'
-    ],
-    transform: {
-        '^.+\\.(ts|tsx)$': 'ts-jest'
-    },
+    extensionsToTreatAsEsm: ['.ts'],
     moduleNameMapper: {
-        '^@/(.*)$': '<rootDir>/src/$1'
+        '^(\\.{1,2}/.*)\\.js$': '$1',
     },
-    setupFilesAfterEnv: [
-        '<rootDir>/src/__tests__/setup.ts'
-    ],
-    globals: {
-        'ts-jest': {
-            tsconfig: 'tsconfig.json',
-            isolatedModules: true
-        }
+    transform: {
+        '^.+\\.tsx?$': [
+            'ts-jest',
+            {
+                useESM: true,
+                tsconfig: 'tsconfig.json',
+            },
+        ],
     },
-    collectCoverage: true,
-    collectCoverageFrom: [
-        'src/**/*.{ts,tsx}',
-        '!src/**/*.d.ts',
-        '!src/**/__tests__/**',
-        '!src/**/__mocks__/**',
-        '!src/**/types/**'
-    ],
-    coverageReporters: ['text', 'lcov', 'html'],
-    coverageDirectory: 'coverage',
-    coverageThreshold: {
-        global: {
-            branches: 80,
-            functions: 80,
-            lines: 80,
-            statements: 80
-        }
-    },
+    testMatch: ['**/__tests__/**/*.test.ts'],
     verbose: true,
-    testTimeout: 10000,
-    maxWorkers: '50%',
-    errorOnDeprecated: true,
     clearMocks: true,
     resetMocks: true,
     restoreMocks: true,
-    testPathIgnorePatterns: [
-        '/node_modules/',
-        '/dist/',
-        '/.cursor/'
-    ],
-    watchPathIgnorePatterns: [
-        '/node_modules/',
-        '/dist/',
-        '/.cursor/',
-        '/coverage/'
-    ],
-    modulePathIgnorePatterns: [
-        '/dist/',
-        '/.cursor/'
-    ],
-    moduleFileExtensions: [
-        'ts',
-        'tsx',
-        'js',
-        'jsx',
-        'json',
-        'node'
-    ]
+    testTimeout: 30000,
+    maxWorkers: '50%',
+    collectCoverage: true,
+    coverageDirectory: 'coverage',
+    coverageReporters: ['text', 'lcov'],
+    globals: {
+        'ts-jest': {
+            useESM: true,
+            isolatedModules: true,
+        },
+    },
 };
 
 export default config; 

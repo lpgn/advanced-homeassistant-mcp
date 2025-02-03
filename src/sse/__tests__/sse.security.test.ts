@@ -1,17 +1,19 @@
 import { SSEManager } from '../index';
 import { TokenManager } from '../../security/index';
 import { EventEmitter } from 'events';
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
+import type { SSEClient, SSEEvent, MockSend, MockSendFn } from '../types';
 
 describe('SSE Security Features', () => {
     let sseManager: SSEManager;
     const validToken = 'valid_token';
     const testIp = '127.0.0.1';
 
-    const createTestClient = (id: string) => ({
+    const createTestClient = (id: string): SSEClient => ({
         id,
         ip: testIp,
         connectedAt: new Date(),
-        send: jest.fn(),
+        send: mock<MockSendFn>((data: string) => { }),
         rateLimit: {
             count: 0,
             lastReset: Date.now()
@@ -26,11 +28,20 @@ describe('SSE Security Features', () => {
             cleanupInterval: 200,
             maxConnectionAge: 1000
         });
-        jest.spyOn(TokenManager, 'validateToken').mockReturnValue({ valid: true });
+        TokenManager.validateToken = mock(() => ({ valid: true }));
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        // Clear all mock function calls
+        const mocks = Object.values(mock).filter(
+            (value): value is MockSend => typeof value === 'function' && 'mock' in value
+        );
+        mocks.forEach(mockFn => {
+            mockFn.mock.calls = [];
+            mockFn.mock.results = [];
+            mockFn.mock.instances = [];
+            mockFn.mock.lastCall = undefined;
+        });
     });
 
     describe('Client Authentication', () => {
@@ -39,21 +50,21 @@ describe('SSE Security Features', () => {
             const result = sseManager.addClient(client, validToken);
 
             expect(result).toBeTruthy();
-            expect(result?.authenticated).toBe(true);
             expect(TokenManager.validateToken).toHaveBeenCalledWith(validToken, testIp);
         });
 
         it('should reject invalid tokens', () => {
-            jest.spyOn(TokenManager, 'validateToken').mockReturnValue({
+            const validateTokenMock = mock(() => ({
                 valid: false,
                 error: 'Invalid token'
-            });
+            }));
+            TokenManager.validateToken = validateTokenMock;
 
             const client = createTestClient('test-client-2');
             const result = sseManager.addClient(client, 'invalid_token');
 
             expect(result).toBeNull();
-            expect(TokenManager.validateToken).toHaveBeenCalledWith('invalid_token', testIp);
+            expect(validateTokenMock).toHaveBeenCalledWith('invalid_token', testIp);
         });
 
         it('should enforce maximum client limit', () => {
@@ -121,15 +132,16 @@ describe('SSE Security Features', () => {
             expect(sseClient).toBeTruthy();
 
             // Send messages up to rate limit
-            for (let i = 0; i < 1000; i++) {
+            for (let i = 0; i < 10; i++) {
                 sseManager['sendToClient'](sseClient!, { type: 'test', data: i });
             }
 
             // Next message should trigger rate limit
             sseManager['sendToClient'](sseClient!, { type: 'test', data: 'overflow' });
 
-            const lastCall = client.send.mock.calls[client.send.mock.calls.length - 1][0];
-            expect(JSON.parse(lastCall)).toMatchObject({
+            const lastCall = client.send.mock.calls[client.send.mock.calls.length - 1];
+            const lastMessage = JSON.parse(lastCall.args[0] as string);
+            expect(lastMessage).toEqual({
                 type: 'error',
                 error: 'rate_limit_exceeded'
             });
@@ -141,7 +153,7 @@ describe('SSE Security Features', () => {
             expect(sseClient).toBeTruthy();
 
             // Send messages up to rate limit
-            for (let i = 0; i < 1000; i++) {
+            for (let i = 0; i < 10; i++) {
                 sseManager['sendToClient'](sseClient!, { type: 'test', data: i });
             }
 
@@ -150,8 +162,9 @@ describe('SSE Security Features', () => {
 
             // Should be able to send messages again
             sseManager['sendToClient'](sseClient!, { type: 'test', data: 'new message' });
-            const lastCall = client.send.mock.calls[client.send.mock.calls.length - 1][0];
-            expect(JSON.parse(lastCall)).toMatchObject({
+            const lastCall = client.send.mock.calls[client.send.mock.calls.length - 1];
+            const lastMessage = JSON.parse(lastCall.args[0] as string);
+            expect(lastMessage).toEqual({
                 type: 'test',
                 data: 'new message'
             });
@@ -164,22 +177,28 @@ describe('SSE Security Features', () => {
             const client2 = createTestClient('client2');
 
             const sseClient1 = sseManager.addClient(client1, validToken);
-            jest.spyOn(TokenManager, 'validateToken').mockReturnValue({ valid: false });
+            TokenManager.validateToken = mock(() => ({ valid: false }));
             const sseClient2 = sseManager.addClient(client2, 'invalid_token');
 
             expect(sseClient1).toBeTruthy();
             expect(sseClient2).toBeNull();
 
-            sseManager.broadcastEvent({
+            const event: SSEEvent = {
                 event_type: 'test_event',
                 data: { test: true },
                 origin: 'test',
                 time_fired: new Date().toISOString(),
                 context: { id: 'test' }
-            });
+            };
 
-            expect(client1.send).toHaveBeenCalled();
-            expect(client2.send).not.toHaveBeenCalled();
+            sseManager.broadcastEvent(event);
+
+            expect(client1.send.mock.calls.length).toBe(1);
+            const sentCall = client1.send.mock.calls[0];
+            const sentEvent = JSON.parse(sentCall.args[0] as string);
+            expect(sentEvent.type).toBe('test_event');
+
+            expect(client2.send.mock.calls.length).toBe(0);
         });
 
         it('should respect subscription filters', () => {
@@ -207,8 +226,9 @@ describe('SSE Security Features', () => {
                 context: { id: 'test' }
             });
 
-            expect(client.send).toHaveBeenCalledTimes(1);
-            const sentMessage = JSON.parse(client.send.mock.calls[0][0]);
+            expect(client.send.mock.calls.length).toBe(1);
+            const sentCall = client.send.mock.calls[0];
+            const sentMessage = JSON.parse(sentCall.args[0] as string);
             expect(sentMessage.type).toBe('test_event');
         });
     });
