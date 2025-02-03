@@ -18,7 +18,7 @@ console.log(`Loading environment from ${envFile}`);
 config({ path: resolve(process.cwd(), envFile) });
 
 import { get_hass } from './hass/index.js';
-import { LiteMCP } from 'litemcp';
+import { LiteMCP } from './mcp/litemcp.js';
 import { z } from 'zod';
 import { DomainSchema } from './schemas.js';
 

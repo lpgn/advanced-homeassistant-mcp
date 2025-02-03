@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@digital-alchemy/core": "^0.1.0",
+    "@digital-alchemy/hass": "^25.1.1",
     "@jest/globals": "^29.7.0",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
