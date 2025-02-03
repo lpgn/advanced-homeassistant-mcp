@@ -1,18 +1,7 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
+/** @type {import('bun:test').BunTestConfig} */
 module.exports = {
-    preset: 'ts-jest',
     testEnvironment: 'node',
-    resolver: './jest-resolver.cjs',
     moduleFileExtensions: ['ts', 'js', 'json', 'node'],
-    transform: {
-        '^.+\\.ts$': ['ts-jest', {
-            useESM: true,
-            tsconfig: 'tsconfig.json'
-        }]
-    },
-    moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1'
-    },
     testMatch: ['**/__tests__/**/*.test.ts'],
     collectCoverage: true,
     coverageDirectory: 'coverage',

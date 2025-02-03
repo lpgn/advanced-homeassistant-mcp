@@ -5,19 +5,19 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx tsc",
-    "start": "node dist/src/index.js",
-    "dev": "tsx watch src/index.ts",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.cjs",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.cjs --coverage",
-    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --config=jest.config.cjs --watch",
-    "test:openai": "tsx openai_test.ts",
+    "build": "bun run tsc",
+    "start": "bun run dist/src/index.js",
+    "dev": "bun --watch src/index.ts",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "test:watch": "bun test --watch",
+    "test:openai": "bun run openai_test.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
-    "prepare": "npm run build",
+    "prepare": "bun run build",
     "clean": "rimraf dist",
     "types:check": "tsc --noEmit",
-    "types:install": "npm install --save-dev @types/node @types/jest"
+    "types:install": "bun add -d @types/node @types/jest"
   },
   "dependencies": {
     "@digital-alchemy/core": "^24.11.4",
@@ -62,5 +62,5 @@
   },
   "author": "Jango Blockchained",
   "license": "MIT",
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "bun@1.0.26"
 }

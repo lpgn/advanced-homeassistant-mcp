@@ -1,23 +1,20 @@
-# Use Node.js 20 as the base image
-FROM node:20-slim
-
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Use Bun as the base image
+FROM oven/bun:1.0.26
 
 # Set working directory
 WORKDIR /app
 
-# Copy source code first
+# Copy source code
 COPY . .
 
 # Install dependencies
-RUN npm install
+RUN bun install
 
 # Build TypeScript
-RUN npm run build
+RUN bun run build
 
 # Expose the port the app runs on
 EXPOSE 3000
 
 # Start the application
-CMD ["node", "dist/src/index.js"] 
+CMD ["bun", "run", "start"] 
