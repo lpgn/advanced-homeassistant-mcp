@@ -9,7 +9,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import glob from 'glob';
+import { glob } from 'glob';
 import { logger } from './logger.js';
 import { APP_CONFIG } from '../config/app.config.js';
 import { unlink } from 'fs/promises';
@@ -73,7 +73,7 @@ const parseDuration = (duration: string): number => {
  */
 const getLogFiles = async (): Promise<LogFileInfo[]> => {
     const logDir = APP_CONFIG.LOGGING.DIR;
-    const files = await globPromise('*.log*', { cwd: logDir });
+    const files: string[] = await glob('*.log*', { cwd: logDir });
 
     const fileInfos: LogFileInfo[] = [];
     for (const file of files) {
@@ -99,12 +99,7 @@ const getLogFiles = async (): Promise<LogFileInfo[]> => {
  */
 export async function cleanupOldLogs(logDir: string, maxDays: number): Promise<void> {
     try {
-        const files = await new Promise<string[]>((resolve, reject) => {
-            glob('*.log*', { cwd: logDir }, (err, matches) => {
-                if (err) reject(err);
-                else resolve(matches);
-            });
-        });
+        const files: string[] = await glob('*.log*', { cwd: logDir });
 
         const now = Date.now();
         const maxAge = maxDays * 24 * 60 * 60 * 1000;
@@ -151,10 +146,19 @@ const checkLogSize = async (): Promise<void> => {
  */
 export const initLogRotation = (): void => {
     // Check log sizes every hour
-    setInterval(checkLogSize, 60 * 60 * 1000);
+    setInterval(() => {
+        checkLogSize().catch(error => {
+            logger.error('Error checking log sizes:', error);
+        });
+    }, 60 * 60 * 1000);
 
     // Clean up old logs daily
-    setInterval(cleanupOldLogs, 24 * 60 * 60 * 1000);
+    setInterval(() => {
+        cleanupOldLogs(APP_CONFIG.LOGGING.DIR, parseDuration(APP_CONFIG.LOGGING.MAX_DAYS))
+            .catch(error => {
+                logger.error('Error cleaning up old logs:', error);
+            });
+    }, 24 * 60 * 60 * 1000);
 
     // Initial check
     checkLogSize().catch(error => {
@@ -162,9 +166,10 @@ export const initLogRotation = (): void => {
     });
 
     // Initial cleanup
-    cleanupOldLogs(APP_CONFIG.LOGGING.DIR, parseDuration(APP_CONFIG.LOGGING.MAX_DAYS)).catch(error => {
-        logger.error('Error in initial log cleanup:', error);
-    });
+    cleanupOldLogs(APP_CONFIG.LOGGING.DIR, parseDuration(APP_CONFIG.LOGGING.MAX_DAYS))
+        .catch(error => {
+            logger.error('Error in initial log cleanup:', error);
+        });
 
     logger.info('Log rotation initialized');
 }; 
