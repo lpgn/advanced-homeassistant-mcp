@@ -5,7 +5,6 @@ import { jest } from '@jest/globals';
 
 describe('TokenManager', () => {
     const validSecret = 'test_secret_key_that_is_at_least_32_chars_long';
-    const validToken = 'valid_token_that_is_at_least_32_chars_long';
     const testIp = '127.0.0.1';
 
     beforeEach(() => {
@@ -13,10 +12,14 @@ describe('TokenManager', () => {
         jest.clearAllMocks();
     });
 
+    afterEach(() => {
+        delete process.env.JWT_SECRET;
+    });
+
     describe('Token Validation', () => {
         it('should validate a properly formatted token', () => {
             const payload = { userId: '123', role: 'user' };
-            const token = jwt.sign(payload, validSecret, { expiresIn: '1h' });
+            const token = jwt.sign(payload, validSecret);
             const result = TokenManager.validateToken(token, testIp);
             expect(result.valid).toBe(true);
             expect(result.error).toBeUndefined();
@@ -35,8 +38,14 @@ describe('TokenManager', () => {
         });
 
         it('should reject an expired token', () => {
-            const payload = { userId: '123', role: 'user' };
-            const token = jwt.sign(payload, validSecret, { expiresIn: -1 });
+            const now = Math.floor(Date.now() / 1000);
+            const payload = {
+                userId: '123',
+                role: 'user',
+                iat: now - 7200,  // 2 hours ago
+                exp: now - 3600   // expired 1 hour ago
+            };
+            const token = jwt.sign(payload, validSecret);
             const result = TokenManager.validateToken(token, testIp);
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Token has expired');
@@ -44,7 +53,7 @@ describe('TokenManager', () => {
 
         it('should implement rate limiting for failed attempts', async () => {
             // Simulate multiple failed attempts
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < SECURITY_CONFIG.MAX_FAILED_ATTEMPTS; i++) {
                 const result = TokenManager.validateToken('invalid_token', testIp);
                 expect(result.valid).toBe(false);
             }
@@ -55,7 +64,13 @@ describe('TokenManager', () => {
             expect(result.error).toBe('Too many failed attempts. Please try again later.');
 
             // Wait for rate limit to expire
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, SECURITY_CONFIG.LOCKOUT_DURATION + 100));
+
+            // Should be able to try again
+            const validPayload = { userId: '123', role: 'user' };
+            const validToken = jwt.sign(validPayload, validSecret);
+            const finalResult = TokenManager.validateToken(validToken, testIp);
+            expect(finalResult.valid).toBe(true);
         });
     });
 

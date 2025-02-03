@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { validateRequest, sanitizeInput, errorHandler } from '../index';
 import { TokenManager } from '../../security/index';
+import { jest } from '@jest/globals';
+
+const TEST_SECRET = 'test-secret-that-is-long-enough-for-testing-purposes';
 
 describe('Security Middleware', () => {
     let mockRequest: Partial<Request>;
@@ -8,21 +11,31 @@ describe('Security Middleware', () => {
     let nextFunction: jest.Mock;
 
     beforeEach(() => {
+        process.env.JWT_SECRET = TEST_SECRET;
         mockRequest = {
-            headers: {
-                'content-type': 'application/json'
-            },
-            body: {},
-            ip: '127.0.0.1',
             method: 'POST',
-            is: jest.fn((type: string | string[]) => type === 'application/json' ? 'application/json' : false)
+            headers: {},
+            body: {},
+            ip: '127.0.0.1'
         };
+
+        const mockJson = jest.fn().mockReturnThis();
+        const mockStatus = jest.fn().mockReturnThis();
+        const mockSetHeader = jest.fn().mockReturnThis();
+        const mockRemoveHeader = jest.fn().mockReturnThis();
+
         mockResponse = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn().mockReturnThis(),
-            setHeader: jest.fn()
+            status: mockStatus as any,
+            json: mockJson as any,
+            setHeader: mockSetHeader as any,
+            removeHeader: mockRemoveHeader as any
         };
         nextFunction = jest.fn();
+    });
+
+    afterEach(() => {
+        delete process.env.JWT_SECRET;
+        jest.clearAllMocks();
     });
 
     describe('Request Validation', () => {

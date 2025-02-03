@@ -128,7 +128,7 @@ export class TokenManager {
     /**
      * Validates a JWT token with enhanced security checks
      */
-    static validateToken(token: string, ip?: string): { valid: boolean; error?: string } {
+    static validateToken(token: string | undefined | null, ip?: string): { valid: boolean; error?: string } {
         // Check basic token format
         if (!token || typeof token !== 'string') {
             return { valid: false, error: 'Invalid token format' };
@@ -136,6 +136,7 @@ export class TokenManager {
 
         // Check for token length
         if (token.length < SECURITY_CONFIG.MIN_TOKEN_LENGTH) {
+            if (ip) this.recordFailedAttempt(ip);
             return { valid: false, error: 'Token length below minimum requirement' };
         }
 
@@ -160,13 +161,13 @@ export class TokenManager {
 
             // Verify token structure
             if (!decoded || typeof decoded !== 'object') {
-                this.recordFailedAttempt(ip);
+                if (ip) this.recordFailedAttempt(ip);
                 return { valid: false, error: 'Invalid token structure' };
             }
 
             // Check required claims
             if (!decoded.exp || !decoded.iat) {
-                this.recordFailedAttempt(ip);
+                if (ip) this.recordFailedAttempt(ip);
                 return { valid: false, error: 'Token missing required claims' };
             }
 
@@ -174,14 +175,14 @@ export class TokenManager {
 
             // Check expiration
             if (decoded.exp <= now) {
-                this.recordFailedAttempt(ip);
+                if (ip) this.recordFailedAttempt(ip);
                 return { valid: false, error: 'Token has expired' };
             }
 
             // Check token age
             const tokenAge = (now - decoded.iat) * 1000;
             if (tokenAge > SECURITY_CONFIG.MAX_TOKEN_AGE) {
-                this.recordFailedAttempt(ip);
+                if (ip) this.recordFailedAttempt(ip);
                 return { valid: false, error: 'Token exceeds maximum age limit' };
             }
 
@@ -192,7 +193,7 @@ export class TokenManager {
 
             return { valid: true };
         } catch (error) {
-            this.recordFailedAttempt(ip);
+            if (ip) this.recordFailedAttempt(ip);
             if (error instanceof jwt.TokenExpiredError) {
                 return { valid: false, error: 'Token has expired' };
             }
@@ -262,13 +263,16 @@ export function validateRequest(req: Request, res: Response, next: NextFunction)
     }
 
     // Validate content type for non-GET requests
-    if (['POST', 'PUT', 'PATCH'].includes(req.method) && !req.is('application/json')) {
-        return res.status(415).json({
-            success: false,
-            message: 'Unsupported Media Type',
-            error: 'Content-Type must be application/json',
-            timestamp: new Date().toISOString()
-        });
+    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        const contentType = req.headers['content-type'] || '';
+        if (!contentType.toLowerCase().includes('application/json')) {
+            return res.status(415).json({
+                success: false,
+                message: 'Unsupported Media Type',
+                error: 'Content-Type must be application/json',
+                timestamp: new Date().toISOString()
+            });
+        }
     }
 
     // Validate authorization header
@@ -329,8 +333,14 @@ export function sanitizeInput(req: Request, res: Response, next: NextFunction) {
 
     function sanitizeValue(value: unknown): unknown {
         if (typeof value === 'string') {
-            // Remove HTML tags and scripts
-            return value.replace(/<[^>]*>/g, '');
+            // Remove HTML tags and scripts more thoroughly
+            return value
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags and content
+                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove style tags and content
+                .replace(/<[^>]+>/g, '')                                            // Remove remaining HTML tags
+                .replace(/javascript:/gi, '')                                       // Remove javascript: protocol
+                .replace(/on\w+\s*=\s*(?:".*?"|'.*?'|[^"'>\s]+)/gi, '')           // Remove event handlers
+                .trim();
         }
         if (Array.isArray(value)) {
             return value.map(item => sanitizeValue(item));
@@ -345,7 +355,7 @@ export function sanitizeInput(req: Request, res: Response, next: NextFunction) {
         return value;
     }
 
-    req.body = sanitizeValue(req.body) as Record<string, unknown>;
+    req.body = sanitizeValue(req.body);
     next();
 }
 

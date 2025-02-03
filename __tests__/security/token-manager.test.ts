@@ -46,16 +46,16 @@ describe('TokenManager', () => {
 
     describe('Token Validation', () => {
         it('should validate correct tokens', () => {
-            const payload = { sub: '123', name: 'Test User' };
-            const token = jwt.sign(payload, TEST_SECRET, { expiresIn: '1h' });
+            const payload = { sub: '123', name: 'Test User', iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600 };
+            const token = jwt.sign(payload, TEST_SECRET);
             const result = TokenManager.validateToken(token);
             expect(result.valid).toBe(true);
             expect(result.error).toBeUndefined();
         });
 
         it('should reject expired tokens', () => {
-            const payload = { sub: '123', name: 'Test User' };
-            const token = jwt.sign(payload, TEST_SECRET, { expiresIn: -1 });
+            const payload = { sub: '123', name: 'Test User', iat: Math.floor(Date.now() / 1000) - 7200, exp: Math.floor(Date.now() / 1000) - 3600 };
+            const token = jwt.sign(payload, TEST_SECRET);
             const result = TokenManager.validateToken(token);
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Token has expired');
@@ -68,8 +68,8 @@ describe('TokenManager', () => {
         });
 
         it('should reject tokens with invalid signature', () => {
-            const payload = { sub: '123', name: 'Test User' };
-            const token = jwt.sign(payload, 'different-secret', { expiresIn: '1h' });
+            const payload = { sub: '123', name: 'Test User', iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600 };
+            const token = jwt.sign(payload, 'different-secret');
             const result = TokenManager.validateToken(token);
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Invalid token signature');
@@ -81,6 +81,16 @@ describe('TokenManager', () => {
             const result = TokenManager.validateToken(token);
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Token missing required claims');
+        });
+
+        it('should handle undefined and null inputs', () => {
+            const undefinedResult = TokenManager.validateToken(undefined);
+            expect(undefinedResult.valid).toBe(false);
+            expect(undefinedResult.error).toBe('Invalid token format');
+
+            const nullResult = TokenManager.validateToken(null);
+            expect(nullResult.valid).toBe(false);
+            expect(nullResult.error).toBe('Invalid token format');
         });
     });
 
@@ -127,11 +137,6 @@ describe('TokenManager', () => {
 
         it('should handle invalid base64 input', () => {
             expect(() => TokenManager.decryptToken('not-base64!@#$%^', encryptionKey)).toThrow();
-        });
-
-        it('should handle undefined and null inputs', () => {
-            expect(TokenManager.validateToken(undefined as any)).toBe(false);
-            expect(TokenManager.validateToken(null as any)).toBe(false);
         });
     });
 }); 
