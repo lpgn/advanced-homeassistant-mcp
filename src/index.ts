@@ -17,6 +17,7 @@ import { requestLogger, errorLogger } from './middleware/logging.middleware.js';
 import { get_hass } from './hass/index.js';
 import { LiteMCP } from 'litemcp';
 import { logger } from './utils/logger.js';
+import { initLogRotation } from './utils/log-rotation.js';
 
 logger.info('Starting Home Assistant MCP...');
 logger.info('Initializing Home Assistant connection...');
@@ -26,6 +27,9 @@ logger.info('Initializing Home Assistant connection...');
  * and route handlers
  */
 const app = express();
+
+// Initialize log rotation
+initLogRotation();
 
 // Apply logging middleware first to catch all requests
 app.use(requestLogger);
