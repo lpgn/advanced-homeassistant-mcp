@@ -171,10 +171,35 @@ router.get('/subscribe_events', middleware.wsRateLimiter, (req, res) => {
     }
 });
 
-// SSE stats endpoint
+/**
+ * SSE Statistics Endpoint
+ * Returns detailed statistics about SSE connections and subscriptions.
+ * 
+ * @route GET /get_sse_stats
+ * @authentication Required - Bearer token
+ * @returns {Object} Statistics object containing:
+ *   - total_clients: Total number of connected clients
+ *   - authenticated_clients: Number of authenticated clients
+ *   - total_subscriptions: Total number of active subscriptions
+ *   - clients_by_connection_time: Client counts by connection duration
+ *   - total_entities_tracked: Number of entities being tracked
+ *   - subscriptions: Lists of entity, event, and domain subscriptions
+ */
 router.get('/get_sse_stats', middleware.authenticate, (_req, res) => {
-    const stats = sseManager.getStatistics();
-    res.json(stats);
+    try {
+        const stats = sseManager.getStatistics();
+        res.json({
+            success: true,
+            timestamp: new Date().toISOString(),
+            data: stats
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error instanceof Error ? error.message : 'Unknown error occurred',
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 export default router; 

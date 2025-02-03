@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { HassEntity, HassEvent, StateChangedEvent } from '../types/hass.js';
+import { HassEntity, HassEvent } from '../interfaces/hass.js';
 import { TokenManager } from '../security/index.js';
 
 interface RateLimit {
@@ -345,17 +345,29 @@ export class SSEManager extends EventEmitter {
                 less_than_1h: 0,
                 more_than_1h: 0
             },
-            total_entities_tracked: this.entityStates.size
+            total_entities_tracked: this.entityStates.size,
+            subscriptions: {
+                entities: new Set<string>(),
+                events: new Set<string>(),
+                domains: new Set<string>()
+            }
         };
 
         for (const client of this.clients.values()) {
             if (client.authenticated) stats.authenticated_clients++;
 
+            // Count subscriptions
             stats.total_subscriptions +=
                 client.subscriptions.entities.size +
                 client.subscriptions.events.size +
                 client.subscriptions.domains.size;
 
+            // Add to subscription sets
+            client.subscriptions.entities.forEach(entity => stats.subscriptions.entities.add(entity));
+            client.subscriptions.events.forEach(event => stats.subscriptions.events.add(event));
+            client.subscriptions.domains.forEach(domain => stats.subscriptions.domains.add(domain));
+
+            // Calculate connection duration
             const connectionDuration = now - client.connectionTime;
             if (connectionDuration < 60000) stats.clients_by_connection_time.less_than_1m++;
             else if (connectionDuration < 300000) stats.clients_by_connection_time.less_than_5m++;
@@ -363,7 +375,15 @@ export class SSEManager extends EventEmitter {
             else stats.clients_by_connection_time.more_than_1h++;
         }
 
-        return stats;
+        // Convert Sets to Arrays for JSON serialization
+        return {
+            ...stats,
+            subscriptions: {
+                entities: Array.from(stats.subscriptions.entities),
+                events: Array.from(stats.subscriptions.events),
+                domains: Array.from(stats.subscriptions.domains)
+            }
+        };
     }
 }
 

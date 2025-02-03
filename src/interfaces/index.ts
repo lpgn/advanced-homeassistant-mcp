@@ -30,31 +30,19 @@ export interface CommandParams {
     humidity?: number;
 }
 
+// Re-export Home Assistant types
+export type {
+    HassInstance,
+    HassStates,
+    HassServices,
+    HassConnection,
+    HassService,
+    HassEvent,
+    HassEntity,
+    HassState
+} from './hass.js';
+
 // Home Assistant interfaces
-export interface HassEntity {
-    entity_id: string;
-    state: string;
-    attributes: Record<string, any>;
-    last_changed?: string;
-    last_updated?: string;
-    context?: {
-        id: string;
-        parent_id?: string;
-        user_id?: string;
-    };
-}
-
-export interface HassState {
-    entity_id: string;
-    state: string;
-    attributes: {
-        friendly_name?: string;
-        description?: string;
-        [key: string]: any;
-    };
-}
-
-// Add-on interfaces
 export interface HassAddon {
     name: string;
     slug: string;
@@ -179,7 +167,4 @@ export interface AutomationConfigParams {
         condition?: any[];
         action: any[];
     };
-}
-
-// Re-export all Home Assistant types
-export * from './hass.js'; 
+} 
