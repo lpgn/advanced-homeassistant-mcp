@@ -8,7 +8,6 @@
  * @module index
  */
 
-import './polyfills.js';
 import express from 'express';
 import { APP_CONFIG } from './config/app.config.js';
 import { apiRoutes } from './routes/index.js';

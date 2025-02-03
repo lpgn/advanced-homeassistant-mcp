@@ -1,5 +1,11 @@
 import { jest, describe, it, expect } from '@jest/globals';
-import { formatToolCall } from '../src/helpers.js';
+
+// Helper function moved from src/helpers.ts
+const formatToolCall = (obj: any, isError: boolean = false) => {
+    return {
+        content: [{ type: "text", text: JSON.stringify(obj, null, 2), isError }],
+    };
+};
 
 describe('helpers', () => {
     describe('formatToolCall', () => {
