@@ -9,9 +9,14 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { glob } from 'glob';
+import glob from 'glob';
 import { logger } from './logger.js';
 import { APP_CONFIG } from '../config/app.config.js';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
+import { promisify } from 'util';
+
+const globPromise = promisify(glob);
 
 /**
  * Interface for log file information
@@ -68,7 +73,7 @@ const parseDuration = (duration: string): number => {
  */
 const getLogFiles = async (): Promise<LogFileInfo[]> => {
     const logDir = APP_CONFIG.LOGGING.DIR;
-    const files = await glob('*.log*', { cwd: logDir });
+    const files = await globPromise('*.log*', { cwd: logDir });
 
     const fileInfos: LogFileInfo[] = [];
     for (const file of files) {
@@ -92,22 +97,32 @@ const getLogFiles = async (): Promise<LogFileInfo[]> => {
 /**
  * Clean up old log files
  */
-const cleanupOldLogs = async (): Promise<void> => {
+export async function cleanupOldLogs(logDir: string, maxDays: number): Promise<void> {
     try {
-        const maxDays = parseDuration(APP_CONFIG.LOGGING.MAX_DAYS);
-        const maxAge = Date.now() - (maxDays * 24 * 60 * 60 * 1000);
+        const files = await new Promise<string[]>((resolve, reject) => {
+            glob('*.log*', { cwd: logDir }, (err, matches) => {
+                if (err) reject(err);
+                else resolve(matches);
+            });
+        });
 
-        const files = await getLogFiles();
-        const oldFiles = files.filter(file => file.date.getTime() < maxAge);
+        const now = Date.now();
+        const maxAge = maxDays * 24 * 60 * 60 * 1000;
 
-        for (const file of oldFiles) {
-            await fs.unlink(file.path);
-            logger.debug(`Deleted old log file: ${file.filename}`);
+        for (const file of files) {
+            const filePath = join(logDir, file);
+            const stats = await fs.stat(filePath);
+            const dateMatch = file.match(/\d{4}-\d{2}-\d{2}/);
+
+            if (dateMatch && stats.ctimeMs < now - maxAge) {
+                await unlink(filePath);
+                logger.debug(`Deleted old log file: ${file}`);
+            }
         }
     } catch (error) {
         logger.error('Error cleaning up old logs:', error);
     }
-};
+}
 
 /**
  * Check and rotate log files based on size
@@ -147,7 +162,7 @@ export const initLogRotation = (): void => {
     });
 
     // Initial cleanup
-    cleanupOldLogs().catch(error => {
+    cleanupOldLogs(APP_CONFIG.LOGGING.DIR, parseDuration(APP_CONFIG.LOGGING.MAX_DAYS)).catch(error => {
         logger.error('Error in initial log cleanup:', error);
     });
 

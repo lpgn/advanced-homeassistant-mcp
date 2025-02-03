@@ -1,15 +1,15 @@
-import { Tool } from '../types/index';
-import { listDevicesTool } from './list-devices.tool';
-import { controlTool } from './control.tool';
-import { historyTool } from './history.tool';
-import { sceneTool } from './scene.tool';
-import { notifyTool } from './notify.tool';
-import { automationTool } from './automation.tool';
-import { addonTool } from './addon.tool';
-import { packageTool } from './package.tool';
-import { automationConfigTool } from './automation-config.tool';
-import { subscribeEventsTool } from './subscribe-events.tool';
-import { getSSEStatsTool } from './sse-stats.tool';
+import { Tool } from '../types/index.js';
+import { listDevicesTool } from './list-devices.tool.js';
+import { controlTool } from './control.tool.js';
+import { historyTool } from './history.tool.js';
+import { sceneTool } from './scene.tool.js';
+import { notifyTool } from './notify.tool.js';
+import { automationTool } from './automation.tool.js';
+import { addonTool } from './addon.tool.js';
+import { packageTool } from './package.tool.js';
+import { automationConfigTool } from './automation-config.tool.js';
+import { subscribeEventsTool } from './subscribe-events.tool.js';
+import { getSSEStatsTool } from './sse-stats.tool.js';
 
 // Tool category types
 export enum ToolCategory {
@@ -36,7 +36,7 @@ interface ToolMetadata {
 }
 
 // Array to track all tools
-const tools: Tool[] = [
+export const tools: Tool[] = [
     listDevicesTool,
     controlTool,
     historyTool,

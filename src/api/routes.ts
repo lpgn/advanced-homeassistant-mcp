@@ -4,7 +4,7 @@ import { middleware } from '../middleware/index.js';
 import { sseManager } from '../sse/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import { TokenManager } from '../security/index.js';
-import { tools } from '../services/tools.js';
+import { tools } from '../tools/index.js';
 import { Tool } from '../interfaces/index.js';
 
 const router = Router();

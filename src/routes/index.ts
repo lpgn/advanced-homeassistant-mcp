@@ -9,10 +9,10 @@
  */
 
 import { Router } from 'express';
-import { mcpRoutes } from './mcp.routes';
-import { sseRoutes } from './sse.routes';
-import { toolRoutes } from './tool.routes';
-import { healthRoutes } from './health.routes';
+import { mcpRoutes } from './mcp.routes.js';
+import { sseRoutes } from './sse.routes.js';
+import { toolRoutes } from './tool.routes.js';
+import { healthRoutes } from './health.routes.js';
 
 /**
  * Create main router instance

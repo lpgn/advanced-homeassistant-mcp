@@ -86,7 +86,7 @@ router.get('/subscribe', (req, res) => {
 // Get SSE stats endpoint
 router.get('/stats', async (req, res) => {
     try {
-        const stats = await sseManager.getStats();
+        const stats = await sseManager.getStatistics();
         res.json(stats);
     } catch (error) {
         res.status(500).json({

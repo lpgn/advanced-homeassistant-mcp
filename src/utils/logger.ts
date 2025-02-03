@@ -8,7 +8,7 @@
  */
 
 import winston from 'winston';
-import 'winston-daily-rotate-file';
+import DailyRotateFile from 'winston-daily-rotate-file';
 import { APP_CONFIG } from '../config/app.config.js';
 
 /**
@@ -56,7 +56,7 @@ const format = winston.format.combine(
  * Transport for daily rotating file
  * Configures how logs are rotated and stored
  */
-const dailyRotateFileTransport = new winston.transports.DailyRotateFile({
+const dailyRotateFileTransport = new DailyRotateFile({
     filename: 'logs/%DATE%.log',
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
@@ -73,7 +73,7 @@ const dailyRotateFileTransport = new winston.transports.DailyRotateFile({
  * Transport for error logs
  * Stores error logs in a separate file
  */
-const errorFileTransport = new winston.transports.DailyRotateFile({
+const errorFileTransport = new DailyRotateFile({
     filename: 'logs/error-%DATE%.log',
     datePattern: 'YYYY-MM-DD',
     level: 'error',
