@@ -129,6 +129,7 @@ export class TokenManager {
      * Validates a JWT token with enhanced security checks
      */
     static validateToken(token: string, ip?: string): { valid: boolean; error?: string } {
+        // Check basic token format
         if (!token || typeof token !== 'string') {
             return { valid: false, error: 'Invalid token format' };
         }
@@ -139,34 +140,35 @@ export class TokenManager {
         }
 
         // Check for rate limiting
-        if (ip) {
-            const attempts = failedAttempts.get(ip);
-            if (attempts) {
-                const timeSinceLastAttempt = Date.now() - attempts.lastAttempt;
-                if (attempts.count >= SECURITY_CONFIG.MAX_FAILED_ATTEMPTS) {
-                    if (timeSinceLastAttempt < SECURITY_CONFIG.LOCKOUT_DURATION) {
-                        return { valid: false, error: 'Too many failed attempts. Please try again later.' };
-                    }
-                    // Reset after lockout period
-                    failedAttempts.delete(ip);
-                }
-            }
+        if (ip && this.isRateLimited(ip)) {
+            return { valid: false, error: 'Too many failed attempts. Please try again later.' };
+        }
+
+        // Get JWT secret
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            return { valid: false, error: 'JWT secret not configured' };
         }
 
         try {
-            const decoded = jwt.decode(token);
+            // Verify token signature and decode
+            const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
+
+            // Verify token structure
             if (!decoded || typeof decoded !== 'object') {
                 this.recordFailedAttempt(ip);
                 return { valid: false, error: 'Invalid token structure' };
             }
 
-            // Enhanced expiration checks
+            // Check required claims
             if (!decoded.exp || !decoded.iat) {
                 this.recordFailedAttempt(ip);
                 return { valid: false, error: 'Token missing required claims' };
             }
 
             const now = Math.floor(Date.now() / 1000);
+
+            // Check expiration
             if (decoded.exp <= now) {
                 this.recordFailedAttempt(ip);
                 return { valid: false, error: 'Token has expired' };
@@ -179,27 +181,41 @@ export class TokenManager {
                 return { valid: false, error: 'Token exceeds maximum age limit' };
             }
 
-            // Verify signature
-            const secret = process.env.JWT_SECRET;
-            if (!secret) {
-                return { valid: false, error: 'JWT secret not configured' };
+            // Reset failed attempts on successful validation
+            if (ip) {
+                failedAttempts.delete(ip);
             }
 
-            try {
-                jwt.verify(token, secret);
-                // Reset failed attempts on successful validation
-                if (ip) {
-                    failedAttempts.delete(ip);
-                }
-                return { valid: true };
-            } catch (error) {
-                this.recordFailedAttempt(ip);
-                return { valid: false, error: 'Invalid token signature' };
-            }
+            return { valid: true };
         } catch (error) {
             this.recordFailedAttempt(ip);
+            if (error instanceof jwt.JsonWebTokenError) {
+                return { valid: false, error: 'Invalid token signature' };
+            }
+            if (error instanceof jwt.TokenExpiredError) {
+                return { valid: false, error: 'Token has expired' };
+            }
             return { valid: false, error: 'Token validation failed' };
         }
+    }
+
+    /**
+     * Checks if an IP is rate limited
+     */
+    private static isRateLimited(ip: string): boolean {
+        const attempts = failedAttempts.get(ip);
+        if (!attempts) return false;
+
+        const now = Date.now();
+        const timeSinceLastAttempt = now - attempts.lastAttempt;
+
+        // Reset if outside lockout period
+        if (timeSinceLastAttempt >= SECURITY_CONFIG.LOCKOUT_DURATION) {
+            failedAttempts.delete(ip);
+            return false;
+        }
+
+        return attempts.count >= SECURITY_CONFIG.MAX_FAILED_ATTEMPTS;
     }
 
     /**
@@ -208,18 +224,18 @@ export class TokenManager {
     private static recordFailedAttempt(ip?: string): void {
         if (!ip) return;
 
-        const attempts = failedAttempts.get(ip) || { count: 0, lastAttempt: 0 };
         const now = Date.now();
+        const attempts = failedAttempts.get(ip);
 
-        // Reset count if last attempt was outside lockout period
-        if (now - attempts.lastAttempt > SECURITY_CONFIG.LOCKOUT_DURATION) {
-            attempts.count = 1;
+        if (!attempts || (now - attempts.lastAttempt) >= SECURITY_CONFIG.LOCKOUT_DURATION) {
+            // First attempt or reset after lockout
+            failedAttempts.set(ip, { count: 1, lastAttempt: now });
         } else {
+            // Increment existing attempts
             attempts.count++;
+            attempts.lastAttempt = now;
+            failedAttempts.set(ip, attempts);
         }
-
-        attempts.lastAttempt = now;
-        failedAttempts.set(ip, attempts);
     }
 
     /**
@@ -231,15 +247,18 @@ export class TokenManager {
             throw new Error('JWT secret not configured');
         }
 
+        // Ensure we don't override system claims
+        const sanitizedPayload = { ...payload };
+        delete (sanitizedPayload as any).iat;
+        delete (sanitizedPayload as any).exp;
+
         return jwt.sign(
-            {
-                ...payload,
-                iat: Math.floor(Date.now() / 1000),
-            },
+            sanitizedPayload,
             secret,
             {
                 expiresIn: Math.floor(expiresIn / 1000),
-                algorithm: 'HS256'
+                algorithm: 'HS256',
+                notBefore: 0 // Token is valid immediately
             }
         );
     }
