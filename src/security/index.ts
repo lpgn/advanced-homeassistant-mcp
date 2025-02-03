@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { HelmetOptions } from 'helmet';
+import jwt from 'jsonwebtoken';
 
 // Security configuration
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
@@ -42,83 +43,112 @@ const helmetConfig: HelmetOptions = {
 // Security headers middleware
 export const securityHeaders = helmet(helmetConfig);
 
-// Token validation and encryption
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 16;
+const AUTH_TAG_LENGTH = 16;
+
 export class TokenManager {
-    private static readonly algorithm = 'aes-256-gcm';
-    private static readonly keyLength = 32;
-    private static readonly ivLength = 16;
-    private static readonly saltLength = 64;
-    private static readonly tagLength = 16;
-    private static readonly iterations = 100000;
-    private static readonly digest = 'sha512';
-
-    private static deriveKey(password: string, salt: Buffer): Buffer {
-        return crypto.pbkdf2Sync(
-            password,
-            salt,
-            this.iterations,
-            this.keyLength,
-            this.digest
-        );
-    }
-
-    public static encryptToken(token: string, encryptionKey: string): string {
-        const iv = crypto.randomBytes(this.ivLength);
-        const salt = crypto.randomBytes(this.saltLength);
-        const key = this.deriveKey(encryptionKey, salt);
-        const cipher = crypto.createCipheriv(this.algorithm, key, iv, {
-            authTagLength: this.tagLength
-        });
-
-        const encrypted = Buffer.concat([
-            cipher.update(token, 'utf8'),
-            cipher.final()
-        ]);
-        const tag = cipher.getAuthTag();
-
-        return Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
-    }
-
-    public static decryptToken(encryptedToken: string, encryptionKey: string): string {
-        const buffer = Buffer.from(encryptedToken, 'base64');
-        const salt = buffer.subarray(0, this.saltLength);
-        const iv = buffer.subarray(this.saltLength, this.saltLength + this.ivLength);
-        const tag = buffer.subarray(
-            this.saltLength + this.ivLength,
-            this.saltLength + this.ivLength + this.tagLength
-        );
-        const encrypted = buffer.subarray(this.saltLength + this.ivLength + this.tagLength);
-        const key = this.deriveKey(encryptionKey, salt);
-
-        const decipher = crypto.createDecipheriv(this.algorithm, key, iv, {
-            authTagLength: this.tagLength
-        });
-        decipher.setAuthTag(tag);
-
-        return decipher.update(encrypted) + decipher.final('utf8');
-    }
-
-    public static validateToken(token: string): boolean {
-        if (!token) return false;
+    /**
+     * Encrypts a token using AES-256-GCM
+     */
+    static encryptToken(token: string, key: string): string {
+        if (!token || typeof token !== 'string') {
+            throw new Error('Invalid token');
+        }
+        if (!key || typeof key !== 'string' || key.length < 32) {
+            throw new Error('Invalid encryption key');
+        }
 
         try {
-            // Check token format
-            if (!/^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/.test(token)) {
+            const iv = crypto.randomBytes(IV_LENGTH);
+            const cipher = crypto.createCipheriv(ALGORITHM, key.slice(0, 32), iv);
+
+            const encrypted = Buffer.concat([
+                cipher.update(token, 'utf8'),
+                cipher.final()
+            ]);
+            const tag = cipher.getAuthTag();
+
+            // Format: algorithm:iv:tag:encrypted
+            return `${ALGORITHM}:${iv.toString('base64')}:${tag.toString('base64')}:${encrypted.toString('base64')}`;
+        } catch (error) {
+            throw new Error('Failed to encrypt token');
+        }
+    }
+
+    /**
+     * Decrypts a token using AES-256-GCM
+     */
+    static decryptToken(encryptedToken: string, key: string): string {
+        if (!encryptedToken || typeof encryptedToken !== 'string') {
+            throw new Error('Invalid encrypted token');
+        }
+        if (!key || typeof key !== 'string' || key.length < 32) {
+            throw new Error('Invalid encryption key');
+        }
+
+        try {
+            const [algorithm, ivBase64, tagBase64, encryptedBase64] = encryptedToken.split(':');
+
+            if (algorithm !== ALGORITHM || !ivBase64 || !tagBase64 || !encryptedBase64) {
+                throw new Error('Invalid encrypted token format');
+            }
+
+            const iv = Buffer.from(ivBase64, 'base64');
+            const tag = Buffer.from(tagBase64, 'base64');
+            const encrypted = Buffer.from(encryptedBase64, 'base64');
+
+            const decipher = crypto.createDecipheriv(ALGORITHM, key.slice(0, 32), iv);
+            decipher.setAuthTag(tag);
+
+            return Buffer.concat([
+                decipher.update(encrypted),
+                decipher.final()
+            ]).toString('utf8');
+        } catch (error) {
+            if (error instanceof Error && error.message === 'Invalid encrypted token format') {
+                throw error;
+            }
+            throw new Error('Invalid encrypted token');
+        }
+    }
+
+    /**
+     * Validates a JWT token
+     */
+    static validateToken(token: string): boolean {
+        if (!token || typeof token !== 'string') {
+            return false;
+        }
+
+        try {
+            const decoded = jwt.decode(token);
+            if (!decoded || typeof decoded !== 'object') {
                 return false;
             }
 
-            // Decode token parts
-            const [headerEncoded, payloadEncoded] = token.split('.');
-            const header = JSON.parse(Buffer.from(headerEncoded, 'base64').toString());
-            const payload = JSON.parse(Buffer.from(payloadEncoded, 'base64').toString());
-
-            // Check token expiry
-            if (payload.exp && Date.now() >= payload.exp * 1000) {
+            // Check for expiration
+            if (!decoded.exp) {
                 return false;
             }
 
-            // Additional checks can be added here
-            return true;
+            const now = Math.floor(Date.now() / 1000);
+            if (decoded.exp <= now) {
+                return false;
+            }
+
+            // Verify signature using the secret from environment variable
+            const secret = process.env.JWT_SECRET;
+            if (!secret) {
+                return false;
+            }
+
+            try {
+                jwt.verify(token, secret);
+                return true;
+            } catch {
+                return false;
+            }
         } catch {
             return false;
         }

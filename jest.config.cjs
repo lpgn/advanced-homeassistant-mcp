@@ -1,59 +1,28 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-    preset: 'ts-jest/presets/default-esm',
+    preset: 'ts-jest',
     testEnvironment: 'node',
-    extensionsToTreatAsEsm: ['.ts', '.mts'],
-    moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
-        '^(\\.{1,2}/.*)\\.ts$': '$1',
-        '^chalk$': '<rootDir>/node_modules/chalk/source/index.js',
-        '#ansi-styles': '<rootDir>/node_modules/ansi-styles/index.js',
-        '#supports-color': '<rootDir>/node_modules/supports-color/index.js'
-    },
+    resolver: './jest-resolver.cjs',
+    moduleFileExtensions: ['ts', 'js', 'json', 'node'],
     transform: {
-        '^.+\\.(ts|mts|js|mjs)$': [
-            'ts-jest',
-            {
-                useESM: true,
-                tsconfig: 'tsconfig.json'
-            },
-        ],
-    },
-    transformIgnorePatterns: [
-        'node_modules/(?!(@digital-alchemy|chalk|ansi-styles|supports-color)/.*)(?!.*\\.mjs$)'
-    ],
-    resolver: '<rootDir>/jest-resolver.cjs',
-    setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-    testMatch: [
-        '**/__tests__/helpers.test.ts',
-        '**/__tests__/schemas/devices.test.ts',
-        '**/__tests__/context/index.test.ts',
-        '**/__tests__/hass/index.test.ts',
-        '**/__tests__/api/index.test.ts'
-    ],
-    globals: {
-        'ts-jest': {
+        '^.+\\.ts$': ['ts-jest', {
             useESM: true,
-        },
+            tsconfig: 'tsconfig.json'
+        }]
     },
+    moduleNameMapper: {
+        '^(\\.{1,2}/.*)\\.js$': '$1'
+    },
+    testMatch: ['**/__tests__/**/*.test.ts'],
     collectCoverage: true,
     coverageDirectory: 'coverage',
-    coverageReporters: ['text', 'lcov', 'clover', 'html'],
-    collectCoverageFrom: [
-        'src/**/*.ts',
-        '!src/**/*.d.ts',
-        '!src/**/*.test.ts',
-        '!src/types/**/*',
-        '!src/polyfills.ts'
-    ],
     coverageThreshold: {
         global: {
+            statements: 50,
             branches: 50,
             functions: 50,
-            lines: 50,
-            statements: 50
+            lines: 50
         }
     },
-    verbose: true,
-    testTimeout: 30000
+    setupFilesAfterEnv: ['./jest.setup.ts']
 }; 

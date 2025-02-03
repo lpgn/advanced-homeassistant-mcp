@@ -3,15 +3,15 @@ import express from 'express';
 import request from 'supertest';
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import type { Entity } from '../../src/types/hass';
-import { TokenManager } from '../../src/security/index';
-import { MCP_SCHEMA } from '../../src/mcp/schema';
+import type { Entity } from '../../src/types/hass.js';
+import { TokenManager } from '../../src/security/index.js';
+import { MCP_SCHEMA } from '../../src/mcp/schema.js';
 
 // Load test environment variables
 config({ path: resolve(process.cwd(), '.env.test') });
 
 // Mock dependencies
-jest.mock('../../src/security/index', () => ({
+jest.mock('../../src/security/index.js', () => ({
     TokenManager: {
         validateToken: jest.fn().mockImplementation((token) => token === 'valid-test-token'),
     },
@@ -39,7 +39,7 @@ const mockEntity: Entity = {
 };
 
 // Mock Home Assistant module
-jest.mock('../../src/hass/index');
+jest.mock('../../src/hass/index.js');
 
 // Mock LiteMCP
 jest.mock('litemcp', () => ({

@@ -6,13 +6,36 @@ module.exports = (request, options) => {
         return path.resolve(__dirname, 'node_modules', request.replace('#', ''));
     }
 
-    // Handle .js extensions for TypeScript files
+    // Handle source files with .js extension
     if (request.endsWith('.js')) {
         const tsRequest = request.replace(/\.js$/, '.ts');
         try {
-            return options.defaultResolver(tsRequest, options);
+            return options.defaultResolver(tsRequest, {
+                ...options,
+                packageFilter: pkg => {
+                    if (pkg.type === 'module') {
+                        if (pkg.exports && pkg.exports.import) {
+                            pkg.main = pkg.exports.import;
+                        } else if (pkg.module) {
+                            pkg.main = pkg.module;
+                        }
+                    }
+                    return pkg;
+                }
+            });
         } catch (e) {
-            // If the .ts file doesn't exist, continue with the original request
+            // If the .ts file doesn't exist, try resolving without extension
+            try {
+                return options.defaultResolver(request.replace(/\.js$/, ''), options);
+            } catch (e2) {
+                // If that fails too, try resolving with .ts extension
+                try {
+                    return options.defaultResolver(tsRequest, options);
+                } catch (e3) {
+                    // If all attempts fail, try resolving the original request
+                    return options.defaultResolver(request, options);
+                }
+            }
         }
     }
 
@@ -38,12 +61,11 @@ module.exports = (request, options) => {
         }
     }
 
-    // Call the default resolver
+    // Call the default resolver with enhanced module resolution
     return options.defaultResolver(request, {
         ...options,
         // Handle ESM modules
         packageFilter: pkg => {
-            // Preserve ESM modules
             if (pkg.type === 'module') {
                 if (pkg.exports) {
                     if (pkg.exports.import) {
@@ -57,5 +79,7 @@ module.exports = (request, options) => {
             }
             return pkg;
         },
+        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+        paths: [...(options.paths || []), path.resolve(__dirname, 'src')]
     });
 }; 

@@ -7,8 +7,10 @@ dotenv.config({ path: '.env.test' });
 
 // Set test environment
 process.env.NODE_ENV = 'test';
+process.env.ENCRYPTION_KEY = 'test-encryption-key-32-bytes-long!!!';
+process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.HASS_URL = 'http://localhost:8123';
-process.env.HASS_TOKEN = 'test_token';
+process.env.HASS_TOKEN = 'test-token';
 process.env.CLAUDE_API_KEY = 'test_api_key';
 process.env.CLAUDE_MODEL = 'test_model';
 
@@ -81,4 +83,5 @@ beforeEach(() => {
 // Cleanup after tests
 afterEach(() => {
     jest.clearAllTimers();
+    jest.clearAllMocks();
 }); 

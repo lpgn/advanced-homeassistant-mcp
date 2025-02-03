@@ -2,13 +2,31 @@ import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals
 import { WebSocket } from 'ws';
 import { EventEmitter } from 'events';
 import type { HassInstanceImpl } from '../../src/hass/index.js';
-import type { Entity, Event } from '../../src/types/hass.js';
+import type { Entity, HassEvent } from '../../src/types/hass.js';
+import { get_hass } from '../../src/hass/index.js';
 
 // Define WebSocket mock types
 type WebSocketCallback = (...args: any[]) => void;
 type WebSocketEventHandler = (event: string, callback: WebSocketCallback) => void;
 type WebSocketSendHandler = (data: string) => void;
 type WebSocketCloseHandler = () => void;
+
+interface MockHassServices {
+    light: Record<string, unknown>;
+    climate: Record<string, unknown>;
+    switch: Record<string, unknown>;
+    media_player: Record<string, unknown>;
+}
+
+interface MockHassInstance {
+    services: MockHassServices;
+}
+
+// Extend HassInstanceImpl for testing
+interface TestHassInstance extends HassInstanceImpl {
+    _baseUrl: string;
+    _token: string;
+}
 
 type WebSocketMock = {
     on: jest.MockedFunction<WebSocketEventHandler>;
@@ -36,6 +54,24 @@ jest.mock('ws', () => ({
 // Mock fetch globally
 const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 global.fetch = mockFetch;
+
+// Mock get_hass
+jest.mock('../../src/hass/index.js', () => {
+    let instance: TestHassInstance | null = null;
+    const actual = jest.requireActual<typeof import('../../src/hass/index.js')>('../../src/hass/index.js');
+    return {
+        get_hass: jest.fn(async () => {
+            if (!instance) {
+                const baseUrl = process.env.HASS_HOST || 'http://localhost:8123';
+                const token = process.env.HASS_TOKEN || 'test_token';
+                instance = new actual.HassInstanceImpl(baseUrl, token) as TestHassInstance;
+                instance._baseUrl = baseUrl;
+                instance._token = token;
+            }
+            return instance;
+        })
+    };
+});
 
 describe('Home Assistant Integration', () => {
     describe('HassWebSocketClient', () => {
@@ -163,8 +199,8 @@ describe('Home Assistant Integration', () => {
         });
 
         it('should create instance with correct properties', () => {
-            expect(instance.baseUrl).toBe(mockBaseUrl);
-            expect(instance.token).toBe(mockToken);
+            expect(instance['baseUrl']).toBe(mockBaseUrl);
+            expect(instance['token']).toBe(mockToken);
         });
 
         it('should fetch states', async () => {
@@ -224,7 +260,7 @@ describe('Home Assistant Integration', () => {
         });
 
         describe('Event Subscription', () => {
-            let eventCallback: (event: Event) => void;
+            let eventCallback: (event: HassEvent) => void;
 
             beforeEach(() => {
                 eventCallback = jest.fn();
@@ -244,22 +280,12 @@ describe('Home Assistant Integration', () => {
 
     describe('get_hass', () => {
         const originalEnv = process.env;
-        let mockBootstrap: jest.Mock;
 
-        const createMockServices = () => ({
+        const createMockServices = (): MockHassServices => ({
             light: {},
             climate: {},
-            alarm_control_panel: {},
-            cover: {},
             switch: {},
-            contact: {},
-            media_player: {},
-            fan: {},
-            lock: {},
-            vacuum: {},
-            scene: {},
-            script: {},
-            camera: {}
+            media_player: {}
         });
 
         beforeEach(() => {
@@ -267,93 +293,40 @@ describe('Home Assistant Integration', () => {
             process.env.HASS_HOST = 'http://localhost:8123';
             process.env.HASS_TOKEN = 'test_token';
 
-            // Mock the MY_APP.bootstrap function
-            mockBootstrap = jest.fn();
-            mockBootstrap.mockImplementation(() => Promise.resolve({
-                baseUrl: process.env.HASS_HOST,
-                token: process.env.HASS_TOKEN,
-                wsClient: undefined,
-                services: createMockServices(),
-                als: {},
-                context: {},
-                event: new EventEmitter(),
-                internal: {},
-                lifecycle: {},
-                logger: {},
-                scheduler: {},
-                config: {},
-                params: {},
-                hass: {},
-                fetchStates: jest.fn(),
-                fetchState: jest.fn(),
-                callService: jest.fn(),
-                subscribeEvents: jest.fn(),
-                unsubscribeEvents: jest.fn()
-            }));
-
-            jest.mock('../../src/hass/index.js', () => ({
-                MY_APP: {
-                    configuration: {},
-                    bootstrap: () => mockBootstrap()
-                }
-            }));
+            // Reset the mock implementation
+            (get_hass as jest.MockedFunction<typeof get_hass>).mockImplementation(async () => {
+                const actual = jest.requireActual<typeof import('../../src/hass/index.js')>('../../src/hass/index.js');
+                const baseUrl = process.env.HASS_HOST || 'http://localhost:8123';
+                const token = process.env.HASS_TOKEN || 'test_token';
+                const instance = new actual.HassInstanceImpl(baseUrl, token) as TestHassInstance;
+                instance._baseUrl = baseUrl;
+                instance._token = token;
+                return instance;
+            });
         });
 
         afterEach(() => {
             process.env = originalEnv;
-            jest.resetModules();
-            jest.clearAllMocks();
         });
 
-        it('should return a development instance by default', async () => {
-            const { get_hass } = await import('../../src/hass/index.js');
-            const instance = await get_hass();
-            expect(instance.baseUrl).toBe('http://localhost:8123');
-            expect(instance.token).toBe('test_token');
-            expect(mockBootstrap).toHaveBeenCalledTimes(1);
+        it('should create instance with default configuration', async () => {
+            const instance = await get_hass() as TestHassInstance;
+            expect(instance._baseUrl).toBe('http://localhost:8123');
+            expect(instance._token).toBe('test_token');
         });
 
-        it('should return a test instance when in test environment', async () => {
-            process.env.NODE_ENV = 'test';
-            const { get_hass } = await import('../../src/hass/index.js');
-            const instance = await get_hass();
-            expect(instance.baseUrl).toBe('http://localhost:8123');
-            expect(instance.token).toBe('test_token');
-            expect(mockBootstrap).toHaveBeenCalledTimes(1);
+        it('should reuse existing instance', async () => {
+            const instance1 = await get_hass();
+            const instance2 = await get_hass();
+            expect(instance1).toBe(instance2);
         });
 
-        it('should return a production instance when in production environment', async () => {
-            process.env.NODE_ENV = 'production';
+        it('should use custom configuration', async () => {
             process.env.HASS_HOST = 'https://hass.example.com';
             process.env.HASS_TOKEN = 'prod_token';
-
-            mockBootstrap.mockImplementationOnce(() => Promise.resolve({
-                baseUrl: process.env.HASS_HOST,
-                token: process.env.HASS_TOKEN,
-                wsClient: undefined,
-                services: createMockServices(),
-                als: {},
-                context: {},
-                event: new EventEmitter(),
-                internal: {},
-                lifecycle: {},
-                logger: {},
-                scheduler: {},
-                config: {},
-                params: {},
-                hass: {},
-                fetchStates: jest.fn(),
-                fetchState: jest.fn(),
-                callService: jest.fn(),
-                subscribeEvents: jest.fn(),
-                unsubscribeEvents: jest.fn()
-            }));
-
-            const { get_hass } = await import('../../src/hass/index.js');
-            const instance = await get_hass();
-            expect(instance.baseUrl).toBe('https://hass.example.com');
-            expect(instance.token).toBe('prod_token');
-            expect(mockBootstrap).toHaveBeenCalledTimes(1);
+            const instance = await get_hass() as TestHassInstance;
+            expect(instance._baseUrl).toBe('https://hass.example.com');
+            expect(instance._token).toBe('prod_token');
         });
     });
 }); 

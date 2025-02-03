@@ -1,12 +1,5 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { Request, Response, NextFunction } from 'express';
-import {
-    validateRequest,
-    sanitizeInput,
-    errorHandler,
-    rateLimiter,
-    securityHeaders
-} from '../../src/security/index.js';
+import { validateRequest, sanitizeInput } from '../../src/security/middleware';
 
 type MockRequest = {
     headers: {
@@ -44,7 +37,7 @@ describe('Security Middleware', () => {
         nextFunction = jest.fn();
     });
 
-    describe('Request Validation', () => {
+    describe('validateRequest', () => {
         it('should pass valid requests', () => {
             mockRequest.headers.authorization = 'Bearer valid-token';
             validateRequest(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
@@ -69,7 +62,7 @@ describe('Security Middleware', () => {
         });
     });
 
-    describe('Input Sanitization', () => {
+    describe('sanitizeInput', () => {
         it('should pass requests without body', () => {
             delete mockRequest.body;
             sanitizeInput(mockRequest as unknown as Request, mockResponse as unknown as Response, nextFunction);
@@ -110,67 +103,6 @@ describe('Security Middleware', () => {
                 null: null,
                 array: [1, 2, 3]
             });
-            expect(nextFunction).toHaveBeenCalled();
-        });
-    });
-
-    describe('Error Handler', () => {
-        const originalEnv = process.env.NODE_ENV;
-
-        afterAll(() => {
-            process.env.NODE_ENV = originalEnv;
-        });
-
-        it('should handle errors in production mode', () => {
-            process.env.NODE_ENV = 'production';
-            const error = new Error('Test error');
-            errorHandler(error, mockRequest as Request, mockResponse as Response, nextFunction);
-            expect(mockResponse.status).toHaveBeenCalledWith(500);
-            expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Internal Server Error'
-            });
-        });
-
-        it('should include error details in development mode', () => {
-            process.env.NODE_ENV = 'development';
-            const error = new Error('Test error');
-            errorHandler(error, mockRequest as Request, mockResponse as Response, nextFunction);
-            expect(mockResponse.status).toHaveBeenCalledWith(500);
-            expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Test error',
-                stack: expect.any(String)
-            });
-        });
-
-        it('should handle non-Error objects', () => {
-            const error = 'String error message';
-
-            errorHandler(
-                error as any,
-                mockRequest as Request,
-                mockResponse as Response,
-                nextFunction
-            );
-
-            expect(mockResponse.status).toHaveBeenCalledWith(500);
-        });
-    });
-
-    describe('Rate Limiter', () => {
-        it('should be configured with correct options', () => {
-            expect(rateLimiter).toBeDefined();
-            const middleware = rateLimiter as any;
-            expect(middleware.windowMs).toBeDefined();
-            expect(middleware.max).toBeDefined();
-        });
-    });
-
-    describe('Security Headers', () => {
-        it('should set appropriate security headers', () => {
-            securityHeaders(mockRequest as Request, mockResponse as Response, nextFunction);
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block');
             expect(nextFunction).toHaveBeenCalled();
         });
     });

@@ -1,6 +1,7 @@
-import { WebSocket } from 'ws';
-import { EventEmitter } from 'events';
+import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { HassWebSocketClient } from '../../src/websocket/client.js';
+import WebSocket from 'ws';
+import { EventEmitter } from 'events';
 import * as HomeAssistant from '../../src/types/hass.js';
 
 // Mock WebSocket
@@ -8,39 +9,130 @@ jest.mock('ws');
 
 describe('WebSocket Event Handling', () => {
     let client: HassWebSocketClient;
-    let mockWs: jest.Mocked<WebSocket>;
+    let mockWebSocket: jest.Mocked<WebSocket>;
     let eventEmitter: EventEmitter;
 
     beforeEach(() => {
-        // Setup mock WebSocket
+        // Clear all mocks
+        jest.clearAllMocks();
+
+        // Create event emitter for mocking WebSocket events
         eventEmitter = new EventEmitter();
-        mockWs = {
-            on: jest.fn((event, callback) => eventEmitter.on(event, callback)),
+
+        // Create mock WebSocket instance
+        mockWebSocket = {
+            on: jest.fn((event: string, listener: (...args: any[]) => void) => {
+                eventEmitter.on(event, listener);
+                return mockWebSocket;
+            }),
             send: jest.fn(),
             close: jest.fn(),
-            readyState: WebSocket.OPEN
+            readyState: WebSocket.OPEN,
+            removeAllListeners: jest.fn(),
+            // Add required WebSocket properties
+            binaryType: 'arraybuffer',
+            bufferedAmount: 0,
+            extensions: '',
+            protocol: '',
+            url: 'ws://test.com',
+            isPaused: () => false,
+            ping: jest.fn(),
+            pong: jest.fn(),
+            terminate: jest.fn()
         } as unknown as jest.Mocked<WebSocket>;
 
-        (WebSocket as jest.MockedClass<typeof WebSocket>).mockImplementation(() => mockWs);
+        // Mock WebSocket constructor
+        (WebSocket as unknown as jest.Mock).mockImplementation(() => mockWebSocket);
 
-        // Create client instance with required options
-        client = new HassWebSocketClient('ws://localhost:8123/api/websocket', 'test_token', {
-            autoReconnect: true,
-            maxReconnectAttempts: 3,
-            reconnectDelay: 100
-        });
+        // Create client instance
+        client = new HassWebSocketClient('ws://test.com', 'test-token');
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
         eventEmitter.removeAllListeners();
         client.disconnect();
+    });
+
+    it('should handle connection events', () => {
+        // Simulate open event
+        eventEmitter.emit('open');
+
+        // Verify authentication message was sent
+        expect(mockWebSocket.send).toHaveBeenCalledWith(
+            expect.stringContaining('"type":"auth"')
+        );
+    });
+
+    it('should handle authentication response', () => {
+        // Simulate auth_ok message
+        eventEmitter.emit('message', JSON.stringify({ type: 'auth_ok' }));
+
+        // Verify client is ready for commands
+        expect(mockWebSocket.readyState).toBe(WebSocket.OPEN);
+    });
+
+    it('should handle auth failure', () => {
+        // Simulate auth_invalid message
+        eventEmitter.emit('message', JSON.stringify({
+            type: 'auth_invalid',
+            message: 'Invalid token'
+        }));
+
+        // Verify client attempts to close connection
+        expect(mockWebSocket.close).toHaveBeenCalled();
+    });
+
+    it('should handle connection errors', () => {
+        // Create error spy
+        const errorSpy = jest.fn();
+        client.on('error', errorSpy);
+
+        // Simulate error
+        const testError = new Error('Test error');
+        eventEmitter.emit('error', testError);
+
+        // Verify error was handled
+        expect(errorSpy).toHaveBeenCalledWith(testError);
+    });
+
+    it('should handle disconnection', () => {
+        // Create close spy
+        const closeSpy = jest.fn();
+        client.on('close', closeSpy);
+
+        // Simulate close
+        eventEmitter.emit('close');
+
+        // Verify close was handled
+        expect(closeSpy).toHaveBeenCalled();
+    });
+
+    it('should handle event messages', () => {
+        // Create event spy
+        const eventSpy = jest.fn();
+        client.on('event', eventSpy);
+
+        // Simulate event message
+        const eventData = {
+            type: 'event',
+            event: {
+                event_type: 'state_changed',
+                data: {
+                    entity_id: 'light.test',
+                    new_state: { state: 'on' }
+                }
+            }
+        };
+        eventEmitter.emit('message', JSON.stringify(eventData));
+
+        // Verify event was handled
+        expect(eventSpy).toHaveBeenCalledWith(eventData.event);
     });
 
     describe('Connection Events', () => {
         it('should handle successful connection', (done) => {
             client.on('open', () => {
-                expect(mockWs.send).toHaveBeenCalled();
+                expect(mockWebSocket.send).toHaveBeenCalled();
                 done();
             });
 
@@ -59,7 +151,7 @@ describe('WebSocket Event Handling', () => {
 
         it('should handle connection close', (done) => {
             client.on('disconnected', () => {
-                expect(mockWs.close).toHaveBeenCalled();
+                expect(mockWebSocket.close).toHaveBeenCalled();
                 done();
             });
 
@@ -75,7 +167,7 @@ describe('WebSocket Event Handling', () => {
             };
 
             client.connect();
-            expect(mockWs.send).toHaveBeenCalledWith(JSON.stringify(authMessage));
+            expect(mockWebSocket.send).toHaveBeenCalledWith(JSON.stringify(authMessage));
         });
 
         it('should handle successful authentication', (done) => {
