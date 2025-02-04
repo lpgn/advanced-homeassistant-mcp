@@ -1,6 +1,6 @@
 # Home Assistant MCP Documentation
 
-Welcome to the Home Assistant MCP (Master Control Program) documentation. This documentation provides comprehensive information about setting up, configuring, and using the Home Assistant MCP.
+Welcome to the Home Assistant MCP (Model Context Protocol) documentation. This documentation provides comprehensive information about setting up, configuring, and using the Home Assistant MCP.
 
 ## Table of Contents
 

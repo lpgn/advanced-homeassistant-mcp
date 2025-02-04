@@ -1,6 +1,6 @@
 # Getting Started with Home Assistant MCP
 
-This guide will help you get started with the Home Assistant MCP (Master Control Program).
+This guide will help you get started with the Home Assistant MCP (Model Context Protocol).
 
 ## Prerequisites
 

@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide helps you diagnose and fix common issues with the Home Assistant MCP.
+This guide helps you diagnose and fix common issues with the Home Assistant Model Context Protocol (MCP).
 
 ## Common Issues
 
