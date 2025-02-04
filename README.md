@@ -122,6 +122,14 @@ For further technical details, check out our [Documentation Index](docs/index.md
 
 ## Installation 🛠
 
+### Installing via Smithery
+
+To install Home Assistant MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@jango-blockchained/advanced-homeassistant-mcp):
+
+```bash
+npx -y @smithery/cli install @jango-blockchained/advanced-homeassistant-mcp --client claude
+```
+
 ### 🐳 Docker Setup (Recommended)
 
 For a hassle-free, containerized deployment:
