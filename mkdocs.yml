@@ -1,0 +1,26 @@
+site_name: Project Documentation
+site_url: https://yourusername.github.io/your-repo-name/
+repo_url: https://github.com/yourusername/your-repo-name
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+  - Usage: usage.md
+  - Contributing: contributing.md 

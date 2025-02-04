@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="{{ site.lang | default: " en-US" }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% seo %}
+    <link rel="stylesheet" href="{{ " /assets/css/style.css?v=" | append: site.github.build_revision | relative_url }}">
+</head>
+
+<body>
+    <div class="wrapper">
+        <header>
+            <h1><a href="{{ " /" | absolute_url }}">{{ site.title | default: site.github.repository_name }}</a></h1>
+
+            {% if site.logo %}
+            <img src="{{site.logo | relative_url}}" alt="Logo" />
+            {% endif %}
+
+            <p>{{ site.description | default: site.github.project_tagline }}</p>
+
+            <p class="view"><a href="{{ site.github.repository_url }}">View the Project on GitHub <small>{{
+                        site.github.repository_nwo }}</small></a></p>
+
+            <nav class="main-nav">
+                <h3>Documentation</h3>
+                <ul>
+                    <li><a href="{{ '/getting-started' | relative_url }}">Getting Started</a></li>
+                    <li><a href="{{ '/api' | relative_url }}">API Reference</a></li>
+                    <li><a href="{{ '/sse-api' | relative_url }}">SSE API</a></li>
+                    <li><a href="{{ '/architecture' | relative_url }}">Architecture</a></li>
+                    <li><a href="{{ '/contributing' | relative_url }}">Contributing</a></li>
+                    <li><a href="{{ '/troubleshooting' | relative_url }}">Troubleshooting</a></li>
+                </ul>
+            </nav>
+        </header>
+        <section>
+            {{ content }}
+        </section>
+        <footer>
+            {% if site.github.is_project_page %}
+            <p>This project is maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a></p>
+            {% endif %}
+            <p><small>Hosted on GitHub Pages &mdash; Theme by <a
+                        href="https://github.com/orderedlist">orderedlist</a></small></p>
+        </footer>
+    </div>
+    <script src="{{ " /assets/js/scale.fix.js" | relative_url }}"></script>
+</body>
+
+</html>

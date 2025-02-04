@@ -79,3 +79,12 @@ coverage/
 .bun/
 .cursorconfig
 bun.lockb
+
+# MkDocs
+site/
+.site/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

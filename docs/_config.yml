@@ -1,0 +1,26 @@
+title: Model Context Protocol (MCP)
+description: A bridge between Home Assistant and Language Learning Models
+theme: jekyll-theme-minimal
+markdown: kramdown
+plugins:
+  - jekyll-relative-links
+  - jekyll-seo-tag
+
+# Enable relative links
+relative_links:
+  enabled: true
+  collections: true
+
+# Navigation structure
+header_pages:
+  - index.md
+  - getting-started.md
+  - api.md
+  - contributing.md
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor 
