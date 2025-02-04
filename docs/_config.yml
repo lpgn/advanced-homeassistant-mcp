@@ -16,7 +16,39 @@ header_pages:
   - index.md
   - getting-started.md
   - api.md
+  - usage.md
+  - tools/tools.md
+  - development/development.md
+  - troubleshooting.md
   - contributing.md
+  - roadmap.md
+
+# Collections
+collections:
+  tools:
+    output: true
+    permalink: /:collection/:name
+  development:
+    output: true
+    permalink: /:collection/:name
+
+# Default layouts
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: "tools"
+      type: "tools"
+    values:
+      layout: "default"
+  - scope:
+      path: "development"
+      type: "development"
+    values:
+      layout: "default"
 
 # Exclude files from processing
 exclude:
