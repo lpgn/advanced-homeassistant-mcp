@@ -1,4 +1,105 @@
-# API Reference
+# API Documentation
+
+This section details the available API endpoints for the Home Assistant MCP Server.
+
+## Device Control
+
+### Common Entity Controls
+
+```json
+{
+  "tool": "control",
+  "command": "turn_on",  // Options: "turn_on", "turn_off", "toggle"
+  "entity_id": "light.living_room"
+}
+```
+
+### Light Control
+
+```json
+{
+  "tool": "control",
+  "command": "turn_on",
+  "entity_id": "light.living_room",
+  "brightness": 128,
+  "color_temp": 4000,
+  "rgb_color": [255, 0, 0]
+}
+```
+
+## Add-on Management
+
+### List Available Add-ons
+
+```json
+{
+  "tool": "addon",
+  "action": "list"
+}
+```
+
+### Install Add-on
+
+```json
+{
+  "tool": "addon",
+  "action": "install",
+  "slug": "core_configurator",
+  "version": "5.6.0"
+}
+```
+
+### Manage Add-on State
+
+```json
+{
+  "tool": "addon",
+  "action": "start",  // Options: "start", "stop", "restart"
+  "slug": "core_configurator"
+}
+```
+
+## Package Management
+
+### List HACS Packages
+
+```json
+{
+  "tool": "package",
+  "action": "list",
+  "category": "integration"  // Options: "integration", "plugin", "theme", "python_script", "appdaemon", "netdaemon"
+}
+```
+
+### Install Package
+
+```json
+{
+  "tool": "package",
+  "action": "install",
+  "category": "integration",
+  "repository": "hacs/integration",
+  "version": "1.32.0"
+}
+```
+
+## Automation Management
+
+For automation management details and endpoints, please refer to the [Tools Documentation](tools/README.md).
+
+## Security Considerations
+
+- Validate and sanitize all user inputs.
+- Enforce rate limiting to prevent abuse.
+- Apply proper security headers.
+- Gracefully handle errors based on the environment.
+
+## Troubleshooting
+
+If you experience issues with the API:
+- Verify the endpoint and request payload.
+- Check authentication tokens and required headers.
+- Consult the [Troubleshooting Guide](troubleshooting.md) for further guidance.
 
 ## MCP Schema Endpoint
 
@@ -42,119 +143,6 @@ Example response:
 ```
 
 Note: The `/mcp` endpoint is publicly accessible and does not require authentication, as it only provides schema information.
-
-## Device Control
-
-### Common Entity Controls
-```json
-{
-  "tool": "control",
-  "command": "turn_on",  // or "turn_off", "toggle"
-  "entity_id": "light.living_room"
-}
-```
-
-### Light Control
-```json
-{
-  "tool": "control",
-  "command": "turn_on",
-  "entity_id": "light.living_room",
-  "brightness": 128,
-  "color_temp": 4000,
-  "rgb_color": [255, 0, 0]
-}
-```
-
-## Add-on Management
-
-### List Available Add-ons
-```json
-{
-  "tool": "addon",
-  "action": "list"
-}
-```
-
-### Install Add-on
-```json
-{
-  "tool": "addon",
-  "action": "install",
-  "slug": "core_configurator",
-  "version": "5.6.0"
-}
-```
-
-### Manage Add-on State
-```json
-{
-  "tool": "addon",
-  "action": "start",  // or "stop", "restart"
-  "slug": "core_configurator"
-}
-```
-
-## Package Management
-
-### List HACS Packages
-```json
-{
-  "tool": "package",
-  "action": "list",
-  "category": "integration"  // or "plugin", "theme", "python_script", "appdaemon", "netdaemon"
-}
-```
-
-### Install Package
-```json
-{
-  "tool": "package",
-  "action": "install",
-  "category": "integration",
-  "repository": "hacs/integration",
-  "version": "1.32.0"
-}
-```
-
-## Automation Management
-
-### Create Automation
-```json
-{
-  "tool": "automation_config",
-  "action": "create",
-  "config": {
-    "alias": "Motion Light",
-    "description": "Turn on light when motion detected",
-    "mode": "single",
-    "trigger": [
-      {
-        "platform": "state",
-        "entity_id": "binary_sensor.motion",
-        "to": "on"
-      }
-    ],
-    "action": [
-      {
-        "service": "light.turn_on",
-        "target": {
-          "entity_id": "light.living_room"
-        }
-      }
-    ]
-  }
-}
-```
-
-### Duplicate Automation
-```json
-{
-  "tool": "automation_config",
-  "action": "duplicate",
-  "automation_id": "automation.motion_light"
-}
-```
 
 ## Core Functions
 

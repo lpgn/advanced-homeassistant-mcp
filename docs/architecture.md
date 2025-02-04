@@ -43,3 +43,26 @@ The MCP Server is designed as a high-performance, secure, and scalable bridge be
 The architecture of the MCP Server prioritizes performance, scalability, and security. By leveraging Bun's high-performance runtime, employing real-time communication through SSE, and maintaining a modular, secure design, the MCP Server provides a robust platform for integrating Home Assistant with modern LLM functionalities.
 
 *This document is a living document and will be updated as the system evolves.* 
+
+## Key Components
+
+- **API Module:** Handles RESTful endpoints, authentication, and error management.
+- **SSE Module:** Provides real-time updates through Server-Sent Events.
+- **Tools Module:** Offers various utilities for device control, automation, and data processing.
+- **Security Module:** Implements token-based authentication and secure communications.
+- **Integration Module:** Bridges data between Home Assistant and external systems.
+
+## Data Flow
+
+1. Requests enter via the API endpoints.
+2. Security middleware validates and processes requests.
+3. Core modules process data and execute the necessary business logic.
+4. Real-time notifications are managed by the SSE module.
+
+## Future Enhancements
+
+- Expand modularity with potential microservices.
+- Enhance security with multi-factor authentication.
+- Improve scalability through distributed architectures.
+
+*Further diagrams and detailed breakdowns will be added in future updates.* 

@@ -7,49 +7,49 @@
 bun test                    # Run all tests
 bun test --watch           # Run tests in watch mode
 bun test --coverage        # Run tests with coverage
-bun test path/to/test.ts   # Run specific test file
+bun test path/to/test.ts   # Run a specific test file
 
 # Additional Options
 DEBUG=true bun test        # Run with debug output
-bun test --pattern "auth"  # Run tests matching pattern
-bun test --timeout 60000   # Run with custom timeout
+bun test --pattern "auth"  # Run tests matching a pattern
+bun test --timeout 60000   # Run with a custom timeout
 ```
 
 ## Overview
 
-This document describes the testing setup and practices used in the Home Assistant MCP project. The project uses Bun's test runner for unit and integration testing, with a comprehensive test suite covering security, SSE (Server-Sent Events), middleware, and other core functionalities.
+This document describes the testing setup and practices used in the Home Assistant MCP project. We use Bun's test runner for both unit and integration testing, ensuring comprehensive coverage across modules.
 
 ## Test Structure
 
 Tests are organized in two main locations:
 
 1. **Root Level Integration Tests** (`/__tests__/`):
-   ```
-   __tests__/
-   ├── ai/              # AI/ML component tests
-   ├── api/             # API integration tests
-   ├── context/         # Context management tests
-   ├── hass/           # Home Assistant integration tests
-   ├── schemas/         # Schema validation tests
-   ├── security/        # Security integration tests
-   ├── tools/          # Tools and utilities tests
-   ├── websocket/      # WebSocket integration tests
-   ├── helpers.test.ts # Helper function tests
-   ├── index.test.ts   # Main application tests
-   └── server.test.ts  # Server integration tests
-   ```
+
+```
+__tests__/
+├── ai/              # AI/ML component tests
+├── api/             # API integration tests
+├── context/         # Context management tests
+├── hass/            # Home Assistant integration tests
+├── schemas/         # Schema validation tests
+├── security/        # Security integration tests
+├── tools/           # Tools and utilities tests
+├── websocket/       # WebSocket integration tests
+├── helpers.test.ts  # Helper function tests
+├── index.test.ts    # Main application tests
+└── server.test.ts   # Server integration tests
+```
 
 2. **Component Level Unit Tests** (`src/**/`):
-   ```
-   src/
-   ├── __tests__/           # Global test setup and utilities
-   │   └── setup.ts        # Global test configuration
-   ├── component/
-   │   ├── __tests__/      # Component-specific unit tests
-   │   └── component.ts
-   ```
 
-The root level `__tests__` directory contains integration and end-to-end tests that verify the interaction between different components of the system, while the component-level tests focus on unit testing individual modules.
+```
+src/
+├── __tests__/   # Global test setup and utilities
+│   └── setup.ts # Global test configuration
+├── component/
+│   ├── __tests__/   # Component-specific unit tests
+│   └── component.ts
+```
 
 ## Test Configuration
 
@@ -88,25 +88,20 @@ bun run format
 
 ### Global Configuration
 
-The project uses a global test setup file (`src/__tests__/setup.ts`) that provides:
-
+A global test setup file (`src/__tests__/setup.ts`) provides:
 - Environment configuration
 - Mock utilities
 - Test helper functions
-- Global test lifecycle hooks
+- Global lifecycle hooks
 
 ### Test Environment
 
-Tests run with the following configuration:
-
-- Environment variables are loaded from `.env.test`
-- Console output is suppressed during tests (unless DEBUG=true)
-- JWT secrets and tokens are automatically configured for testing
-- Rate limiting and other security features are properly initialized
+- Environment variables are loaded from `.env.test`.
+- Console output is minimized unless `DEBUG=true`.
+- JWT secrets and tokens are preconfigured for testing.
+- Rate limiting and security features are initialized appropriately.
 
 ## Running Tests
-
-To run the test suite:
 
 ```bash
 # Basic test run
@@ -115,7 +110,7 @@ bun test
 # Run tests with coverage
 bun test --coverage
 
-# Run specific test file
+# Run a specific test file
 bun test path/to/test.test.ts
 
 # Run tests in watch mode
@@ -131,82 +126,61 @@ bun test --timeout 60000
 bun test --pattern "auth"
 ```
 
-### Test Environment Setup
+## Advanced Debugging
 
-1. **Prerequisites**:
-   - Bun >= 1.0.0
-   - Node.js dependencies (see package.json)
+### Using Node Inspector
 
-2. **Environment Files**:
-   - `.env.test` - Test environment variables
-   - `.env.development` - Development environment variables
+```bash
+# Start tests with inspector
+bun test --inspect
 
-3. **Test Data**:
-   - Mock responses in `__tests__/mock-responses/`
-   - Test fixtures in `__tests__/fixtures/`
+# Start tests with inspector and break on first line
+bun test --inspect-brk
+```
 
-### Continuous Integration
+### Using VS Code
 
-The project uses GitHub Actions for CI/CD. Tests are automatically run on:
-- Pull requests
-- Pushes to main branch
-- Release tags
+Create a launch configuration in `.vscode/launch.json`:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "Debug Tests",
+      "program": "${workspaceFolder}/node_modules/bun/bin/bun",
+      "args": ["test", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "env": { "DEBUG": "true" }
+    }
+  ]
+}
+```
+
+### Test Isolation
+
+To run a single test in isolation:
+
+```typescript
+describe.only("specific test suite", () => {
+  it.only("specific test case", () => {
+    // Only this test will run
+  });
+});
+```
 
 ## Writing Tests
 
 ### Test File Naming
 
-- Test files should be placed in a `__tests__` directory adjacent to the code being tested
-- Test files should be named `*.test.ts`
-- Test files should mirror the structure of the source code
+- Place test files in a `__tests__` directory adjacent to the code being tested.
+- Name files with the pattern `*.test.ts`.
+- Mirror the structure of the source code in your test organization.
 
-### Test Structure
+### Example Test Structure
 
-```typescript
-import { describe, expect, it, beforeEach } from "bun:test";
-
-describe("Module Name", () => {
-  beforeEach(() => {
-    // Setup for each test
-  });
-
-  describe("Feature/Function Name", () => {
-    it("should do something specific", () => {
-      // Test implementation
-    });
-  });
-});
-```
-
-### Test Utilities
-
-The project provides several test utilities:
-
-```typescript
-import { testUtils } from "../__tests__/setup";
-
-// Available utilities:
-- mockWebSocket()      // Mock WebSocket for SSE tests
-- mockResponse()       // Mock HTTP response for API tests
-- mockRequest()        // Mock HTTP request for API tests
-- createTestClient()   // Create test SSE client
-- createTestEvent()    // Create test event
-- createTestEntity()   // Create test Home Assistant entity
-- wait()              // Helper to wait for async operations
-```
-
-## Testing Patterns
-
-### Security Testing
-
-Security tests cover:
-- Token validation and encryption
-- Rate limiting
-- Request validation
-- Input sanitization
-- Error handling
-
-Example:
 ```typescript
 describe("Security Features", () => {
   it("should validate tokens correctly", () => {
@@ -218,83 +192,17 @@ describe("Security Features", () => {
 });
 ```
 
-### SSE Testing
+## Coverage
 
-SSE tests cover:
-- Client authentication
-- Message broadcasting
-- Rate limiting
-- Subscription management
-- Client cleanup
+The project maintains strict coverage:
+- Overall coverage: at least 80%
+- Critical paths: 90%+
+- New features: ≥85% coverage
 
-Example:
-```typescript
-describe("SSE Features", () => {
-  it("should authenticate valid clients", () => {
-    const client = createTestClient("test-client");
-    const result = sseManager.addClient(client, validToken);
-    expect(result?.authenticated).toBe(true);
-  });
-});
-```
+Generate a coverage report with:
 
-### Middleware Testing
-
-Middleware tests cover:
-- Request validation
-- Input sanitization
-- Error handling
-- Response formatting
-
-Example:
-```typescript
-describe("Middleware", () => {
-  it("should sanitize HTML in request body", () => {
-    const req = mockRequest({
-      body: { text: '<script>alert("xss")</script>' }
-    });
-    sanitizeInput(req, res, next);
-    expect(req.body.text).toBe("");
-  });
-});
-```
-
-### Integration Testing
-
-Integration tests in the root `__tests__` directory cover:
-
-- **AI/ML Components**: Testing machine learning model integrations and predictions
-- **API Integration**: End-to-end API route testing
-- **Context Management**: Testing context persistence and state management
-- **Home Assistant Integration**: Testing communication with Home Assistant
-- **Schema Validation**: Testing data validation across the application
-- **Security Integration**: Testing security features in a full system context
-- **WebSocket Communication**: Testing real-time communication
-- **Server Integration**: Testing the complete server setup and configuration
-
-Example integration test:
-```typescript
-describe("API Integration", () => {
-  it("should handle a complete authentication flow", async () => {
-    // Setup test client
-    const client = await createTestClient();
-    
-    // Test registration
-    const regResponse = await client.register(testUser);
-    expect(regResponse.status).toBe(201);
-    
-    // Test authentication
-    const authResponse = await client.authenticate(testCredentials);
-    expect(authResponse.status).toBe(200);
-    expect(authResponse.body.token).toBeDefined();
-    
-    // Test protected endpoint access
-    const protectedResponse = await client.get("/api/protected", {
-      headers: { Authorization: `Bearer ${authResponse.body.token}` }
-    });
-    expect(protectedResponse.status).toBe(200);
-  });
-});
+```bash
+bun test --coverage
 ```
 
 ## Security Middleware Testing

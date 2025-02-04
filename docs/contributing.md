@@ -1,27 +1,27 @@
 # Contributing to Home Assistant MCP
 
-We welcome contributions from the community! Your help and feedback are essential to improving the MCP Server. Please review the following guidelines before contributing.
+We welcome community contributions to improve the MCP Server. Please review the following guidelines before contributing.
 
 ## How to Contribute
 
-1. **Fork the Repository**: Create your personal fork of the project on GitHub.
-2. **Create a Feature Branch**: Use clear branch names, e.g., `feature/your-feature` or `bugfix/short-description`.
-3. **Make Changes**: Develop your feature or fix bugs. Ensure your code follows the project's coding conventions.
-4. **Write Tests**: Include tests for new features or bug fixes. We aim for high code coverage.
-5. **Submit a Pull Request (PR)**: Once your changes are complete, submit a PR. Our team will review your request and provide feedback.
-6. **Address Feedback**: Make any necessary revisions based on code review feedback.
+1. **Fork the Repository:** Create your personal fork on GitHub.
+2. **Create a Feature Branch:** Use a clear name (e.g., `feature/your-feature` or `bugfix/short-description`).
+3. **Make Changes:** Develop your feature or fix bugs while following our coding standards.
+4. **Write Tests:** Include tests for new features or bug fixes.
+5. **Submit a Pull Request:** Once your changes are complete, submit a PR for review.
+6. **Address Feedback:** Revise your PR based on maintainers' suggestions.
 
 ## Code Style Guidelines
 
 - Follow the project's established coding style.
 - Use Bun tooling for linting and formatting:
-  - `bun run lint` for linting
-  - `bun run format` for formatting
+  - `bun run lint`
+  - `bun run format`
 
 ## Documentation
 
-- Update relevant documentation alongside your code changes.
-- Ensure that tests pass and coverage remains high.
+- Update documentation alongside your code changes.
+- Ensure tests pass and coverage remains high.
 
 ## Reporting Issues
 

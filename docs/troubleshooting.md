@@ -1,144 +1,135 @@
 # Troubleshooting Guide
 
-This guide helps you diagnose and fix common issues with the Home Assistant Model Context Protocol (MCP).
+This guide provides solutions to common issues encountered with the Home Assistant MCP Server.
 
 ## Common Issues
 
-### Connection Issues
+- **Server Not Starting:**
+  - Verify that all required environment variables are correctly set.
+  - Check for port conflicts or missing dependencies.
+  - Review the server logs for error details.
 
-#### Cannot Connect to Home Assistant
+- **Connection Problems:**
+  - Ensure your Home Assistant instance is reachable.
+  - Confirm that the authentication token is valid.
+  - Check network configurations and firewalls.
 
-**Symptoms:**
-- Connection timeout errors
-- "Failed to connect to Home Assistant" messages
-- 401 Unauthorized errors
+## Tool Issues
 
-**Solutions:**
-1. Verify Home Assistant is running
-2. Check HASS_HOST environment variable
-3. Validate HASS_TOKEN is correct
-4. Ensure network connectivity
-5. Check firewall settings
-
-#### SSE Connection Drops
+### Tool Not Found
 
 **Symptoms:**
-- Frequent disconnections
-- Missing events
-- Connection reset errors
+- "Tool not found" errors or 404 responses.
 
 **Solutions:**
-1. Check network stability
-2. Increase connection timeout
-3. Implement reconnection logic
-4. Monitor server resources
+- Double-check the tool name spelling.
+- Verify that the tool is correctly registered.
+- Review tool imports and documentation.
 
-### Authentication Issues
-
-#### Invalid Token
+### Tool Execution Failures
 
 **Symptoms:**
-- 401 Unauthorized responses
-- "Invalid token" messages
-- Authentication failures
+- Execution errors or timeouts.
 
 **Solutions:**
-1. Generate new Long-Lived Access Token
-2. Check token expiration
-3. Verify token format
-4. Update environment variables
+- Validate input parameters.
+- Check and review error logs.
+- Debug the tool implementation.
+- Ensure proper permissions in Home Assistant.
 
-#### Rate Limiting
-
-**Symptoms:**
-- 429 Too Many Requests
-- "Rate limit exceeded" messages
-
-**Solutions:**
-1. Implement request throttling
-2. Adjust rate limit settings
-3. Cache responses
-4. Optimize request patterns
-
-### Tool Issues
-
-#### Tool Not Found
-
-**Symptoms:**
-- "Tool not found" errors
-- 404 Not Found responses
-
-**Solutions:**
-1. Check tool name spelling
-2. Verify tool registration
-3. Update tool imports
-4. Check tool availability
-
-#### Tool Execution Fails
-
-**Symptoms:**
-- Tool execution errors
-- Unexpected responses
-- Timeout issues
-
-**Solutions:**
-1. Validate input parameters
-2. Check error logs
-3. Debug tool implementation
-4. Verify Home Assistant permissions
-
-## Debugging
+## Debugging Steps
 
 ### Server Logs
 
-1. Enable debug logging:
+1. Enable debug logging by setting:
    ```env
    LOG_LEVEL=debug
    ```
-
 2. Check logs:
    ```bash
    npm run logs
    ```
-
-3. Filter logs:
+3. Filter errors:
    ```bash
    npm run logs | grep "error"
    ```
 
 ### Network Debugging
 
-1. Check API endpoints:
+1. Test API endpoints:
    ```bash
    curl -v http://localhost:3000/api/health
    ```
-
 2. Monitor SSE connections:
    ```bash
    curl -N http://localhost:3000/api/sse/stats
    ```
-
-3. Test WebSocket:
+3. Test WebSocket connectivity:
    ```bash
    wscat -c ws://localhost:3000
    ```
 
 ### Performance Issues
 
-1. Monitor memory usage:
-   ```bash
-   npm run stats
-   ```
+- Monitor memory usage with:
+  ```bash
+  npm run stats
+  ```
 
-2. Check response times:
-   ```bash
-   curl -w "%{time_total}\n" -o /dev/null -s http://localhost:3000/api/health
-   ```
+## Security Middleware Troubleshooting
 
-3. Profile code:
-   ```bash
-   npm run profile
-   ```
+### Rate Limiting Problems
+
+**Symptoms:** Receiving 429 (Too Many Requests) errors.
+
+**Solutions:**
+- Adjust and fine-tune rate limit settings.
+- Consider different limits for critical versus non-critical endpoints.
+
+### Request Validation Failures
+
+**Symptoms:** 400 or 415 errors on valid requests.
+
+**Solutions:**
+- Verify that the `Content-Type` header is set correctly.
+- Inspect request payload size and format.
+
+### Input Sanitization Issues
+
+**Symptoms:** Unexpected data transformation or loss.
+
+**Solutions:**
+- Test sanitization with various input types.
+- Implement custom sanitization for complex data if needed.
+
+### Security Header Configuration
+
+**Symptoms:** Missing or improper security headers.
+
+**Solutions:**
+- Review and update security header configurations (e.g., Helmet settings).
+- Ensure environment-specific header settings are in place.
+
+### Error Handling and Logging
+
+**Symptoms:** Inconsistent error responses.
+
+**Solutions:**
+- Enhance logging for detailed error tracking.
+- Adjust error handlers for production and development differences.
+
+## Additional Resources
+
+- [OWASP Security Guidelines](https://owasp.org/www-project-top-ten/)
+- [Helmet.js Documentation](https://helmetjs.github.io/)
+- [JWT Security Best Practices](https://jwt.io/introduction)
+
+## Getting Help
+
+If issues persist:
+1. Review detailed logs.
+2. Verify your configuration and environment.
+3. Consult the GitHub issue tracker or community forums.
 
 ## FAQ
 

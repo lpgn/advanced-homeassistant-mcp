@@ -1,8 +1,6 @@
 # Home Assistant MCP Documentation
 
-Welcome to the Home Assistant MCP (Model Context Protocol) documentation. This documentation provides comprehensive information about setting up, configuring, and using the Home Assistant MCP.
-
-The main documentation can be found in our [Documentation Index](index.md).
+Welcome to the documentation for the Home Assistant MCP (Model Context Protocol) Server. Here you'll find comprehensive guides on setup, configuration, usage, and contribution.
 
 ## Quick Navigation
 
@@ -19,4 +17,4 @@ The main documentation can be found in our [Documentation Index](index.md).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details. 
+This project is licensed under the MIT License. See [LICENSE](../LICENSE) for details. 
