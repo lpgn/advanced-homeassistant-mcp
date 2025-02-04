@@ -28,9 +28,12 @@ CPU_QUOTA=$(( CPU_COUNT * 50000 ))  # Allow 50% CPU usage per core
 
 echo "Building with ${BUILD_MEM}MB memory limit and CPU quota ${CPU_QUOTA}"
 
+# Remove any existing lockfile
+rm -f bun.lockb
+
 # Build with resource limits, optimizations, and timeout
 echo "Building Docker image..."
-timeout 15m docker build \
+DOCKER_BUILDKIT=1 docker build \
     --memory="${BUILD_MEM}m" \
     --memory-swap="${BUILD_MEM}m" \
     --cpu-quota="${CPU_QUOTA}" \

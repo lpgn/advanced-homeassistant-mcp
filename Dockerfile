@@ -1,8 +1,11 @@
-# Use Bun as the base image with specific platform for better optimization
-FROM --platform=linux/amd64 oven/bun:1.2.2-slim as builder
+# Use Node.js as base for building
+FROM node:20-slim as builder
 
 # Set working directory
 WORKDIR /app
+
+# Install bun
+RUN npm install -g bun@1.0.25
 
 # Install only the minimal dependencies needed and clean up in the same layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -14,30 +17,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Set build-time environment variables
 ENV NODE_ENV=production \
-    NODE_OPTIONS="--max-old-space-size=2048" \
-    BUN_INSTALL_CACHE=false \
-    BUN_INSTALL_VERBOSE=true
+    NODE_OPTIONS="--max-old-space-size=2048"
 
 # Copy only package files first
 COPY package.json ./
-COPY tsconfig*.json ./
 
-# Install ALL dependencies (including devDependencies) for build
-RUN bun install --no-cache \
-    --no-progress \
-    && rm -rf ~/.bun/install/cache
+# Install dependencies without lockfile
+RUN bun install --no-cache
 
 # Copy source files and build
 COPY src ./src
+COPY tsconfig*.json ./
 RUN bun build ./src/index.ts --target=bun --minify --outdir=./dist
 
 # Create a smaller production image
-FROM --platform=linux/amd64 oven/bun:1.2.2-slim as runner
+FROM node:20-slim as runner
+
+# Install bun in production image
+RUN npm install -g bun@1.0.25
 
 # Set production environment variables
 ENV NODE_ENV=production \
-    NODE_OPTIONS="--max-old-space-size=1024" \
-    BUN_INSTALL_CACHE=false
+    NODE_OPTIONS="--max-old-space-size=1024"
 
 # Create a non-root user
 RUN addgroup --system --gid 1001 nodejs && \
