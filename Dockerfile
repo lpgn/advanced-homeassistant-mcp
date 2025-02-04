@@ -17,13 +17,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Set build-time environment variables
 ENV NODE_ENV=production \
-    NODE_OPTIONS="--max-old-space-size=2048"
+    NODE_OPTIONS="--max-old-space-size=2048" \
+    BUN_INSTALL_CACHE=0
 
 # Copy only package files first
 COPY package.json ./
 
-# Install dependencies without lockfile
-RUN bun install --no-cache
+# Install dependencies with a clean slate
+RUN rm -rf node_modules .bun bun.lockb && \
+    bun install --no-save
 
 # Copy source files and build
 COPY src ./src

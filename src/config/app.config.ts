@@ -24,7 +24,7 @@ config({ path: resolve(process.cwd(), envFile) });
  */
 export const AppConfigSchema = z.object({
   /** Server Configuration */
-  PORT: z.number().default(4000),
+  PORT: z.coerce.number().default(4000),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),

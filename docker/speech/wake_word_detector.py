@@ -31,7 +31,6 @@ class AudioProcessor:
     def __init__(self):
         # Initialize wake word detection model
         self.wake_word_model = Model(
-            custom_model_paths=None,  # Use default models
             inference_framework="onnx"  # Use ONNX for better performance
         )
 

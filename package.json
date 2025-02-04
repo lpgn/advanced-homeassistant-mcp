@@ -21,7 +21,6 @@
     "profile": "bun --inspect src/index.ts",
     "clean": "rm -rf dist .bun coverage",
     "typecheck": "bun x tsc --noEmit",
-    "preinstall": "bun install --frozen-lockfile",
     "example:speech": "bun run examples/speech-to-text-example.ts"
   },
   "dependencies": {

@@ -13,6 +13,7 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python dependencies with specific versions and CPU-only variants
+RUN pip install --no-cache-dir numpy==1.24.3
 RUN pip install --no-cache-dir torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir faster-whisper==0.10.0 openwakeword==0.4.0 pyaudio==0.2.14 sounddevice==0.4.6
 
