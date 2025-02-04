@@ -7,6 +7,8 @@ This guide provides information for developers who want to contribute to or exte
 ```
 homeassistant-mcp/
 ├── src/
+│   ├── __tests__/        # Test files
+│   ├── __mocks__/       # Mock files
 │   ├── api/           # API endpoints and route handlers
 │   ├── config/        # Configuration management
 │   ├── hass/         # Home Assistant integration

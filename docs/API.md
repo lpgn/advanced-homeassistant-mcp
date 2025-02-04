@@ -416,4 +416,140 @@ async function executeAction() {
   const data = await response.json();
   console.log('Action result:', data);
 }
-``` 
+```
+
+## Security Middleware
+
+### Overview
+
+The security middleware provides a comprehensive set of utility functions to enhance the security of the Home Assistant MCP application. These functions cover various aspects of web security, including:
+
+- Rate limiting
+- Request validation
+- Input sanitization
+- Security headers
+- Error handling
+
+### Utility Functions
+
+#### `checkRateLimit(ip: string, maxRequests?: number, windowMs?: number)`
+
+Manages rate limiting for IP addresses to prevent abuse.
+
+**Parameters**:
+- `ip`: IP address to track
+- `maxRequests`: Maximum number of requests allowed (default: 100)
+- `windowMs`: Time window for rate limiting (default: 15 minutes)
+
+**Returns**: `boolean` or throws an error if limit is exceeded
+
+**Example**:
+```typescript
+try {
+  checkRateLimit('127.0.0.1'); // Checks rate limit with default settings
+} catch (error) {
+  // Handle rate limit exceeded
+}
+```
+
+#### `validateRequestHeaders(request: Request, requiredContentType?: string)`
+
+Validates incoming HTTP request headers for security and compliance.
+
+**Parameters**:
+- `request`: The incoming HTTP request
+- `requiredContentType`: Expected content type (default: 'application/json')
+
+**Checks**:
+- Content type
+- Request body size
+- Authorization header (optional)
+
+**Example**:
+```typescript
+try {
+  validateRequestHeaders(request);
+} catch (error) {
+  // Handle validation errors
+}
+```
+
+#### `sanitizeValue(value: unknown)`
+
+Sanitizes input values to prevent XSS attacks.
+
+**Features**:
+- Escapes HTML tags
+- Handles nested objects and arrays
+- Preserves non-string values
+
+**Example**:
+```typescript
+const sanitized = sanitizeValue('<script>alert("xss")</script>');
+// Returns: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+```
+
+#### `applySecurityHeaders(request: Request, helmetConfig?: HelmetOptions)`
+
+Applies security headers to HTTP requests using Helmet.
+
+**Security Headers**:
+- Content Security Policy
+- X-Frame-Options
+- X-Content-Type-Options
+- Referrer Policy
+- HSTS (in production)
+
+**Example**:
+```typescript
+const headers = applySecurityHeaders(request);
+```
+
+#### `handleError(error: Error, env?: string)`
+
+Handles error responses with environment-specific details.
+
+**Modes**:
+- Production: Generic error message
+- Development: Detailed error with stack trace
+
+**Example**:
+```typescript
+const errorResponse = handleError(error, process.env.NODE_ENV);
+```
+
+### Middleware Usage
+
+These utility functions are integrated into Elysia middleware:
+
+```typescript
+const app = new Elysia()
+  .use(rateLimiter)      // Rate limiting
+  .use(validateRequest)  // Request validation
+  .use(sanitizeInput)    // Input sanitization
+  .use(securityHeaders)  // Security headers
+  .use(errorHandler)     // Error handling
+```
+
+### Best Practices
+
+1. Always validate and sanitize user inputs
+2. Use rate limiting to prevent abuse
+3. Apply security headers
+4. Handle errors gracefully
+5. Keep environment-specific error handling
+
+### Security Considerations
+
+- Configurable rate limits
+- XSS protection
+- Content security policies
+- Token validation
+- Error information exposure control
+
+### Troubleshooting
+
+- Ensure `JWT_SECRET` is set in environment
+- Check content type in requests
+- Monitor rate limit errors
+- Review error handling in different environments 

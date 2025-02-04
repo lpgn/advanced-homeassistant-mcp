@@ -1,47 +1,191 @@
 import crypto from "crypto";
-import { Request, Response, NextFunction } from "express";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { HelmetOptions } from "helmet";
 import jwt from "jsonwebtoken";
+import { Elysia, type Context } from "elysia";
 
 // Security configuration
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX = 100; // requests per window
 const TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
-// Rate limiting middleware
-export const rateLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW,
-  max: RATE_LIMIT_MAX,
-  message: "Too many requests from this IP, please try again later",
+// Rate limiting state
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+interface RequestContext {
+  request: Request;
+  set: Context['set'];
+}
+
+// Extracted rate limiting logic
+export function checkRateLimit(ip: string, maxRequests: number = RATE_LIMIT_MAX, windowMs: number = RATE_LIMIT_WINDOW) {
+  const now = Date.now();
+
+  const record = rateLimitStore.get(ip) || {
+    count: 0,
+    resetTime: now + windowMs,
+  };
+
+  if (now > record.resetTime) {
+    record.count = 0;
+    record.resetTime = now + windowMs;
+  }
+
+  record.count++;
+  rateLimitStore.set(ip, record);
+
+  if (record.count > maxRequests) {
+    throw new Error("Too many requests from this IP, please try again later");
+  }
+
+  return true;
+}
+
+// Rate limiting middleware for Elysia
+export const rateLimiter = new Elysia().derive(({ request }: RequestContext) => {
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
+  checkRateLimit(ip);
 });
 
-// Security configuration
-const helmetConfig: HelmetOptions = {
-  contentSecurityPolicy: {
-    useDefaults: true,
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "wss:", "https:"],
+// Extracted security headers logic
+export function applySecurityHeaders(request: Request, helmetConfig?: HelmetOptions) {
+  const config: HelmetOptions = helmetConfig || {
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "wss:", "https:"],
+      },
     },
-  },
-  dnsPrefetchControl: true,
-  frameguard: true,
-  hidePoweredBy: true,
-  hsts: true,
-  ieNoOpen: true,
-  noSniff: true,
-  referrerPolicy: {
-    policy: ["no-referrer", "strict-origin-when-cross-origin"],
-  },
-};
+    dnsPrefetchControl: true,
+    frameguard: true,
+    hidePoweredBy: true,
+    hsts: true,
+    ieNoOpen: true,
+    noSniff: true,
+    referrerPolicy: {
+      policy: ["no-referrer", "strict-origin-when-cross-origin"],
+    },
+  };
 
-// Security headers middleware
-export const securityHeaders = helmet(helmetConfig);
+  const headers = helmet(config);
+
+  // Apply helmet headers to the request
+  Object.entries(headers).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      request.headers.set(key, value);
+    }
+  });
+
+  return headers;
+}
+
+// Security headers middleware for Elysia
+export const securityHeaders = new Elysia().derive(({ request }: RequestContext) => {
+  applySecurityHeaders(request);
+});
+
+// Extracted request validation logic
+export function validateRequestHeaders(request: Request, requiredContentType = 'application/json') {
+  // Validate content type for POST/PUT/PATCH requests
+  if (["POST", "PUT", "PATCH"].includes(request.method)) {
+    const contentType = request.headers.get("content-type");
+    if (!contentType?.includes(requiredContentType)) {
+      throw new Error(`Content-Type must be ${requiredContentType}`);
+    }
+  }
+
+  // Validate request size
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && parseInt(contentLength) > 1024 * 1024) {
+    throw new Error("Request body too large");
+  }
+
+  // Validate authorization header if required
+  const authHeader = request.headers.get("authorization");
+  if (authHeader) {
+    const [type, token] = authHeader.split(" ");
+    if (type !== "Bearer" || !token) {
+      throw new Error("Invalid authorization header");
+    }
+
+    const ip = request.headers.get("x-forwarded-for");
+    const validation = TokenManager.validateToken(token, ip || undefined);
+    if (!validation.valid) {
+      throw new Error(validation.error || "Invalid token");
+    }
+  }
+
+  return true;
+}
+
+// Request validation middleware for Elysia
+export const validateRequest = new Elysia().derive(({ request }: RequestContext) => {
+  validateRequestHeaders(request);
+});
+
+// Extracted input sanitization logic
+export function sanitizeValue(value: unknown): unknown {
+  if (typeof value === "string") {
+    // Basic XSS protection
+    return value
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#x27;")
+      .replace(/\//g, "&#x2F;");
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(sanitizeValue);
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, sanitizeValue(v)])
+    );
+  }
+
+  return value;
+}
+
+// Input sanitization middleware for Elysia
+export const sanitizeInput = new Elysia().derive(async ({ request }: RequestContext) => {
+  if (["POST", "PUT", "PATCH"].includes(request.method)) {
+    const body = await request.json();
+    request.json = () => Promise.resolve(sanitizeValue(body));
+  }
+});
+
+// Extracted error handling logic
+export function handleError(error: Error, env: string = process.env.NODE_ENV || 'production') {
+  console.error("Error:", error);
+
+  const baseResponse = {
+    error: true,
+    message: "Internal server error",
+    timestamp: new Date().toISOString(),
+  };
+
+  if (env === 'development') {
+    return {
+      ...baseResponse,
+      error: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return baseResponse;
+}
+
+// Error handling middleware for Elysia
+export const errorHandler = new Elysia().onError(({ error, set }: { error: Error; set: Context['set'] }) => {
+  set.status = error instanceof jwt.JsonWebTokenError ? 401 : 500;
+  return handleError(error);
+});
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
@@ -275,137 +419,3 @@ export class TokenManager {
     });
   }
 }
-
-// Request validation middleware
-export function validateRequest(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Response | void {
-  // Skip validation for health and MCP schema endpoints
-  if (req.path === "/health" || req.path === "/mcp") {
-    return next();
-  }
-
-  // Validate content type for non-GET requests
-  if (["POST", "PUT", "PATCH"].includes(req.method)) {
-    const contentType = req.headers["content-type"] || "";
-    if (!contentType.toLowerCase().includes("application/json")) {
-      return res.status(415).json({
-        success: false,
-        message: "Unsupported Media Type",
-        error: "Content-Type must be application/json",
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-
-  // Validate authorization header
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized",
-      error: "Missing or invalid authorization header",
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  // Validate token
-  const token = authHeader.replace("Bearer ", "");
-  const validationResult = TokenManager.validateToken(token, req.ip);
-  if (!validationResult.valid) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized",
-      error: validationResult.error || "Invalid token",
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  // Validate request body for non-GET requests
-  if (["POST", "PUT", "PATCH"].includes(req.method)) {
-    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-      return res.status(400).json({
-        success: false,
-        message: "Bad Request",
-        error: "Invalid request body structure",
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Check request body size
-    const contentLength = parseInt(req.headers["content-length"] || "0", 10);
-    const maxSize = 1024 * 1024; // 1MB limit
-    if (contentLength > maxSize) {
-      return res.status(413).json({
-        success: false,
-        message: "Payload Too Large",
-        error: `Request body must not exceed ${maxSize} bytes`,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-
-  next();
-}
-
-// Input sanitization middleware
-export function sanitizeInput(req: Request, res: Response, next: NextFunction) {
-  if (!req.body) {
-    return next();
-  }
-
-  function sanitizeValue(value: unknown): unknown {
-    if (typeof value === "string") {
-      // Remove HTML tags and scripts more thoroughly
-      return value
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove script tags and content
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "") // Remove style tags and content
-        .replace(/<[^>]+>/g, "") // Remove remaining HTML tags
-        .replace(/javascript:/gi, "") // Remove javascript: protocol
-        .replace(/on\w+\s*=\s*(?:".*?"|'.*?'|[^"'>\s]+)/gi, "") // Remove event handlers
-        .trim();
-    }
-    if (Array.isArray(value)) {
-      return value.map((item) => sanitizeValue(item));
-    }
-    if (typeof value === "object" && value !== null) {
-      const sanitized: Record<string, unknown> = {};
-      for (const [key, val] of Object.entries(value)) {
-        sanitized[key] = sanitizeValue(val);
-      }
-      return sanitized;
-    }
-    return value;
-  }
-
-  req.body = sanitizeValue(req.body);
-  next();
-}
-
-// Error handling middleware
-export function errorHandler(
-  err: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
-  console.error(err.stack);
-  res.status(500).json({
-    error: "Internal Server Error",
-    message: process.env.NODE_ENV === "development" ? err.message : undefined,
-  });
-}
-
-// Export security middleware chain
-export const securityMiddleware = [
-  helmet(helmetConfig),
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-  }),
-  validateRequest,
-  sanitizeInput,
-  errorHandler,
-];

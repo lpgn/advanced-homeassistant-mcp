@@ -1,7 +1,9 @@
 import "./polyfills.js";
 import { config } from "dotenv";
 import { resolve } from "path";
-import express from "express";
+import { Elysia } from "elysia";
+import { cors } from "@elysiajs/cors";
+import { swagger } from "@elysiajs/swagger";
 import {
   rateLimiter,
   securityHeaders,
@@ -40,25 +42,6 @@ const HASS_TOKEN = process.env.HASS_TOKEN;
 const PORT = parseInt(process.env.PORT || "4000", 10);
 
 console.log("Initializing Home Assistant connection...");
-
-// Initialize Express app
-const app = express();
-
-// Apply security middleware
-app.use(securityHeaders);
-app.use(rateLimiter);
-app.use(express.json());
-app.use(validateRequest);
-app.use(sanitizeInput);
-
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    version: "0.1.0",
-  });
-});
 
 // Define Tool interface
 interface Tool {
@@ -131,35 +114,38 @@ const controlTool: Tool = {
 // Add the control tool to the array
 tools.push(controlTool);
 
+// Initialize Elysia app with middleware
+const app = new Elysia()
+  .use(cors())
+  .use(swagger())
+  .use(rateLimiter)
+  .use(securityHeaders)
+  .use(validateRequest)
+  .use(sanitizeInput)
+  .use(errorHandler);
+
+// Health check endpoint
+app.get("/health", () => ({
+  status: "ok",
+  timestamp: new Date().toISOString(),
+  version: "0.1.0",
+}));
+
 // Create API endpoints for each tool
 tools.forEach((tool) => {
-  app.post(`/api/tools/${tool.name}`, async (req, res) => {
-    try {
-      const result = await tool.execute(req.body);
-      res.json(result);
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
-      });
-    }
+  app.post(`/api/tools/${tool.name}`, async ({ body }: { body: Record<string, unknown> }) => {
+    const result = await tool.execute(body);
+    return result;
   });
 });
 
-// Error handling middleware
-app.use(errorHandler);
-
 // Start the server
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
 // Handle server shutdown
 process.on("SIGTERM", () => {
   console.log("Received SIGTERM. Shutting down gracefully...");
-  void server.close(() => {
-    console.log("Server closed");
-    process.exit(0);
-  });
+  process.exit(0);
 });

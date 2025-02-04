@@ -1,181 +1,156 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { Request, Response } from 'express';
-import { Mock } from 'bun:test';
+import { describe, it, expect } from 'bun:test';
 import {
-    validateRequest,
-    sanitizeInput,
-    errorHandler,
-    rateLimiter,
-    securityHeaders
+    checkRateLimit,
+    validateRequestHeaders,
+    sanitizeValue,
+    applySecurityHeaders,
+    handleError
 } from '../../src/security/index.js';
 
-interface MockRequest extends Partial<Request> {
-    headers: {
-        'content-type'?: string;
-        authorization?: string;
-    };
-    method: string;
-    body: any;
-    ip: string;
-    path: string;
-}
+describe('Security Middleware Utilities', () => {
+    describe('Rate Limiter', () => {
+        it('should allow requests under threshold', () => {
+            const ip = '127.0.0.1';
+            expect(() => checkRateLimit(ip, 10)).not.toThrow();
+        });
 
-interface MockResponse extends Partial<Response> {
-    status: Mock<(code: number) => MockResponse>;
-    json: Mock<(body: any) => MockResponse>;
-    setHeader: Mock<(name: string, value: string) => MockResponse>;
-    removeHeader: Mock<(name: string) => MockResponse>;
-}
+        it('should throw when requests exceed threshold', () => {
+            const ip = '127.0.0.2';
 
-describe('Security Middleware', () => {
-    let mockRequest: any;
-    let mockResponse: any;
-    let nextFunction: any;
+            // Simulate multiple requests
+            for (let i = 0; i < 11; i++) {
+                if (i < 10) {
+                    expect(() => checkRateLimit(ip, 10)).not.toThrow();
+                } else {
+                    expect(() => checkRateLimit(ip, 10)).toThrow('Too many requests from this IP, please try again later');
+                }
+            }
+        });
 
-    beforeEach(() => {
-        mockRequest = {
-            headers: {
-                'content-type': 'application/json'
-            },
-            method: 'POST',
-            body: {},
-            ip: '127.0.0.1',
-            path: '/api/test'
-        };
+        it('should reset rate limit after window expires', async () => {
+            const ip = '127.0.0.3';
 
-        mockResponse = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn().mockReturnThis(),
-            setHeader: jest.fn().mockReturnThis(),
-            removeHeader: jest.fn().mockReturnThis()
-        } as MockResponse;
+            // Simulate multiple requests
+            for (let i = 0; i < 11; i++) {
+                if (i < 10) {
+                    expect(() => checkRateLimit(ip, 10, 50)).not.toThrow();
+                }
+            }
 
-        nextFunction = jest.fn();
+            // Wait for rate limit window to expire
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Should be able to make requests again
+            expect(() => checkRateLimit(ip, 10, 50)).not.toThrow();
+        });
     });
 
     describe('Request Validation', () => {
-        it('should pass valid requests', () => {
-            mockRequest.headers.authorization = 'Bearer valid-token';
-            validateRequest(mockRequest, mockResponse, nextFunction);
-            expect(nextFunction).toHaveBeenCalled();
+        it('should validate content type', () => {
+            const mockRequest = new Request('http://localhost', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                }
+            });
+
+            expect(() => validateRequestHeaders(mockRequest)).not.toThrow();
         });
 
-        it('should reject requests without authorization header', () => {
-            validateRequest(mockRequest, mockResponse, nextFunction);
-            expect(mockResponse.status).toHaveBeenCalledWith(401);
-            expect(mockResponse.json).toHaveBeenCalledWith({
-                success: false,
-                message: 'Unauthorized',
-                error: 'Missing or invalid authorization header',
-                timestamp: expect.any(String)
+        it('should reject invalid content type', () => {
+            const mockRequest = new Request('http://localhost', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'text/plain'
+                }
             });
+
+            expect(() => validateRequestHeaders(mockRequest)).toThrow('Content-Type must be application/json');
         });
 
-        it('should reject requests with invalid authorization format', () => {
-            mockRequest.headers.authorization = 'invalid-format';
-            validateRequest(mockRequest, mockResponse, nextFunction);
-            expect(mockResponse.status).toHaveBeenCalledWith(401);
-            expect(mockResponse.json).toHaveBeenCalledWith({
-                success: false,
-                message: 'Unauthorized',
-                error: 'Missing or invalid authorization header',
-                timestamp: expect.any(String)
+        it('should reject large request bodies', () => {
+            const mockRequest = new Request('http://localhost', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json',
+                    'content-length': '2000000'
+                }
             });
+
+            expect(() => validateRequestHeaders(mockRequest)).toThrow('Request body too large');
         });
     });
 
     describe('Input Sanitization', () => {
-        it('should sanitize HTML in request body', () => {
-            mockRequest.body = {
+        it('should sanitize HTML tags', () => {
+            const input = '<script>alert("xss")</script>Hello';
+            const sanitized = sanitizeValue(input);
+            expect(sanitized).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;Hello');
+        });
+
+        it('should sanitize nested objects', () => {
+            const input = {
                 text: '<script>alert("xss")</script>Hello',
                 nested: {
                     html: '<img src="x" onerror="alert(1)">World'
                 }
             };
-            sanitizeInput(mockRequest, mockResponse, nextFunction);
-            expect(mockRequest.body.text).toBe('Hello');
-            expect(mockRequest.body.nested.html).toBe('World');
-            expect(nextFunction).toHaveBeenCalled();
-        });
-
-        it('should handle non-object bodies', () => {
-            mockRequest.body = '<p>text</p>';
-            sanitizeInput(mockRequest, mockResponse, nextFunction);
-            expect(mockRequest.body).toBe('text');
-            expect(nextFunction).toHaveBeenCalled();
+            const sanitized = sanitizeValue(input);
+            expect(sanitized).toEqual({
+                text: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;Hello',
+                nested: {
+                    html: '&lt;img src=&quot;x&quot; onerror=&quot;alert(1)&quot;&gt;World'
+                }
+            });
         });
 
         it('should preserve non-string values', () => {
-            mockRequest.body = {
+            const input = {
                 number: 123,
                 boolean: true,
                 array: [1, 2, 3]
             };
-            sanitizeInput(mockRequest, mockResponse, nextFunction);
-            expect(mockRequest.body).toEqual({
-                number: 123,
-                boolean: true,
-                array: [1, 2, 3]
-            });
-            expect(nextFunction).toHaveBeenCalled();
+            const sanitized = sanitizeValue(input);
+            expect(sanitized).toEqual(input);
         });
     });
 
-    describe('Error Handler', () => {
-        const originalEnv = process.env.NODE_ENV;
+    describe('Security Headers', () => {
+        it('should apply security headers', () => {
+            const mockRequest = new Request('http://localhost');
+            const headers = applySecurityHeaders(mockRequest);
 
-        afterAll(() => {
-            process.env.NODE_ENV = originalEnv;
+            expect(headers).toBeDefined();
+            expect(headers['content-security-policy']).toBeDefined();
+            expect(headers['x-frame-options']).toBeDefined();
+            expect(headers['x-content-type-options']).toBeDefined();
+            expect(headers['referrer-policy']).toBeDefined();
         });
+    });
 
+    describe('Error Handling', () => {
         it('should handle errors in production mode', () => {
-            process.env.NODE_ENV = 'production';
             const error = new Error('Test error');
-            errorHandler(error, mockRequest, mockResponse, nextFunction);
-            expect(mockResponse.status).toHaveBeenCalledWith(500);
-            expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Internal Server Error',
-                message: undefined,
+            const result = handleError(error, 'production');
+
+            expect(result).toEqual({
+                error: true,
+                message: 'Internal server error',
                 timestamp: expect.any(String)
             });
         });
 
         it('should include error details in development mode', () => {
-            process.env.NODE_ENV = 'development';
             const error = new Error('Test error');
-            errorHandler(error, mockRequest, mockResponse, nextFunction);
-            expect(mockResponse.status).toHaveBeenCalledWith(500);
-            expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Internal Server Error',
-                message: 'Test error',
-                stack: expect.any(String),
-                timestamp: expect.any(String)
+            const result = handleError(error, 'development');
+
+            expect(result).toEqual({
+                error: true,
+                message: 'Internal server error',
+                timestamp: expect.any(String),
+                error: 'Test error',
+                stack: expect.any(String)
             });
-        });
-
-        it('should handle non-Error objects', () => {
-            const error = 'String error message';
-            errorHandler(error as any, mockRequest, mockResponse, nextFunction);
-            expect(mockResponse.status).toHaveBeenCalledWith(500);
-        });
-    });
-
-    describe('Rate Limiter', () => {
-        it('should be configured with correct options', () => {
-            expect(rateLimiter).toBeDefined();
-            expect(rateLimiter.windowMs).toBeDefined();
-            expect(rateLimiter.max).toBeDefined();
-            expect(rateLimiter.message).toBeDefined();
-        });
-    });
-
-    describe('Security Headers', () => {
-        it('should set appropriate security headers', () => {
-            securityHeaders(mockRequest, mockResponse, nextFunction);
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
-            expect(mockResponse.setHeader).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block');
-            expect(nextFunction).toHaveBeenCalled();
         });
     });
 }); 
