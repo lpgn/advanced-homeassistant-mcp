@@ -32,7 +32,7 @@ Before you begin, ensure you have:
    ```env
    # Server Configuration
    PORT=3000
-   NODE_ENV=development
+   BUN_ENV=development
 
    # Home Assistant Configuration
    HASS_HOST=http://your-hass-instance:8123
@@ -47,7 +47,7 @@ Before you begin, ensure you have:
 ### Environment Variables
 
 - `PORT`: The port number for the MCP server (default: 3000)
-- `NODE_ENV`: The environment mode (development, production, test)
+- `BUN_ENV`: The environment mode (development, production, test)
 - `HASS_HOST`: Your Home Assistant instance URL
 - `HASS_TOKEN`: Your Home Assistant Long-Lived Access Token
 - `JWT_SECRET`: Secret key for JWT token generation
