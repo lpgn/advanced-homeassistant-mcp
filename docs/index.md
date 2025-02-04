@@ -8,7 +8,7 @@ nav_order: 1
 
 ## Overview
 
-The Model Context Protocol (MCP) Server is a cutting-edge bridge between Home Assistant and Language Learning Models (LLMs), designed to revolutionize smart home automation and control.
+The Model Context Protocol (MCP) Server is a cutting-edge bridge between Home Assistant and Language Learning Models (LLMs), designed to revolutionize smart home automation and control. This documentation provides comprehensive information about setting up, configuring, and using the Home Assistant MCP.
 
 ## Key Features
 
@@ -29,18 +29,59 @@ The Model Context Protocol (MCP) Server is a cutting-edge bridge between Home As
 
 ## Documentation
 
-- [Getting Started](getting-started.md) - Installation and basic setup
-- [API Reference](api.md) - Complete API documentation
-- [SSE API](sse-api.md) - Server-Sent Events API documentation
-- [Architecture](architecture.md) - System architecture and design
-- [Contributing](contributing.md) - How to contribute to the project
-- [Troubleshooting](troubleshooting.md) - Common issues and solutions
+### Core Documentation
+1. [Getting Started](getting-started.md)
+   - Installation and basic setup
+   - Configuration
+   - First Steps
+
+2. [API Reference](api.md)
+   - REST API Endpoints
+   - Authentication
+   - Error Handling
+
+3. [SSE API](sse-api.md)
+   - Event Subscriptions
+   - Real-time Updates
+   - Connection Management
+
+### Advanced Topics
+4. [Architecture](architecture.md)
+   - System Design
+   - Components
+   - Data Flow
+
+5. [Configuration](getting-started.md#configuration)
+   - Environment Variables
+   - Security Settings
+   - Performance Tuning
+
+6. [Development Guide](development/README.md)
+   - Project Structure
+   - Contributing Guidelines
+   - Testing
+
+7. [Troubleshooting](troubleshooting.md)
+   - Common Issues
+   - Debugging
+   - FAQ
+
+## Quick Links
+
+- [GitHub Repository](https://github.com/jango-blockchained/homeassistant-mcp)
+- [Issue Tracker](https://github.com/jango-blockchained/homeassistant-mcp/issues)
+- [Contributing Guide](contributing.md)
+- [Roadmap](roadmap.md)
 
 ## Community and Support
 
-- [GitHub Issues](https://github.com/jango-blockchained/homeassistant-mcp/issues) - Report bugs and request features
-- [GitHub Discussions](https://github.com/jango-blockchained/homeassistant-mcp/discussions) - Ask questions and share ideas
+If you need help or have questions:
+
+1. Check the [Troubleshooting Guide](troubleshooting.md)
+2. Search existing [Issues](https://github.com/jango-blockchained/homeassistant-mcp/issues)
+3. Join our [GitHub Discussions](https://github.com/jango-blockchained/homeassistant-mcp/discussions)
+4. Create a new issue if your problem isn't already reported
 
 ## License
 
-Licensed under the MIT License. See [LICENSE](https://github.com/jango-blockchained/homeassistant-mcp/blob/main/LICENSE) for details. 
+This project is licensed under the MIT License. See [LICENSE](https://github.com/jango-blockchained/homeassistant-mcp/blob/main/LICENSE) for details. 
