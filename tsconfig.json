@@ -10,24 +10,32 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "types": [
-      "bun-types"
+      "bun-types",
+      "@types/node",
+      "@types/ws",
+      "@types/jsonwebtoken",
+      "@types/sanitize-html"
     ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
     "src/**/*",
-    "__tests__/**/*"
+    "__tests__/**/*",
+    "*.d.ts"
   ],
   "exclude": [
     "node_modules",
