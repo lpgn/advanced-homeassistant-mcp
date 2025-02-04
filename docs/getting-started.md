@@ -4,7 +4,7 @@ Begin your journey with the Home Assistant MCP Server by following these steps:
 
 - **API Documentation:** Read the [API Documentation](api.md) for available endpoints.
 - **Real-Time Updates:** Learn about [Server-Sent Events](sse-api.md) for live communication.
-- **Tools:** Explore available [Tools](tools/README.md) for device control and automation.
+- **Tools:** Explore available [Tools](tools/tools.md) for device control and automation.
 - **Configuration:** Refer to the [Configuration Guide](configuration.md) for setup and advanced settings.
 
 ## Troubleshooting
@@ -19,7 +19,7 @@ If you encounter any issues:
 For contributors:
 1. Fork the repository.
 2. Create a feature branch.
-3. Follow the [Development Guide](development/README.md) for contribution guidelines.
+3. Follow the [Development Guide](development/development.md) for contribution guidelines.
 4. Submit a pull request with your enhancements.
 
 ## Support

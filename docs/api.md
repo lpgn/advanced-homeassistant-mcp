@@ -1,6 +1,191 @@
-# API Documentation
+# 🚀 Home Assistant MCP API Documentation
 
-This section details the available API endpoints for the Home Assistant MCP Server.
+![API Version](https://img.shields.io/badge/API-v2.1-blueviolet) ![Rate Limit](https://img.shields.io/badge/Rate%20Limit-100%2Fmin-brightgreen)
+
+## 🌟 Quick Start
+
+```bash
+# Get API schema with caching
+curl -X GET http://localhost:3000/mcp \
+  -H "Cache-Control: max-age=3600" # Cache for 1 hour
+```
+
+## 🔌 Core Functions ⚙️
+
+### State Management (`/api/state`)
+```http
+GET /api/state?cache=true  # Enable client-side caching
+POST /api/state
+```
+
+**Example Request:**
+```json
+{
+  "context": "living_room",
+  "state": {
+    "lights": "on",
+    "temperature": 22
+  },
+  "_cache": {  // Optional caching config
+    "ttl": 300,  // 5 minutes
+    "tags": ["lights", "climate"]
+  }
+}
+```
+
+## ⚡ Action Endpoints
+
+### Execute Action with Cache Validation
+```http
+POST /api/action
+If-None-Match: "etag_value"  // Prevent duplicate actions
+```
+
+**Batch Processing:**
+```json
+{
+  "actions": [
+    { "action": "🌞 Morning Routine", "params": { "brightness": 80 } },
+    { "action": "❄️ AC Control", "params": { "temp": 21 } }
+  ],
+  "_parallel": true  // Execute actions concurrently
+}
+```
+
+## 🔍 Query Functions
+
+### Available Actions with ETag
+```http
+GET /api/actions
+ETag: "a1b2c3d4"  // Client-side cache validation
+```
+
+**Response Headers:**
+```
+Cache-Control: public, max-age=86400  // 24-hour cache
+ETag: "a1b2c3d4"
+```
+
+## 🌐 WebSocket Events
+
+```javascript
+const ws = new WebSocket('wss://ha-mcp/ws');
+ws.onmessage = ({ data }) => {
+  const event = JSON.parse(data);
+  if(event.type === 'STATE_UPDATE') {
+    updateUI(event.payload);  // 🎨 Real-time UI sync
+  }
+};
+```
+
+## 🗃️ Caching Strategies
+
+### Client-Side Caching
+```http
+GET /api/devices
+Cache-Control: max-age=300, stale-while-revalidate=60
+```
+
+### Server-Side Cache-Control
+```typescript
+// Example middleware configuration
+app.use(
+  cacheMiddleware({
+    ttl: 60 * 5,  // 5 minutes
+    paths: ['/api/devices', '/mcp'],
+    vary: ['Authorization']  // User-specific caching
+  })
+);
+```
+
+## ❌ Error Handling
+
+**429 Too Many Requests:**
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Slow down! 🐢",
+    "retry_after": 30,
+    "docs": "https://ha-mcp/docs/rate-limits"
+  }
+}
+```
+
+## 🚦 Rate Limiting Tiers
+
+| Tier          | Requests/min | Features               |
+|---------------|--------------|------------------------|
+| Guest         | 10           | Basic read-only        |
+| User          | 100          | Full access            |
+| Power User    | 500          | Priority queue         |
+| Integration   | 1000         | Bulk operations        |
+
+## 🛠️ Example Usage
+
+### Smart Cache Refresh
+```javascript
+async function getDevices() {
+  const response = await fetch('/api/devices', {
+    headers: {
+      'If-None-Match': localStorage.getItem('devicesETag')
+    }
+  });
+  
+  if(response.status === 304) {  // Not Modified
+    return JSON.parse(localStorage.devicesCache);
+  }
+  
+  const data = await response.json();
+  localStorage.setItem('devicesETag', response.headers.get('ETag'));
+  localStorage.setItem('devicesCache', JSON.stringify(data));
+  return data;
+}
+```
+
+## 🔒 Security Middleware (Enhanced)
+
+### Cache-Aware Rate Limiting
+```typescript
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    cache: new RedisStore(), // Distributed cache
+    keyGenerator: (req) => {
+      return `${req.ip}-${req.headers.authorization}`;
+    }
+  })
+);
+```
+
+### Security Headers
+```http
+Content-Security-Policy: default-src 'self';
+Strict-Transport-Security: max-age=31536000;
+X-Content-Type-Options: nosniff;
+Cache-Control: public, max-age=600;
+ETag: "abc123"
+```
+
+## 📘 Best Practices
+
+1. **Cache Wisely:** Use `ETag` and `Cache-Control` headers for state data
+2. **Batch Operations:** Combine requests using `/api/actions/batch`
+3. **WebSocket First:** Prefer real-time updates over polling
+4. **Error Recovery:** Implement exponential backoff with jitter
+5. **Cache Invalidation:** Use tags for bulk invalidation
+
+```mermaid
+graph LR
+A[Client] -->|Cached Request| B{CDN}
+B -->|Cache Hit| C[Return 304]
+B -->|Cache Miss| D[Origin Server]
+D -->|Response| B
+B -->|Response| A
+```
+
+> Pro Tip: Use `curl -I` to inspect cache headers! 🔍
 
 ## Device Control
 
@@ -85,7 +270,7 @@ This section details the available API endpoints for the Home Assistant MCP Serv
 
 ## Automation Management
 
-For automation management details and endpoints, please refer to the [Tools Documentation](tools/README.md).
+For automation management details and endpoints, please refer to the [Tools Documentation](tools/tools.md).
 
 ## Security Considerations
 

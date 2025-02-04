@@ -158,7 +158,7 @@ A: Adjust SSE_MAX_CLIENTS in configuration or clean up stale connections.
 1. Documentation
    - [API Reference](./API.md)
    - [Configuration Guide](./configuration/README.md)
-   - [Development Guide](./development/README.md)
+   - [Development Guide](./development/development.md)
 
 2. Community
    - GitHub Issues

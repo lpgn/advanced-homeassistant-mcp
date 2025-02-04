@@ -4,6 +4,29 @@ title: Home
 nav_order: 1
 ---
 
+# 📚 Home Assistant MCP Documentation
+
+Welcome to the documentation for the Home Assistant MCP (Model Context Protocol) Server.
+
+## 📑 Documentation Index
+
+- [Getting Started Guide](getting-started.md)
+- [API Documentation](api.md)
+- [Troubleshooting](troubleshooting.md)
+- [Contributing Guide](contributing.md)
+
+For project overview, installation, and general information, please see our [main README](../README.md).
+
+## 🔗 Quick Links
+
+- [GitHub Repository](https://github.com/jango-blockchained/homeassistant-mcp)
+- [Issue Tracker](https://github.com/jango-blockchained/homeassistant-mcp/issues)
+- [GitHub Discussions](https://github.com/jango-blockchained/homeassistant-mcp/discussions)
+
+## 📝 License
+
+This project is licensed under the MIT License. See [LICENSE](../LICENSE) for details.
+
 # Model Context Protocol (MCP) Server
 
 ## Overview
@@ -56,7 +79,7 @@ The Model Context Protocol (MCP) Server is a cutting-edge bridge between Home As
    - Security Settings
    - Performance Tuning
 
-6. [Development Guide](development/README.md)
+6. [Development Guide](development/development.md)
    - Project Structure
    - Contributing Guidelines
    - Testing

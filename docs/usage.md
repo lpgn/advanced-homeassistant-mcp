@@ -21,13 +21,13 @@ This guide explains how to use the Home Assistant MCP Server for smart home devi
    - See [API Documentation](api.md) for details.
 
 2. **Tool Integrations:**
-   - Multiple tools are available (see [Tools Documentation](tools/README.md)), for tasks like automation management and notifications.
+   - Multiple tools are available (see [Tools Documentation](tools/tools.md)), for tasks like automation management and notifications.
 
 3. **Security Settings:**
    - Configure token-based authentication and environment variables as per the [Configuration Guide](getting-started/configuration.md).
 
 4. **Customization and Extensions:**
-   - Extend server functionality by developing new tools as outlined in the [Development Guide](development/README.md).
+   - Extend server functionality by developing new tools as outlined in the [Development Guide](development/development.md).
 
 ## Troubleshooting
 
