@@ -53,6 +53,9 @@ COPY --from=builder --chown=bunjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=bunjs:nodejs /app/node_modules ./node_modules
 COPY --chown=bunjs:nodejs package.json ./
 
+# Create logs directory with proper permissions
+RUN mkdir -p /app/logs && chown -R bunjs:nodejs /app/logs
+
 # Switch to non-root user
 USER bunjs
 
