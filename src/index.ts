@@ -25,6 +25,8 @@ import {
   climateCommands,
   type Command,
 } from "./commands.js";
+import { speechService } from "./speech/index.js";
+import { APP_CONFIG } from "./config/app.config.js";
 
 // Load environment variables based on NODE_ENV
 const envFile =
@@ -129,7 +131,18 @@ app.get("/health", () => ({
   status: "ok",
   timestamp: new Date().toISOString(),
   version: "0.1.0",
+  speech_enabled: APP_CONFIG.SPEECH.ENABLED,
+  wake_word_enabled: APP_CONFIG.SPEECH.WAKE_WORD_ENABLED,
+  speech_to_text_enabled: APP_CONFIG.SPEECH.SPEECH_TO_TEXT_ENABLED,
 }));
+
+// Initialize speech service if enabled
+if (APP_CONFIG.SPEECH.ENABLED) {
+  console.log("Initializing speech service...");
+  speechService.initialize().catch((error) => {
+    console.error("Failed to initialize speech service:", error);
+  });
+}
 
 // Create API endpoints for each tool
 tools.forEach((tool) => {
@@ -145,7 +158,12 @@ app.listen(PORT, () => {
 });
 
 // Handle server shutdown
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   console.log("Received SIGTERM. Shutting down gracefully...");
+  if (APP_CONFIG.SPEECH.ENABLED) {
+    await speechService.shutdown().catch((error) => {
+      console.error("Error shutting down speech service:", error);
+    });
+  }
   process.exit(0);
 });

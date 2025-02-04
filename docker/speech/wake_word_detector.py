@@ -7,6 +7,7 @@ import sounddevice as sd
 from openwakeword import Model
 from datetime import datetime
 import wave
+from faster_whisper import WhisperModel
 
 # Configuration
 SAMPLE_RATE = 16000
@@ -15,12 +16,29 @@ CHUNK_SIZE = 1024
 BUFFER_DURATION = 30  # seconds to keep in buffer
 DETECTION_THRESHOLD = 0.5
 
+# Wake word models to use
+WAKE_WORDS = ["hey_jarvis", "ok_google", "alexa"]
+
+# Initialize the ASR model
+asr_model = WhisperModel(
+    model_size_or_path=os.environ.get('ASR_MODEL', 'base.en'),
+    device="cpu",
+    compute_type="int8",
+    download_root=os.environ.get('ASR_MODEL_PATH', '/models')
+)
+
 class AudioProcessor:
     def __init__(self):
+        # Initialize wake word detection model
         self.wake_word_model = Model(
-            wakeword_models=["hey_jarvis", "ok_google", "alexa"],
-            model_path=os.environ.get('WAKEWORD_MODEL_PATH', '/models/wake_word')
+            custom_model_paths=None,  # Use default models
+            inference_framework="onnx"  # Use ONNX for better performance
         )
+
+        # Pre-load the wake word models
+        for wake_word in WAKE_WORDS:
+            self.wake_word_model.add_model(wake_word)
+
         self.audio_buffer = queue.Queue()
         self.recording = False
         self.buffer = np.zeros(SAMPLE_RATE * BUFFER_DURATION)
@@ -46,16 +64,16 @@ class AudioProcessor:
         prediction = self.wake_word_model.predict(audio_data)
         
         # Check if wake word detected
-        for wake_word, score in prediction.items():
-            if score > DETECTION_THRESHOLD:
-                print(f"Wake word detected: {wake_word} (confidence: {score:.2f})")
-                self.save_audio_segment()
+        for wake_word in WAKE_WORDS:
+            if prediction[wake_word] > DETECTION_THRESHOLD:
+                print(f"Wake word detected: {wake_word} (confidence: {prediction[wake_word]:.2f})")
+                self.save_audio_segment(wake_word)
                 break
 
-    def save_audio_segment(self):
+    def save_audio_segment(self, wake_word):
         """Save the audio buffer when wake word is detected"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"/audio/wake_word_{timestamp}.wav"
+        filename = f"/audio/wake_word_{wake_word}_{timestamp}.wav"
         
         # Save the audio buffer to a WAV file
         with wave.open(filename, 'wb') as wf:
@@ -68,28 +86,80 @@ class AudioProcessor:
             wf.writeframes(audio_data.tobytes())
         
         print(f"Saved audio segment to {filename}")
-        
-        # Write metadata
-        metadata = {
-            "timestamp": timestamp,
-            "sample_rate": SAMPLE_RATE,
-            "channels": CHANNELS,
-            "duration": BUFFER_DURATION
-        }
-        
-        with open(f"{filename}.json", 'w') as f:
-            json.dump(metadata, f, indent=2)
+
+        # Transcribe the audio
+        try:
+            segments, info = asr_model.transcribe(
+                filename,
+                language="en",
+                beam_size=5,
+                temperature=0
+            )
+            
+            # Format the transcription result
+            result = {
+                "text": " ".join(segment.text for segment in segments),
+                "segments": [
+                    {
+                        "text": segment.text,
+                        "start": segment.start,
+                        "end": segment.end,
+                        "confidence": segment.confidence
+                    }
+                    for segment in segments
+                ]
+            }
+            
+            # Save metadata and transcription
+            metadata = {
+                "timestamp": timestamp,
+                "wake_word": wake_word,
+                "wake_word_confidence": float(prediction[wake_word]),
+                "sample_rate": SAMPLE_RATE,
+                "channels": CHANNELS,
+                "duration": BUFFER_DURATION,
+                "transcription": result
+            }
+            
+            with open(f"{filename}.json", 'w') as f:
+                json.dump(metadata, f, indent=2)
+                
+            print("\nTranscription result:")
+            print(f"Text: {result['text']}")
+            print("\nSegments:")
+            for segment in result["segments"]:
+                print(f"[{segment['start']:.2f}s - {segment['end']:.2f}s] ({segment['confidence']:.2%})")
+                print(f'"{segment["text"]}"')
+                
+        except Exception as e:
+            print(f"Error during transcription: {e}")
+            metadata = {
+                "timestamp": timestamp,
+                "wake_word": wake_word,
+                "wake_word_confidence": float(prediction[wake_word]),
+                "sample_rate": SAMPLE_RATE,
+                "channels": CHANNELS,
+                "duration": BUFFER_DURATION,
+                "error": str(e)
+            }
+            with open(f"{filename}.json", 'w') as f:
+                json.dump(metadata, f, indent=2)
 
     def start(self):
         """Start audio processing"""
         try:
+            print("Initializing wake word detection...")
+            print(f"Loaded wake words: {', '.join(WAKE_WORDS)}")
+            
             with sd.InputStream(
                 channels=CHANNELS,
                 samplerate=SAMPLE_RATE,
                 blocksize=CHUNK_SIZE,
                 callback=self.audio_callback
             ):
-                print("Wake word detection started. Listening...")
+                print("\nWake word detection started. Listening...")
+                print("Press Ctrl+C to stop")
+                
                 while True:
                     sd.sleep(1000)  # Sleep for 1 second
                     
@@ -99,6 +169,5 @@ class AudioProcessor:
             print(f"Error in audio processing: {e}")
 
 if __name__ == "__main__":
-    print("Initializing wake word detection...")
     processor = AudioProcessor()
     processor.start() 

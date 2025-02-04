@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install fast-whisper and its dependencies
 RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir fast-whisper
+RUN pip install --no-cache-dir faster-whisper
 
 # Install wake word detection
 RUN pip install --no-cache-dir openwakeword pyaudio sounddevice
@@ -19,11 +19,13 @@ RUN pip install --no-cache-dir openwakeword pyaudio sounddevice
 RUN mkdir -p /models /audio
 
 # Download the base model by default
-RUN python -c "from faster_whisper import WhisperModel; WhisperModel.download_model('base.en', cache_dir='/models')"
+# The model will be downloaded automatically when first used
+ENV ASR_MODEL=base.en
+ENV ASR_MODEL_PATH=/models
 
-# Download OpenWakeWord models
-RUN mkdir -p /models/wake_word && \
-    python -c "import openwakeword; openwakeword.download_models(['hey_jarvis', 'ok_google', 'alexa'], '/models/wake_word')"
+# Create wake word model directory
+# Models will be downloaded automatically when first used
+RUN mkdir -p /models/wake_word
 
 WORKDIR /app
 

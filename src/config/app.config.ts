@@ -33,6 +33,21 @@ export const AppConfigSchema = z.object({
   HASS_HOST: z.string().default("http://192.168.178.63:8123"),
   HASS_TOKEN: z.string().optional(),
 
+  /** Speech Features Configuration */
+  SPEECH: z.object({
+    ENABLED: z.boolean().default(false),
+    WAKE_WORD_ENABLED: z.boolean().default(false),
+    SPEECH_TO_TEXT_ENABLED: z.boolean().default(false),
+    WHISPER_MODEL_PATH: z.string().default("/models"),
+    WHISPER_MODEL_TYPE: z.string().default("base"),
+  }).default({
+    ENABLED: false,
+    WAKE_WORD_ENABLED: false,
+    SPEECH_TO_TEXT_ENABLED: false,
+    WHISPER_MODEL_PATH: "/models",
+    WHISPER_MODEL_TYPE: "base",
+  }),
+
   /** Security Configuration */
   JWT_SECRET: z.string().default("your-secret-key"),
   RATE_LIMIT: z.object({
@@ -113,4 +128,11 @@ export const APP_CONFIG = AppConfigSchema.parse({
     LOG_REQUESTS: process.env.LOG_REQUESTS === "true",
   },
   VERSION: "0.1.0",
+  SPEECH: {
+    ENABLED: process.env.ENABLE_SPEECH_FEATURES === "true",
+    WAKE_WORD_ENABLED: process.env.ENABLE_WAKE_WORD === "true",
+    SPEECH_TO_TEXT_ENABLED: process.env.ENABLE_SPEECH_TO_TEXT === "true",
+    WHISPER_MODEL_PATH: process.env.WHISPER_MODEL_PATH || "/models",
+    WHISPER_MODEL_TYPE: process.env.WHISPER_MODEL_TYPE || "base",
+  },
 });
