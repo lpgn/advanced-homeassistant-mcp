@@ -78,4 +78,4 @@ coverage/
 .cursor/*
 
 .bun/
-.cursor/
+.cursorconfig

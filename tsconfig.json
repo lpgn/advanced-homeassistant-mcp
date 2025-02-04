@@ -21,16 +21,23 @@
       "@types/node",
       "@types/ws",
       "@types/jsonwebtoken",
-      "@types/sanitize-html"
+      "@types/sanitize-html",
+      "@types/jest"
     ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@test/*": [
+        "__tests__/*"
       ]
     },
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true
   },
   "include": [
     "src/**/*",
@@ -39,6 +46,7 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "coverage"
   ]
 }

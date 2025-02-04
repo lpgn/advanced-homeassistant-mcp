@@ -74,3 +74,6 @@ temp/
 .cloud/
 *.db
 *.db-* 
+.cursor/
+.cursor*
+.cursorconfig
