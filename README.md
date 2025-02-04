@@ -124,7 +124,7 @@ docker exec mcp_redis redis-cli info memory
 
 ## 🤝 Contributing
 
-We love community input! Here's how to help:
+I love community input! Here's how to help:
 
 1. 🍴 Fork the repository
 2. 🌿 Create a feature branch
@@ -132,8 +132,6 @@ We love community input! Here's how to help:
 4. 🧪 Run tests: `bun test --coverage`
 5. 📦 Commit using [Conventional Commits](https://www.conventionalcommits.org)
 6. 🔀 Open a Pull Request
-
-**Pro Tip:** Check our [Good First Issues](https://github.com/jango-blockchained/homeassistant-mcp/contribute) for starter tasks! 🎯
 
 ---
 
@@ -245,15 +243,15 @@ For additional details, check out our [Roadmap](docs/roadmap.md).
 
 ## Community & Support
 
-Join our community to stay updated, share ideas, and get help:
+Join the community to stay updated, share ideas, and get help:
 
-- **GitHub Issues:** Report bugs or suggest features on our [GitHub Issues Page](https://github.com/jango-blockchained/homeassistant-mcp/issues).
-- **Discussion Forums:** Connect with other users and contributors in our community forums.
-- **Chat Platforms:** Join our real-time discussions on [Discord](#) or [Slack](#).
+- **GitHub Issues:** Report bugs or suggest features on the [GitHub Issues Page](https://github.com/jango-blockchained/homeassistant-mcp/issues).
+- **Discussion Forums:** Connect with other users and contributors in the community forums.
+- **Chat Platforms:** Join real-time discussions on [Discord](#) or [Slack](#).
 
 ## Contributing
 
-We welcome your contributions! To get started:
+I welcome your contributions! To get started:
 
 1. Fork the repository.
 2. Create your feature branch:
@@ -290,11 +288,11 @@ A: MCP Server runs on Linux, macOS, and Windows (Docker is recommended for Windo
 
 **Q: How do I report a bug or request a feature?**
 
-A: Please use our [GitHub Issues Page](https://github.com/jango-blockchained/homeassistant-mcp/issues) to report bugs or request new features.
+A: Please use the [GitHub Issues Page](https://github.com/jango-blockchained/homeassistant-mcp/issues) to report bugs or request new features.
 
 **Q: Can I contribute to the project?**
 
-A: Absolutely! We welcome contributions from the community. See the [Contributing](#contributing) section for more details.
+A: Absolutely! I welcome contributions from the community. See the [Contributing](#contributing) section for more details.
 
 ## License
 
@@ -303,9 +301,3 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for the f
 ## Documentation
 
 Full documentation is available at: [https://jango-blockchained.github.io/homeassistant-mcp/](https://jango-blockchained.github.io/homeassistant-mcp/)
-
-## Quick Start
-
-## Installation
-
-## Usage
