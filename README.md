@@ -48,7 +48,7 @@ The MCP Server is built with scalability, resilience, and security in mind:
 - **Modular & Extensible:** Designed to support plugins, add-ons, and custom automation scripts, allowing for easy expansion.
 - **Secure API Integration:** Implements token-based authentication, rate limiting, and adherence to best security practices.
 
-_For a deeper dive into the system architecture, please refer to our [Architecture Documentation](docs/ARCHITECTURE.md) (if available)._ 
+For a deeper dive into the system architecture, please refer to our [Architecture Documentation](docs/architecture.md).
 
 ## Installation
 
@@ -118,10 +118,10 @@ eventSource.onmessage = (event) => {
 
 Access comprehensive API details and guides in the docs directory:
 
-- **API Reference:** [API Documentation](docs/API.md)
-- **SSE Documentation:** [SSE API](docs/SSE_API.md)
-- **Troubleshooting Guide:** [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- **Architecture Details:** [Architecture Documentation](docs/ARCHITECTURE.md) _(if available)_
+- **API Reference:** [API Documentation](docs/api.md)
+- **SSE Documentation:** [SSE API](docs/sse-api.md)
+- **Troubleshooting Guide:** [Troubleshooting](docs/troubleshooting.md)
+- **Architecture Details:** [Architecture Documentation](docs/architecture.md)
 
 ## Development
 
@@ -160,7 +160,7 @@ The MCP Server is under active development and improvement. Planned enhancements
 - **Expanded Integrations:** Support for a wider array of smart home devices and third-party services.
 - **Performance Optimizations:** Continued efforts to reduce latency and improve resource efficiency.
 
-_For additional details, check out our [Roadmap](docs/ROADMAP.md) (if available)._ 
+For additional details, check out our [Roadmap](docs/roadmap.md).
 
 ## Community & Support
 
@@ -189,7 +189,7 @@ We welcome your contributions! To get started:
    ```
 5. Commit and push your changes, then open a Pull Request.
 
-_For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)._ 
+For detailed guidelines, see [Contributing Guide](docs/contributing.md).
 
 ## Troubleshooting & FAQ
 
@@ -199,7 +199,7 @@ _For detailed guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)._
 - **Docker Deployment:** Confirm that Docker is running and that your `.env` file contains the correct settings.
 - **Automation Errors:** Verify entity availability and review your automation configurations for potential issues.
 
-_For more troubleshooting details, refer to [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)._ 
+For more troubleshooting details, refer to [Troubleshooting Guide](docs/troubleshooting.md).
 
 ### Frequently Asked Questions
 
