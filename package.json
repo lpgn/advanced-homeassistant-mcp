@@ -6,14 +6,18 @@
   "type": "module",
   "scripts": {
     "start": "bun run dist/index.js",
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "dev": "bun --hot --watch src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist --target node --minify",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "profile": "bun --inspect src/index.ts",
+    "clean": "rm -rf dist .bun",
+    "typecheck": "bun x tsc --noEmit",
+    "preinstall": "bun install --frozen-lockfile"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.2.0",

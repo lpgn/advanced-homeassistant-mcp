@@ -20,4 +20,17 @@ dir = ".bun"
 disable = false
 
 [debug]
-port = 9229 
+port = 9229
+
+[env]
+# Environment-specific configurations
+development.LOG_LEVEL = "debug"
+production.LOG_LEVEL = "warn"
+
+[hot]
+restart = true
+reload = true
+
+[performance]
+gc = true
+optimize = true 

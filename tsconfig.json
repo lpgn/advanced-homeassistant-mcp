@@ -1,44 +1,36 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "outDir": "dist",
-    "rootDir": ".",
+    "target": "esnext",
+    "module": "esnext",
+    "lib": [
+      "esnext",
+      "dom"
+    ],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
     "resolveJsonModule": true,
-    "declaration": true,
-    "sourceMap": true,
-    "allowJs": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
     "types": [
       "bun-types"
     ],
-    "typeRoots": [
-      "./node_modules/@types"
-    ],
-    "lib": [
-      "ES2022"
-    ],
     "baseUrl": ".",
     "paths": {
-      "*": [
-        "node_modules/*"
+      "@/*": [
+        "./src/*"
       ]
     }
   },
   "include": [
     "src/**/*",
-    "__tests__/**/*",
-    "jest.config.ts"
+    "__tests__/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "coverage"
+    "dist"
   ]
 }
