@@ -63,15 +63,7 @@ bun install --frozen-lockfile  # ♻️ Reliable dep tree
 
 # Start in dev mode with hot-reload 🔥
 bun run dev --watch
-```
-
-## 🚦 Rate Limiting Tiers
-
-| Plan          | Requests/min | Features               | Cache TTL   |
-|---------------|--------------|------------------------|-------------|
-| Free          | 100          | Basic controls         | 5min        |
-| Pro           | 1,000        | Priority queue         | 1hr         |
-| Enterprise    | 10,000       | Dedicated cache        | Custom      |
+```   |
 
 ## 💡 Example Usage
 
@@ -108,9 +100,7 @@ docker system prune  # Clean old images 🧹
 | Platform       | Link                          | Response Time |
 |----------------|-------------------------------|---------------|
 | 📚 Docs        | [API Reference](docs/api.md)  | Instant       |
-| 💬 Discord     | [Join Chat](#)                | <1hr          |
 | 🐛 GitHub      | [Issues](#)                   | <24hr         |
-| 🐦 Twitter     | [@HomeMCP](#)                 | <2hr          |
 
 ## 🚧 Troubleshooting Guide
 
