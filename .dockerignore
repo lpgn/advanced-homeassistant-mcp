@@ -73,6 +73,7 @@ temp/
 .cloud/
 *.db
 *.db-* 
+bun.lockb
 .cursor/
 .cursor*
 .cursorconfig
