@@ -63,25 +63,25 @@ timeout = 30000                         # Test timeout in milliseconds
 testMatch = ["**/__tests__/**/*.test.ts"] # Test file patterns
 ```
 
-### NPM Scripts
+### Bun Scripts
 
 Available test commands in `package.json`:
 
 ```bash
 # Run all tests
-npm test           # or: bun test
+bun test
 
 # Watch mode for development
-npm run test:watch # or: bun test --watch
+bun test --watch
 
 # Generate coverage report
-npm run test:coverage # or: bun test --coverage
+bun test --coverage
 
 # Run linting
-npm run lint
+bun run lint
 
 # Format code
-npm run format
+bun run format
 ```
 
 ## Test Setup

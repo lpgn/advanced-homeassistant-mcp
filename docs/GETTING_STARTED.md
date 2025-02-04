@@ -20,7 +20,7 @@ Before you begin, ensure you have:
 
 2. Install dependencies:
    ```bash
-   npm install
+   bun install
    ```
 
 3. Copy the example environment file:
@@ -57,7 +57,7 @@ Before you begin, ensure you have:
 For development, you can use:
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 This will start the server in development mode with hot reloading.
@@ -67,8 +67,8 @@ This will start the server in development mode with hot reloading.
 For production, build and start the server:
 
 ```bash
-npm run build
-npm start
+bun run build
+bun start
 ```
 
 ## First Steps
