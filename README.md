@@ -294,3 +294,79 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for full 
 ---
 
 🔋 Batteries included.
+
+## MCP Client Integration
+
+This MCP server can be integrated with various clients that support the Model Context Protocol. Below are instructions for different client integrations:
+
+### Cursor Integration
+
+The server can be integrated with Cursor by adding the configuration to `.cursor/config/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "bun",
+      "args": ["run", "start"],
+      "cwd": "${workspaceRoot}",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}
+```
+
+### Claude Desktop Integration
+
+For Claude Desktop, add the following to your Claude configuration file:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "bun",
+      "args": ["run", "start", "--port", "8080"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+```
+
+### Cline Integration
+
+For Cline-based clients, add the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "bun",
+      "args": [
+        "run",
+        "start",
+        "--enable-cline",
+        "--config",
+        "${configDir}/.env"
+      ],
+      "env": {
+        "NODE_ENV": "production",
+        "CLINE_MODE": "true"
+      }
+    }
+  }
+}
+```
+
+### Command Line Usage
+
+#### Windows
+A CMD script is provided in the `scripts` directory. To use it:
+
+1. Navigate to the `scripts` directory
+2. Run `start_mcp.cmd`
+
+The script will start the MCP server with default configuration.
