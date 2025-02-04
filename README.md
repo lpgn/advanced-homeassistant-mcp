@@ -6,6 +6,7 @@ The Model Context Protocol (MCP) Server is a robust, secure, and high-performanc
 ![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.26-black)
 ![TypeScript](https://img.shields.io/badge/typescript-%5E5.0.0-blue.svg)
 ![Test Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)
+[![Documentation](https://img.shields.io/badge/docs-github.io-blue.svg)](https://jango-blockchained.github.io/homeassistant-mcp/)
 
 ## Table of Contents
 
@@ -221,7 +222,7 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for the f
 
 ## Documentation
 
-Full documentation is available at: https://yourusername.github.io/your-repo-name/
+Full documentation is available at: [https://jango-blockchained.github.io/homeassistant-mcp/](https://jango-blockchained.github.io/homeassistant-mcp/)
 
 ## Quick Start
 
