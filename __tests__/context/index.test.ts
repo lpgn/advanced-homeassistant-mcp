@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { jest, describe, it, expect } from '@jest/globals';
 import { ContextManager, ResourceType, RelationType, ResourceState } from '../../src/context/index.js';
 

@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { HassInstanceImpl } from '../../src/hass/index.js';
 import * as HomeAssistant from '../../src/types/hass.js';
 import { HassWebSocketClient } from '../../src/websocket/client.js';

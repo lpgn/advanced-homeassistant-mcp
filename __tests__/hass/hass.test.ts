@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { jest, describe, beforeEach, afterAll, it, expect } from '@jest/globals';
 import type { Mock } from 'jest-mock';
 

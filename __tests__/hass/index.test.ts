@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 import { WebSocket } from 'ws';
 import { EventEmitter } from 'events';

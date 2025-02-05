@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { TokenManager, validateRequest, sanitizeInput, errorHandler, rateLimiter, securityHeaders } from '../../src/security/index.js';
 import { mock, describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import jwt from 'jsonwebtoken';

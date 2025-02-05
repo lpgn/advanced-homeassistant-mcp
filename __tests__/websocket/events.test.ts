@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { HassWebSocketClient } from '../../src/websocket/client.js';
 import WebSocket from 'ws';

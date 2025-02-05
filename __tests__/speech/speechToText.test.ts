@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { SpeechToText, TranscriptionResult, WakeWordEvent, TranscriptionError, TranscriptionOptions } from '../../src/speech/speechToText';
 import { EventEmitter } from 'events';
 import fs from 'fs';

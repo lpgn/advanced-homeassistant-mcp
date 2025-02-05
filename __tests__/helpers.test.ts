@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { formatToolCall } from "../src/utils/helpers";
 
 describe('helpers', () => {

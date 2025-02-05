@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { ToolRegistry, ToolCategory, EnhancedTool } from '../../src/tools/index.js';
 
 describe('ToolRegistry', () => {

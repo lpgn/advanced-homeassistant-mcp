@@ -1,3 +1,4 @@
+import { describe, expect, test } from "bun:test";
 import { entitySchema, serviceSchema, stateChangedEventSchema, configSchema, automationSchema, deviceControlSchema } from '../../src/schemas/hass.js';
 import Ajv from 'ajv';
 import { describe, expect, test } from "bun:test";
