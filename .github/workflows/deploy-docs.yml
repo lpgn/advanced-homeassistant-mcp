@@ -21,5 +21,18 @@ jobs:
           pip install mkdocs-material
           pip install mkdocs-git-revision-date-localized-plugin
           pip install mkdocstrings[python]
-      - name: Deploy
-        run: mkdocs gh-deploy --force 
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Build docs
+        run: mkdocs build
+      - name: Deploy to GitHub Pages
+        run: |
+          git checkout --orphan gh-pages
+          git rm -rf .
+          mv site/* .
+          rm -rf site
+          git add .
+          git commit -m "docs: Update documentation"
+          git push origin gh-pages --force 
