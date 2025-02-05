@@ -1,51 +1,52 @@
 # Roadmap for MCP Server
 
-The following roadmap outlines our planned enhancements and future directions for the Home Assistant MCP Server. This document is a living guide that will be updated as new features are planned and developed.
+The following roadmap outlines our planned enhancements and future directions for the Home Assistant MCP Server. This document is a living guide that will be updated as new features are developed.
 
 ## Near-Term Goals
 
-- **Advanced Automation Capabilities:**
-  - Integrate sophisticated automation rules with conditional logic and multi-step execution.
-  - Introduce a visual automation builder for simplified rule creation.
+- **Core Functionality Improvements:**
+  - Enhance REST API capabilities
+  - Improve WebSocket and SSE reliability
+  - Develop more robust error handling
 
-- **Enhanced Security Features:**
-  - Implement multi-factor authentication for critical actions.
-  - Strengthen encryption methods and data handling practices.
-  - Expand monitoring and alerting for potential security breaches.
+- **Security Enhancements:**
+  - Strengthen JWT authentication
+  - Improve input validation
+  - Add basic logging for security events
 
 - **Performance Optimizations:**
-  - Refine resource utilization to reduce latency.
-  - Optimize real-time data streaming via SSE.
-  - Introduce advanced caching mechanisms for frequently requested data.
+  - Optimize server response times
+  - Improve resource utilization
+  - Implement basic caching mechanisms
 
 ## Mid-Term Goals
 
-- **User Interface Improvements:**
-  - Develop an intuitive web-based dashboard for device management and monitoring.
-  - Provide real-time analytics and performance metrics.
+- **Device Integration:**
+  - Expand support for additional Home Assistant device types
+  - Improve device state synchronization
+  - Develop more flexible automation rule support
 
-- **Expanded Integrations:**
-  - Support a broader range of smart home devices and brands.
-  - Integrate with additional home automation platforms and third-party services.
-
-- **Developer Experience Enhancements:**
-  - Improve documentation and developer tooling.
-  - Streamline contribution guidelines and testing setups.
+- **Developer Experience:**
+  - Improve documentation
+  - Create more comprehensive examples
+  - Develop basic CLI tools for configuration
 
 ## Long-Term Vision
 
-- **Ecosystem Expansion:**
-  - Build a modular plugin system for community-driven extensions and integrations.
-  - Enable seamless integration with future technologies in smart home and AI domains.
+- **Extensibility:**
+  - Design a simple plugin system
+  - Create guidelines for community contributions
+  - Establish a clear extension mechanism
 
-- **Scalability and Resilience:**
-  - Architect the system to support large-scale deployments.
-  - Incorporate advanced load balancing and failover mechanisms.
+- **Reliability:**
+  - Implement comprehensive testing
+  - Develop monitoring and basic health check features
+  - Improve overall system stability
 
 ## How to Follow the Roadmap
 
-- **Community Involvement:** We welcome and encourage feedback.
-- **Regular Updates:** This document is updated regularly with new goals and milestones.
-- **Transparency:** Check our GitHub repository and issue tracker for ongoing discussions.
+- **Community Involvement:** We welcome feedback and contributions.
+- **Transparency:** Check our GitHub repository for ongoing discussions.
+- **Iterative Development:** Goals may change based on community needs and technical feasibility.
 
 *This roadmap is intended as a guide and may evolve based on community needs, technological advancements, and strategic priorities.* 

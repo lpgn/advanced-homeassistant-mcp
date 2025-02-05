@@ -1,22 +1,29 @@
 # Use Python slim image as builder
-FROM python:3.10-slim as builder
+FROM python:3.10-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     git \
-    build-essential \
-    portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    wget
 
 # Create and activate virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python dependencies with specific versions and CPU-only variants
-RUN pip install --no-cache-dir "numpy>=1.24.3,<2.0.0" && \
-    pip install --no-cache-dir torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir faster-whisper==0.10.0 openwakeword==0.4.0 pyaudio==0.2.14 sounddevice==0.4.6 requests==2.31.0 && \
-    pip freeze > /opt/venv/requirements.txt
+RUN pip install --no-cache-dir \
+    "numpy>=1.24.3,<2.0" \
+    "sounddevice" \
+    "openwakeword" \
+    "faster-whisper" \
+    "transformers" \
+    "torch" \
+    "torchaudio" \
+    "huggingface_hub" \
+    "requests" \
+    "soundfile" \
+    "tflite-runtime"
 
 # Create final image
 FROM python:3.10-slim
@@ -28,30 +35,47 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install audio dependencies
 RUN apt-get update && apt-get install -y \
     portaudio19-dev \
-    python3-pyaudio \
-    alsa-utils \
-    libasound2 \
-    libasound2-plugins \
     pulseaudio \
-    pulseaudio-utils \
-    libpulse0 \
-    libportaudio2 \
-    && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /var/run/pulse /var/lib/pulse
+    alsa-utils \
+    curl \
+    wget
 
-# Create necessary directories
-RUN mkdir -p /models/wake_word /audio && \
-    chown -R 1000:1000 /models /audio && \
-    mkdir -p /home/user/.config/pulse && \
-    chown -R 1000:1000 /home/user
+# Create necessary directories with explicit permissions
+RUN mkdir -p /models/wake_word /audio /app /models/cache /models/models--Systran--faster-whisper-base /opt/venv/lib/python3.10/site-packages/openwakeword/resources/models \
+    && chmod -R 777 /models /audio /app /models/cache /models/models--Systran--faster-whisper-base /opt/venv/lib/python3.10/site-packages/openwakeword/resources/models
+
+# Download wake word models
+RUN wget -O /opt/venv/lib/python3.10/site-packages/openwakeword/resources/models/alexa_v0.1.tflite \
+    https://github.com/dscripka/openWakeWord/raw/main/openwakeword/resources/models/alexa_v0.1.tflite \
+    && wget -O /opt/venv/lib/python3.10/site-packages/openwakeword/resources/models/hey_jarvis_v0.1.tflite \
+    https://github.com/dscripka/openWakeWord/raw/main/openwakeword/resources/models/hey_jarvis_v0.1.tflite \
+    && chmod 644 /opt/venv/lib/python3.10/site-packages/openwakeword/resources/models/*.tflite
+
+# Set environment variables for model caching
+ENV HF_HOME=/models/cache
+ENV TRANSFORMERS_CACHE=/models/cache
+ENV HUGGINGFACE_HUB_CACHE=/models/cache
+
+# Copy scripts and set permissions explicitly
+COPY wake_word_detector.py /app/wake_word_detector.py
+COPY setup-audio.sh /setup-audio.sh
+
+# Ensure scripts are executable by any user
+RUN chmod 755 /setup-audio.sh /app/wake_word_detector.py
+
+# Create a non-root user with explicit UID and GID
+RUN addgroup --gid 1000 user && \
+    adduser --uid 1000 --gid 1000 --disabled-password --gecos '' user
+
+# Change ownership of directories
+RUN chown -R 1000:1000 /models /audio /app /models/cache /models/models--Systran--faster-whisper-base \
+    /opt/venv/lib/python3.10/site-packages/openwakeword/resources/models
+
+# Switch to non-root user
+USER user
 
 # Set working directory
 WORKDIR /app
-
-# Copy the wake word detection script and audio setup script
-COPY wake_word_detector.py .
-COPY setup-audio.sh /setup-audio.sh
-RUN chmod +x /setup-audio.sh
 
 # Set environment variables
 ENV WHISPER_MODEL_PATH=/models \
@@ -59,9 +83,6 @@ ENV WHISPER_MODEL_PATH=/models \
     PYTHONUNBUFFERED=1 \
     PULSE_SERVER=unix:/run/user/1000/pulse/native \
     HOME=/home/user
-
-# Run as the host user
-USER 1000:1000
 
 # Start the application
 CMD ["/setup-audio.sh"] 

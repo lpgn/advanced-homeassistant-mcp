@@ -6,249 +6,119 @@ nav_order: 5
 
 # Contributing Guide 🤝
 
-Thank you for your interest in contributing to the MCP Server project! This guide will help you get started with contributing to the project.
+Thank you for your interest in contributing to the MCP Server project!
 
 ## Getting Started
 
 ### Prerequisites
 
-Before you begin, ensure you have:
-
 - [Bun](https://bun.sh) >= 1.0.26
-- [Node.js](https://nodejs.org) >= 18
-- [Docker](https://www.docker.com) (optional, for containerized development)
-- A running Home Assistant instance for testing
+- Home Assistant instance
+- Basic understanding of TypeScript
 
 ### Development Setup
 
-1. Fork and clone the repository:
+1. Fork the repository
+2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/advanced-homeassistant-mcp.git
-   cd advanced-homeassistant-mcp
+   git clone https://github.com/YOUR_USERNAME/homeassistant-mcp.git
+   cd homeassistant-mcp
    ```
 
-2. Install dependencies:
+3. Install dependencies:
    ```bash
    bun install
    ```
 
-3. Set up your development environment:
+4. Configure environment:
    ```bash
    cp .env.example .env
    # Edit .env with your Home Assistant details
    ```
 
-4. Start the development server:
-   ```bash
-   bun run dev
-   ```
-
 ## Development Workflow
 
-### Branch Naming Convention
+### Branch Naming
 
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `docs/` - Documentation updates
-- `refactor/` - Code refactoring
-- `test/` - Test improvements
 
 Example:
 ```bash
-git checkout -b feature/voice-commands
+git checkout -b feature/device-control-improvements
 ```
 
 ### Commit Messages
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
+Follow simple, clear commit messages:
 
 ```
-type(scope): description
+type: brief description
 
-[optional body]
-
-[optional footer]
+[optional detailed explanation]
 ```
 
 Types:
-- `feat:` - New features
-- `fix:` - Bug fixes
-- `docs:` - Documentation changes
-- `style:` - Code style changes (formatting, etc.)
-- `refactor:` - Code refactoring
-- `test:` - Test updates
-- `chore:` - Maintenance tasks
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation
+- `chore:` - Maintenance
 
-Examples:
-```bash
-feat(api): add voice command endpoint
-fix(sse): resolve connection timeout issue
-docs(readme): update installation instructions
-```
+### Code Style
 
-### Testing
+- Use TypeScript
+- Follow existing code structure
+- Keep changes focused and minimal
 
-Run tests before submitting your changes:
+## Testing
+
+Run tests before submitting:
 
 ```bash
 # Run all tests
 bun test
 
-# Run specific test file
-bun test test/api/command.test.ts
-
-# Run tests with coverage
-bun test --coverage
-```
-
-### Code Style
-
-We use ESLint and Prettier for code formatting:
-
-```bash
-# Check code style
-bun run lint
-
-# Fix code style issues
-bun run lint:fix
+# Run specific test
+bun test test/api/control.test.ts
 ```
 
 ## Pull Request Process
 
-1. **Update Documentation**
-   - Add/update relevant documentation
-   - Include inline code comments where necessary
-   - Update API documentation if endpoints change
-
-2. **Write Tests**
-   - Add tests for new features
-   - Update existing tests if needed
-   - Ensure all tests pass
-
-3. **Create Pull Request**
-   - Fill out the PR template
-   - Link related issues
-   - Provide clear description of changes
-
-4. **Code Review**
-   - Address review comments
-   - Keep discussions focused
-   - Be patient and respectful
+1. Ensure tests pass
+2. Update documentation if needed
+3. Provide clear description of changes
 
 ### PR Template
 
 ```markdown
 ## Description
-Brief description of the changes
+Brief explanation of the changes
 
 ## Type of Change
 - [ ] Bug fix
 - [ ] New feature
-- [ ] Breaking change
 - [ ] Documentation update
 
-## How Has This Been Tested?
-Describe your test process
-
-## Checklist
-- [ ] Tests added/updated
-- [ ] Documentation updated
-- [ ] Code follows style guidelines
-- [ ] All tests passing
+## Testing
+Describe how you tested these changes
 ```
 
-## Development Guidelines
+## Reporting Issues
 
-### Code Organization
+- Use GitHub Issues
+- Provide clear, reproducible steps
+- Include environment details
 
-```
-src/
-├── api/          # API endpoints
-├── core/         # Core functionality
-├── models/       # Data models
-├── services/     # Business logic
-├── utils/        # Utility functions
-└── types/        # TypeScript types
-```
+## Code of Conduct
 
-### Best Practices
-
-1. **Type Safety**
-   ```typescript
-   // Use explicit types
-   interface CommandRequest {
-       command: string;
-       parameters?: Record<string, unknown>;
-   }
-   
-   function processCommand(request: CommandRequest): Promise<CommandResponse> {
-       // Implementation
-   }
-   ```
-
-2. **Error Handling**
-   ```typescript
-   try {
-       await processCommand(request);
-   } catch (error) {
-       if (error instanceof ValidationError) {
-           // Handle validation errors
-       }
-       throw error;
-   }
-   ```
-
-3. **Async/Await**
-   ```typescript
-   // Prefer async/await over promises
-   async function handleRequest() {
-       const result = await processData();
-       return result;
-   }
-   ```
-
-## Documentation
-
-### API Documentation
-
-Update API documentation when adding/modifying endpoints:
-
-```typescript
-/**
- * Process a voice command
- * @param command - The voice command to process
- * @returns Promise<CommandResult>
- * @throws {ValidationError} If command is invalid
- */
-async function processVoiceCommand(command: string): Promise<CommandResult> {
-    // Implementation
-}
-```
-
-### README Updates
-
-Keep the README up to date with:
-- New features
-- Changed requirements
-- Updated examples
-- Modified configuration
-
-## Getting Help
-
-- Check [Discussions](https://github.com/jango-blockchained/advanced-homeassistant-mcp/discussions)
-- Review existing [Issues](https://github.com/jango-blockchained/advanced-homeassistant-mcp/issues)
-
-## Community Guidelines
-
-We expect all contributors to:
-
-- Be respectful and inclusive
+- Be respectful
 - Focus on constructive feedback
 - Help maintain a positive environment
-- Follow our code style guidelines
-- Write clear documentation
-- Test their code thoroughly
 
-## License
+## Resources
 
-By contributing, you agree that your contributions will be licensed under the MIT License. 
+- [API Documentation](api.md)
+- [Troubleshooting Guide](troubleshooting.md)
+
+*Thank you for contributing!* 

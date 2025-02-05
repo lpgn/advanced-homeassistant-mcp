@@ -53,8 +53,8 @@ HASS_TOKEN = os.environ.get('HASS_TOKEN')
 
 def initialize_asr_model():
     """Initialize the ASR model with retries and timeout"""
-    model_path = os.environ.get('ASR_MODEL_PATH', '/models')
-    model_name = os.environ.get('ASR_MODEL', 'large-v3')
+    model_path = os.environ.get('WHISPER_MODEL_PATH', '/models')
+    model_name = os.environ.get('WHISPER_MODEL_TYPE', 'base')
     
     start_time = time.time()
     for attempt in range(MAX_MODEL_LOAD_RETRIES):

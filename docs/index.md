@@ -4,31 +4,25 @@ title: Home
 nav_order: 1
 ---
 
-# 🚀 MCP Server for Home Assistant
+# 🏠 MCP Server for Home Assistant
 
-Welcome to the Model Context Protocol (MCP) Server documentation! This guide will help you get started with integrating AI-powered natural language processing into your Home Assistant setup.
+Welcome to the Model Context Protocol (MCP) Server documentation! This guide will help you get started with integrating a lightweight automation tool with your Home Assistant setup.
 
 ## What is MCP Server?
 
-MCP Server is a bridge between Home Assistant and Language Learning Models (LLMs), enabling natural language interactions and real-time automation of your smart devices. It allows you to control your home automation setup using natural language commands while maintaining high performance and security.
+MCP Server is a bridge between Home Assistant and custom automation tools, enabling basic device control and real-time monitoring of your smart home environment. It provides a flexible interface for managing and interacting with your home automation setup.
 
 ## Key Features
 
-### 🎮 Device Control & Monitoring
-- Voice-controlled automation
-- Real-time updates via SSE/WebSocket
-- Scene-based automation rules
-
-### 🤖 AI-Powered Features
-- Natural Language Processing (NLP)
-- Predictive automation
-- Anomaly detection
+### 🎮 Device Control
+- Basic REST API for device management
+- WebSocket and Server-Sent Events (SSE) for real-time updates
+- Simple automation rule support
 
 ### 🛡️ Security & Performance
 - JWT authentication
-- Request sanitization
-- Sub-100ms latency
-- Rate limiting
+- Basic request validation
+- Lightweight server design
 
 ## Documentation Structure
 
@@ -37,19 +31,18 @@ MCP Server is a bridge between Home Assistant and Language Learning Models (LLMs
 - [Quick Start Tutorial](getting-started/quickstart.md) - Basic usage examples
 
 ### Core Documentation
-- [API Documentation](api/index.md) - Complete API reference
-- [Architecture Overview](architecture.md) - System design and components
+- [API Documentation](api/index.md) - API reference
+- [Architecture Overview](architecture.md) - System design
 - [Contributing Guidelines](contributing.md) - How to contribute
-- [Troubleshooting Guide](troubleshooting.md) - Common issues and solutions
+- [Troubleshooting Guide](troubleshooting.md) - Common issues
 
 ## Support
 
-If you need help or want to report issues:
+Need help or want to report issues?
 
-- [GitHub Issues](https://github.com/jango-blockchained/advanced-homeassistant-mcp/issues)
-- [GitHub Discussions](https://github.com/jango-blockchained/advanced-homeassistant-mcp/discussions)
-- [Contributing Guidelines](contributing.md)
+- [GitHub Issues](https://github.com/jango-blockchained/homeassistant-mcp/issues)
+- [GitHub Discussions](https://github.com/jango-blockchained/homeassistant-mcp/discussions)
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/jango-blockchained/advanced-homeassistant-mcp/blob/main/LICENSE) file for details. 
+This project is licensed under the MIT License. See the [LICENSE](https://github.com/jango-blockchained/homeassistant-mcp/blob/main/LICENSE) file for details. 

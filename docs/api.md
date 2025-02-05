@@ -1,728 +1,170 @@
-# 🚀 Home Assistant MCP API Documentation
+# Home Assistant MCP Server API Documentation
 
-![API Version](https://img.shields.io/badge/API-v2.1-blueviolet) ![Rate Limit](https://img.shields.io/badge/Rate%20Limit-100%2Fmin-brightgreen)
+## Overview
 
-## 🌟 Quick Start
+This document provides a reference for the MCP Server API, which offers basic device control and state management for Home Assistant.
 
-```bash
-# Get API schema with caching
-curl -X GET http://localhost:3000/mcp \
-  -H "Cache-Control: max-age=3600" # Cache for 1 hour
-```
+## Authentication
 
-## 🔌 Core Functions ⚙️
+All API requests require a valid JWT token in the Authorization header:
 
-### State Management (`/api/state`)
 ```http
-GET /api/state?cache=true  # Enable client-side caching
-POST /api/state
+Authorization: Bearer YOUR_TOKEN
 ```
 
-**Example Request:**
+## Core Endpoints
+
+### Device State Management
+
+#### Get Device State
+```http
+GET /api/state/{entity_id}
+```
+
+**Response:**
 ```json
 {
-  "context": "living_room",
-  "state": {
-    "lights": "on",
-    "temperature": 22
-  },
-  "_cache": {  // Optional caching config
-    "ttl": 300,  // 5 minutes
-    "tags": ["lights", "climate"]
-  }
-}
-```
-
-## ⚡ Action Endpoints
-
-### Execute Action with Cache Validation
-```http
-POST /api/action
-If-None-Match: "etag_value"  // Prevent duplicate actions
-```
-
-**Batch Processing:**
-```json
-{
-  "actions": [
-    { "action": "🌞 Morning Routine", "params": { "brightness": 80 } },
-    { "action": "❄️ AC Control", "params": { "temp": 21 } }
-  ],
-  "_parallel": true  // Execute actions concurrently
-}
-```
-
-## 🔍 Query Functions
-
-### Available Actions with ETag
-```http
-GET /api/actions
-ETag: "a1b2c3d4"  // Client-side cache validation
-```
-
-**Response Headers:**
-```
-Cache-Control: public, max-age=86400  // 24-hour cache
-ETag: "a1b2c3d4"
-```
-
-## 🌐 WebSocket Events
-
-```javascript
-const ws = new WebSocket('wss://ha-mcp/ws');
-ws.onmessage = ({ data }) => {
-  const event = JSON.parse(data);
-  if(event.type === 'STATE_UPDATE') {
-    updateUI(event.payload);  // 🎨 Real-time UI sync
-  }
-};
-```
-
-## 🗃️ Caching Strategies
-
-### Client-Side Caching
-```http
-GET /api/devices
-Cache-Control: max-age=300, stale-while-revalidate=60
-```
-
-### Server-Side Cache-Control
-```typescript
-// Example middleware configuration
-app.use(
-  cacheMiddleware({
-    ttl: 60 * 5,  // 5 minutes
-    paths: ['/api/devices', '/mcp'],
-    vary: ['Authorization']  // User-specific caching
-  })
-);
-```
-
-## ❌ Error Handling
-
-**429 Too Many Requests:**
-```json
-{
-  "error": {
-    "code": "RATE_LIMITED",
-    "message": "Slow down! 🐢",
-    "retry_after": 30,
-    "docs": "https://ha-mcp/docs/rate-limits"
-  }
-}
-```
-
-## 🚦 Rate Limiting Tiers
-
-| Tier          | Requests/min | Features               |
-|---------------|--------------|------------------------|
-| Guest         | 10           | Basic read-only        |
-| User          | 100          | Full access            |
-| Power User    | 500          | Priority queue         |
-| Integration   | 1000         | Bulk operations        |
-
-## 🛠️ Example Usage
-
-### Smart Cache Refresh
-```javascript
-async function getDevices() {
-  const response = await fetch('/api/devices', {
-    headers: {
-      'If-None-Match': localStorage.getItem('devicesETag')
-    }
-  });
-  
-  if(response.status === 304) {  // Not Modified
-    return JSON.parse(localStorage.devicesCache);
-  }
-  
-  const data = await response.json();
-  localStorage.setItem('devicesETag', response.headers.get('ETag'));
-  localStorage.setItem('devicesCache', JSON.stringify(data));
-  return data;
-}
-```
-
-## 🔒 Security Middleware (Enhanced)
-
-### Cache-Aware Rate Limiting
-```typescript
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
-    cache: new RedisStore(), // Distributed cache
-    keyGenerator: (req) => {
-      return `${req.ip}-${req.headers.authorization}`;
-    }
-  })
-);
-```
-
-### Security Headers
-```http
-Content-Security-Policy: default-src 'self';
-Strict-Transport-Security: max-age=31536000;
-X-Content-Type-Options: nosniff;
-Cache-Control: public, max-age=600;
-ETag: "abc123"
-```
-
-## 📘 Best Practices
-
-1. **Cache Wisely:** Use `ETag` and `Cache-Control` headers for state data
-2. **Batch Operations:** Combine requests using `/api/actions/batch`
-3. **WebSocket First:** Prefer real-time updates over polling
-4. **Error Recovery:** Implement exponential backoff with jitter
-5. **Cache Invalidation:** Use tags for bulk invalidation
-
-```mermaid
-graph LR
-A[Client] -->|Cached Request| B{CDN}
-B -->|Cache Hit| C[Return 304]
-B -->|Cache Miss| D[Origin Server]
-D -->|Response| B
-B -->|Response| A
-```
-
-> Pro Tip: Use `curl -I` to inspect cache headers! 🔍
-
-## Device Control
-
-### Common Entity Controls
-
-```json
-{
-  "tool": "control",
-  "command": "turn_on",  // Options: "turn_on", "turn_off", "toggle"
-  "entity_id": "light.living_room"
-}
-```
-
-### Light Control
-
-```json
-{
-  "tool": "control",
-  "command": "turn_on",
   "entity_id": "light.living_room",
-  "brightness": 128,
-  "color_temp": 4000,
-  "rgb_color": [255, 0, 0]
-}
-```
-
-## Add-on Management
-
-### List Available Add-ons
-
-```json
-{
-  "tool": "addon",
-  "action": "list"
-}
-```
-
-### Install Add-on
-
-```json
-{
-  "tool": "addon",
-  "action": "install",
-  "slug": "core_configurator",
-  "version": "5.6.0"
-}
-```
-
-### Manage Add-on State
-
-```json
-{
-  "tool": "addon",
-  "action": "start",  // Options: "start", "stop", "restart"
-  "slug": "core_configurator"
-}
-```
-
-## Package Management
-
-### List HACS Packages
-
-```json
-{
-  "tool": "package",
-  "action": "list",
-  "category": "integration"  // Options: "integration", "plugin", "theme", "python_script", "appdaemon", "netdaemon"
-}
-```
-
-### Install Package
-
-```json
-{
-  "tool": "package",
-  "action": "install",
-  "category": "integration",
-  "repository": "hacs/integration",
-  "version": "1.32.0"
-}
-```
-
-## Automation Management
-
-For automation management details and endpoints, please refer to the [Tools Documentation](tools/tools.md).
-
-## Security Considerations
-
-- Validate and sanitize all user inputs.
-- Enforce rate limiting to prevent abuse.
-- Apply proper security headers.
-- Gracefully handle errors based on the environment.
-
-## Troubleshooting
-
-If you experience issues with the API:
-- Verify the endpoint and request payload.
-- Check authentication tokens and required headers.
-- Consult the [Troubleshooting Guide](troubleshooting.md) for further guidance.
-
-## MCP Schema Endpoint
-
-The server exposes an MCP (Model Context Protocol) schema endpoint that describes all available tools and their parameters:
-
-```http
-GET /mcp
-```
-
-This endpoint returns a JSON schema describing all available tools, their parameters, and documentation resources. The schema follows the MCP specification and can be used by LLM clients to understand the server's capabilities.
-
-Example response:
-```json
-{
-  "tools": [
-    {
-      "name": "list_devices",
-      "description": "List all devices connected to Home Assistant",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "domain": {
-            "type": "string",
-            "enum": ["light", "climate", "alarm_control_panel", ...]
-          },
-          "area": { "type": "string" },
-          "floor": { "type": "string" }
-        }
-      }
-    },
-    // ... other tools
-  ],
-  "prompts": [],
-  "resources": [
-    {
-      "name": "Home Assistant API",
-      "url": "https://developers.home-assistant.io/docs/api/rest/"
-    }
-  ]
-}
-```
-
-Note: The `/mcp` endpoint is publicly accessible and does not require authentication, as it only provides schema information.
-
-## Core Functions
-
-### State Management
-```http
-GET /api/state
-POST /api/state
-```
-
-Manages the current state of the system.
-
-**Example Request:**
-```json
-POST /api/state
-{
-  "context": "living_room",
-  "state": {
-    "lights": "on",
-    "temperature": 22
+  "state": "on",
+  "attributes": {
+    "brightness": 128
   }
 }
 ```
 
-### Context Updates
+#### Update Device State
 ```http
-POST /api/context
-```
+POST /api/state
+Content-Type: application/json
 
-Updates the current context with new information.
-
-**Example Request:**
-```json
-POST /api/context
 {
-  "user": "john",
-  "location": "kitchen",
-  "time": "morning",
-  "activity": "cooking"
+  "entity_id": "light.living_room",
+  "state": "on",
+  "attributes": {
+    "brightness": 128
+  }
 }
 ```
 
-## Action Endpoints
+### Device Control
 
-### Execute Action
+#### Execute Device Command
 ```http
-POST /api/action
-```
+POST /api/control
+Content-Type: application/json
 
-Executes a specified action with given parameters.
-
-**Example Request:**
-```json
-POST /api/action
 {
-  "action": "turn_on_lights",
+  "entity_id": "light.living_room",
+  "command": "turn_on",
   "parameters": {
-    "room": "living_room",
-    "brightness": 80
+    "brightness": 50
   }
 }
 ```
 
-### Batch Actions
-```http
-POST /api/actions/batch
-```
+## Real-Time Updates
 
-Executes multiple actions in sequence.
-
-**Example Request:**
-```json
-POST /api/actions/batch
-{
-  "actions": [
-    {
-      "action": "turn_on_lights",
-      "parameters": {
-        "room": "living_room"
-      }
-    },
-    {
-      "action": "set_temperature",
-      "parameters": {
-        "temperature": 22
-      }
-    }
-  ]
-}
-```
-
-## Query Functions
-
-### Get Available Actions
-```http
-GET /api/actions
-```
-
-Returns a list of all available actions.
-
-**Example Response:**
-```json
-{
-  "actions": [
-    {
-      "name": "turn_on_lights",
-      "parameters": ["room", "brightness"],
-      "description": "Turns on lights in specified room"
-    },
-    {
-      "name": "set_temperature",
-      "parameters": ["temperature"],
-      "description": "Sets temperature in current context"
-    }
-  ]
-}
-```
-
-### Context Query
-```http
-GET /api/context?type=current
-```
-
-Retrieves context information.
-
-**Example Response:**
-```json
-{
-  "current_context": {
-    "user": "john",
-    "location": "kitchen",
-    "time": "morning",
-    "activity": "cooking"
-  }
-}
-```
-
-## WebSocket Events
-
-The server supports real-time updates via WebSocket connections.
+### WebSocket Connection
+Connect to real-time updates:
 
 ```javascript
-// Client-side connection example
-const ws = new WebSocket('ws://localhost:3000/ws');
-
+const ws = new WebSocket('ws://localhost:3000/events');
 ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log('Received update:', data);
+  const deviceUpdate = JSON.parse(event.data);
+  console.log('Device state changed:', deviceUpdate);
 };
-```
-
-### Supported Events
-
-- `state_change`: Emitted when system state changes
-- `context_update`: Emitted when context is updated
-- `action_executed`: Emitted when an action is completed
-- `error`: Emitted when an error occurs
-
-**Example Event Data:**
-```json
-{
-  "event": "state_change",
-  "data": {
-    "previous_state": {
-      "lights": "off"
-    },
-    "current_state": {
-      "lights": "on"
-    },
-    "timestamp": "2024-03-20T10:30:00Z"
-  }
-}
 ```
 
 ## Error Handling
 
-All endpoints return standard HTTP status codes:
+### Common Error Responses
 
-- 200: Success
-- 400: Bad Request
-- 401: Unauthorized
-- 403: Forbidden
-- 404: Not Found
-- 500: Internal Server Error
-
-**Error Response Format:**
 ```json
 {
   "error": {
-    "code": "INVALID_PARAMETERS",
-    "message": "Missing required parameter: room",
-    "details": {
-      "missing_fields": ["room"]
-    }
+    "code": "INVALID_REQUEST",
+    "message": "Invalid request parameters",
+    "details": "Entity ID not found or invalid command"
   }
 }
 ```
 
 ## Rate Limiting
 
-The API implements rate limiting to prevent abuse:
+Basic rate limiting is implemented:
+- Maximum of 100 requests per minute
+- Excess requests will receive a 429 Too Many Requests response
 
-- 100 requests per minute per IP for regular endpoints
-- 1000 requests per minute per IP for WebSocket connections
+## Supported Operations
 
-When rate limit is exceeded, the server returns:
+### Supported Commands
+- `turn_on`
+- `turn_off`
+- `toggle`
+- `set_brightness`
+- `set_color`
 
-```json
-{
-  "error": {
-    "code": "RATE_LIMIT_EXCEEDED",
-    "message": "Too many requests",
-    "reset_time": "2024-03-20T10:31:00Z"
+### Supported Entities
+- Lights
+- Switches
+- Climate controls
+- Media players
+
+## Limitations
+
+- Limited to basic device control
+- No advanced automation
+- Minimal error handling
+- Basic authentication
+
+## Best Practices
+
+1. Always include a valid JWT token
+2. Handle potential errors in your client code
+3. Use WebSocket for real-time updates when possible
+4. Validate entity IDs before sending commands
+
+## Example Client Usage
+
+```typescript
+async function controlDevice(entityId: string, command: string, params?: Record<string, unknown>) {
+  try {
+    const response = await fetch('/api/control', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        entity_id: entityId,
+        command,
+        parameters: params
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Device control failed:', error);
+    throw error;
   }
 }
+
+// Usage example
+controlDevice('light.living_room', 'turn_on', { brightness: 50 })
+  .then(result => console.log('Device controlled successfully'))
+  .catch(error => console.error('Control failed', error));
 ```
 
-## Example Usage
+## Future Development
 
-### Using curl
-```bash
-# Get current state
-curl -X GET \
-  http://localhost:3000/api/state \
-  -H 'Authorization: ApiKey your_api_key_here'
+Planned improvements:
+- Enhanced error handling
+- More comprehensive device support
+- Improved authentication mechanisms
 
-# Execute action
-curl -X POST \
-  http://localhost:3000/api/action \
-  -H 'Authorization: ApiKey your_api_key_here' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "action": "turn_on_lights",
-    "parameters": {
-      "room": "living_room",
-      "brightness": 80
-    }
-  }'
-```
-
-### Using JavaScript
-```javascript
-// Execute action
-async function executeAction() {
-  const response = await fetch('http://localhost:3000/api/action', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'ApiKey your_api_key_here',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      action: 'turn_on_lights',
-      parameters: {
-        room: 'living_room',
-        brightness: 80
-      }
-    })
-  });
-  
-  const data = await response.json();
-  console.log('Action result:', data);
-}
-```
-
-## Security Middleware
-
-### Overview
-
-The security middleware provides a comprehensive set of utility functions to enhance the security of the Home Assistant MCP application. These functions cover various aspects of web security, including:
-
-- Rate limiting
-- Request validation
-- Input sanitization
-- Security headers
-- Error handling
-
-### Utility Functions
-
-#### `checkRateLimit(ip: string, maxRequests?: number, windowMs?: number)`
-
-Manages rate limiting for IP addresses to prevent abuse.
-
-**Parameters**:
-- `ip`: IP address to track
-- `maxRequests`: Maximum number of requests allowed (default: 100)
-- `windowMs`: Time window for rate limiting (default: 15 minutes)
-
-**Returns**: `boolean` or throws an error if limit is exceeded
-
-**Example**:
-```typescript
-try {
-  checkRateLimit('127.0.0.1'); // Checks rate limit with default settings
-} catch (error) {
-  // Handle rate limit exceeded
-}
-```
-
-#### `validateRequestHeaders(request: Request, requiredContentType?: string)`
-
-Validates incoming HTTP request headers for security and compliance.
-
-**Parameters**:
-- `request`: The incoming HTTP request
-- `requiredContentType`: Expected content type (default: 'application/json')
-
-**Checks**:
-- Content type
-- Request body size
-- Authorization header (optional)
-
-**Example**:
-```typescript
-try {
-  validateRequestHeaders(request);
-} catch (error) {
-  // Handle validation errors
-}
-```
-
-#### `sanitizeValue(value: unknown)`
-
-Sanitizes input values to prevent XSS attacks.
-
-**Features**:
-- Escapes HTML tags
-- Handles nested objects and arrays
-- Preserves non-string values
-
-**Example**:
-```typescript
-const sanitized = sanitizeValue('<script>alert("xss")</script>');
-// Returns: '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
-```
-
-#### `applySecurityHeaders(request: Request, helmetConfig?: HelmetOptions)`
-
-Applies security headers to HTTP requests using Helmet.
-
-**Security Headers**:
-- Content Security Policy
-- X-Frame-Options
-- X-Content-Type-Options
-- Referrer Policy
-- HSTS (in production)
-
-**Example**:
-```typescript
-const headers = applySecurityHeaders(request);
-```
-
-#### `handleError(error: Error, env?: string)`
-
-Handles error responses with environment-specific details.
-
-**Modes**:
-- Production: Generic error message
-- Development: Detailed error with stack trace
-
-**Example**:
-```typescript
-const errorResponse = handleError(error, process.env.NODE_ENV);
-```
-
-### Middleware Usage
-
-These utility functions are integrated into Elysia middleware:
-
-```typescript
-const app = new Elysia()
-  .use(rateLimiter)      // Rate limiting
-  .use(validateRequest)  // Request validation
-  .use(sanitizeInput)    // Input sanitization
-  .use(securityHeaders)  // Security headers
-  .use(errorHandler)     // Error handling
-```
-
-### Best Practices
-
-1. Always validate and sanitize user inputs
-2. Use rate limiting to prevent abuse
-3. Apply security headers
-4. Handle errors gracefully
-5. Keep environment-specific error handling
-
-### Security Considerations
-
-- Configurable rate limits
-- XSS protection
-- Content security policies
-- Token validation
-- Error information exposure control
-
-### Troubleshooting
-
-- Ensure `JWT_SECRET` is set in environment
-- Check content type in requests
-- Monitor rate limit errors
-- Review error handling in different environments 
+*API is subject to change. Always refer to the latest documentation.*
