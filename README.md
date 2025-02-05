@@ -58,17 +58,17 @@ Our architecture is engineered for performance, scalability, and security. The f
 ```mermaid
 graph TD
     subgraph Client
-       A[Client Application<br>(Web / Mobile / Voice)]
+        A["Client Application (Web/Mobile/Voice)"]
     end
     subgraph CDN
-       B[CDN / Cache]
+        B["CDN / Cache"]
     end
     subgraph Server
-       C[Bun Native Server]
-       E[NLP Engine &<br>Language Processing Module]
+        C["Bun Native Server"]
+        E["NLP Engine & Language Processing Module"]
     end
     subgraph Integration
-       D[Home Assistant<br>(Devices, Lights, Thermostats)]
+        D["Home Assistant (Devices, Lights, Thermostats)"]
     end
 
     A -->|HTTP Request| B
