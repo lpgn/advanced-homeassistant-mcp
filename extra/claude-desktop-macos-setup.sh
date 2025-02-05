@@ -326,4 +326,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     else
         echo -e "${GREEN}Home Assistant MCP test successful!${NC}"
     fi
-fi 
+fi
+
+# macOS environment configuration
+HASS_SOCKET_URL="${HASS_HOST/http/ws}/api/websocket" # WebSocket URL conversion
+chmod 600 "$CLAUDE_CONFIG_DIR/claude_desktop_config.json" # Security hardening 

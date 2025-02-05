@@ -13,7 +13,7 @@
 
 Welcome to the **Model Context Protocol (MCP) Server for Home Assistant**! This robust platform bridges Home Assistant with cutting-edge Language Learning Models (LLMs), enabling natural language interactions and real-time automation of your smart devices. Imagine entering your home, saying:  
 
-> “Hey MCP, dim the lights and start my evening playlist,”  
+> "Hey MCP, dim the lights and start my evening playlist,"  
 
 and watching your home transform instantly—that's the magic that MCP Server delivers!
 
