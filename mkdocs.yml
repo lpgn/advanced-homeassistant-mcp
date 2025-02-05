@@ -1,6 +1,6 @@
 site_name: Home Assistant Model Context Protocol (MCP)
-site_url: https://yourusername.github.io/your-repo-name/
-repo_url: https://github.com/yourusername/your-repo-name
+site_url: https://jango-blockchained.github.io/advanced-homeassistant-mcp/
+repo_url: https://github.com/jango-blockchained/advanced-homeassistant-mcp
 
 theme:
   name: material
