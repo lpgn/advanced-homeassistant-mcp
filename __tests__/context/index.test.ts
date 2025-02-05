@@ -5,7 +5,7 @@ describe('Context Manager', () => {
     describe('Resource Management', () => {
         const contextManager = new ContextManager();
 
-        it('should add resources', () => {
+        test('should add resources', () => {
             const resource: ResourceState = {
                 id: 'light.living_room',
                 type: ResourceType.DEVICE,
@@ -20,7 +20,7 @@ describe('Context Manager', () => {
             expect(retrievedResource).toEqual(resource);
         });
 
-        it('should update resources', () => {
+        test('should update resources', () => {
             const resource: ResourceState = {
                 id: 'light.living_room',
                 type: ResourceType.DEVICE,
@@ -35,14 +35,14 @@ describe('Context Manager', () => {
             expect(retrievedResource?.state).toBe('off');
         });
 
-        it('should remove resources', () => {
+        test('should remove resources', () => {
             const resourceId = 'light.living_room';
             contextManager.removeResource(resourceId);
             const retrievedResource = contextManager.getResource(resourceId);
             expect(retrievedResource).toBeUndefined();
         });
 
-        it('should get resources by type', () => {
+        test('should get resources by type', () => {
             const light1: ResourceState = {
                 id: 'light.living_room',
                 type: ResourceType.DEVICE,
@@ -73,7 +73,7 @@ describe('Context Manager', () => {
     describe('Relationship Management', () => {
         const contextManager = new ContextManager();
 
-        it('should add relationships', () => {
+        test('should add relationships', () => {
             const light: ResourceState = {
                 id: 'light.living_room',
                 type: ResourceType.DEVICE,
@@ -106,7 +106,7 @@ describe('Context Manager', () => {
             expect(related[0]).toEqual(room);
         });
 
-        it('should remove relationships', () => {
+        test('should remove relationships', () => {
             const sourceId = 'light.living_room';
             const targetId = 'room.living_room';
             contextManager.removeRelationship(sourceId, targetId, RelationType.CONTAINS);
@@ -114,7 +114,7 @@ describe('Context Manager', () => {
             expect(related).toHaveLength(0);
         });
 
-        it('should get related resources with depth', () => {
+        test('should get related resources with depth', () => {
             const light: ResourceState = {
                 id: 'light.living_room',
                 type: ResourceType.DEVICE,
@@ -148,7 +148,7 @@ describe('Context Manager', () => {
     describe('Resource Analysis', () => {
         const contextManager = new ContextManager();
 
-        it('should analyze resource usage', () => {
+        test('should analyze resource usage', () => {
             const light: ResourceState = {
                 id: 'light.living_room',
                 type: ResourceType.DEVICE,
@@ -171,8 +171,8 @@ describe('Context Manager', () => {
     describe('Event Subscriptions', () => {
         const contextManager = new ContextManager();
 
-        it('should handle resource subscriptions', () => {
-            const callback = jest.fn();
+        test('should handle resource subscriptions', () => {
+            const callback = mock();
             const resourceId = 'light.living_room';
             const resource: ResourceState = {
                 id: resourceId,
@@ -189,8 +189,8 @@ describe('Context Manager', () => {
             expect(callback).toHaveBeenCalled();
         });
 
-        it('should handle type subscriptions', () => {
-            const callback = jest.fn();
+        test('should handle type subscriptions', () => {
+            const callback = mock();
             const type = ResourceType.DEVICE;
 
             const unsubscribe = contextManager.subscribeToType(type, callback);

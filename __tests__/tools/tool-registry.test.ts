@@ -18,27 +18,27 @@ describe('ToolRegistry', () => {
                     ttl: 1000
                 }
             },
-            execute: jest.fn().mockResolvedValue({ success: true }),
-            validate: jest.fn().mockResolvedValue(true),
-            preExecute: jest.fn().mockResolvedValue(undefined),
-            postExecute: jest.fn().mockResolvedValue(undefined)
+            execute: mock().mockResolvedValue({ success: true }),
+            validate: mock().mockResolvedValue(true),
+            preExecute: mock().mockResolvedValue(undefined),
+            postExecute: mock().mockResolvedValue(undefined)
         };
     });
 
     describe('Tool Registration', () => {
-        it('should register a tool successfully', () => {
+        test('should register a tool successfully', () => {
             registry.registerTool(mockTool);
             const retrievedTool = registry.getTool('test_tool');
             expect(retrievedTool).toBe(mockTool);
         });
 
-        it('should categorize tools correctly', () => {
+        test('should categorize tools correctly', () => {
             registry.registerTool(mockTool);
             const deviceTools = registry.getToolsByCategory(ToolCategory.DEVICE);
             expect(deviceTools).toContain(mockTool);
         });
 
-        it('should handle multiple tools in the same category', () => {
+        test('should handle multiple tools in the same category', () => {
             const mockTool2 = {
                 ...mockTool,
                 name: 'test_tool_2'
@@ -53,7 +53,7 @@ describe('ToolRegistry', () => {
     });
 
     describe('Tool Execution', () => {
-        it('should execute a tool with all hooks', async () => {
+        test('should execute a tool with all hooks', async () => {
             registry.registerTool(mockTool);
             await registry.executeTool('test_tool', { param: 'value' });
 
@@ -63,20 +63,20 @@ describe('ToolRegistry', () => {
             expect(mockTool.postExecute).toHaveBeenCalled();
         });
 
-        it('should throw error for non-existent tool', async () => {
+        test('should throw error for non-existent tool', async () => {
             await expect(registry.executeTool('non_existent', {}))
                 .rejects.toThrow('Tool non_existent not found');
         });
 
-        it('should handle validation failure', async () => {
-            mockTool.validate = jest.fn().mockResolvedValue(false);
+        test('should handle validation failure', async () => {
+            mockTool.validate = mock().mockResolvedValue(false);
             registry.registerTool(mockTool);
 
             await expect(registry.executeTool('test_tool', {}))
                 .rejects.toThrow('Invalid parameters');
         });
 
-        it('should execute without optional hooks', async () => {
+        test('should execute without optional hooks', async () => {
             const simpleTool: EnhancedTool = {
                 name: 'simple_tool',
                 description: 'A simple tool',
@@ -85,7 +85,7 @@ describe('ToolRegistry', () => {
                     platform: 'test',
                     version: '1.0.0'
                 },
-                execute: jest.fn().mockResolvedValue({ success: true })
+                execute: mock().mockResolvedValue({ success: true })
             };
 
             registry.registerTool(simpleTool);
@@ -95,7 +95,7 @@ describe('ToolRegistry', () => {
     });
 
     describe('Caching', () => {
-        it('should cache tool results when enabled', async () => {
+        test('should cache tool results when enabled', async () => {
             registry.registerTool(mockTool);
             const params = { test: 'value' };
 
@@ -108,7 +108,7 @@ describe('ToolRegistry', () => {
             expect(mockTool.execute).toHaveBeenCalledTimes(1);
         });
 
-        it('should not cache results when disabled', async () => {
+        test('should not cache results when disabled', async () => {
             const uncachedTool: EnhancedTool = {
                 ...mockTool,
                 metadata: {
@@ -130,7 +130,7 @@ describe('ToolRegistry', () => {
             expect(uncachedTool.execute).toHaveBeenCalledTimes(2);
         });
 
-        it('should expire cache after TTL', async () => {
+        test('should expire cache after TTL', async () => {
             mockTool.metadata.caching!.ttl = 100; // Short TTL for testing
             registry.registerTool(mockTool);
             const params = { test: 'value' };
@@ -147,7 +147,7 @@ describe('ToolRegistry', () => {
             expect(mockTool.execute).toHaveBeenCalledTimes(2);
         });
 
-        it('should clean expired cache entries', async () => {
+        test('should clean expired cache entries', async () => {
             mockTool.metadata.caching!.ttl = 100;
             registry.registerTool(mockTool);
             const params = { test: 'value' };
@@ -168,12 +168,12 @@ describe('ToolRegistry', () => {
     });
 
     describe('Category Management', () => {
-        it('should return empty array for unknown category', () => {
+        test('should return empty array for unknown category', () => {
             const tools = registry.getToolsByCategory('unknown' as ToolCategory);
             expect(tools).toEqual([]);
         });
 
-        it('should handle tools across multiple categories', () => {
+        test('should handle tools across multiple categories', () => {
             const systemTool: EnhancedTool = {
                 ...mockTool,
                 name: 'system_tool',

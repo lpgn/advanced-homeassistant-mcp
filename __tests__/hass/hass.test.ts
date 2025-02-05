@@ -40,7 +40,7 @@ jest.unstable_mockModule('@digital-alchemy/core', () => ({
         bootstrap: async () => mockInstance,
         services: {}
     })),
-    TServiceParams: jest.fn()
+    TServiceParams: mock()
 }));
 
 jest.unstable_mockModule('@digital-alchemy/hass', () => ({
@@ -78,7 +78,7 @@ describe('Home Assistant Connection', () => {
         process.env = originalEnv;
     });
 
-    it('should return a Home Assistant instance with services', async () => {
+    test('should return a Home Assistant instance with services', async () => {
         const { get_hass } = await import('../../src/hass/index.js');
         const hass = await get_hass();
 
@@ -89,7 +89,7 @@ describe('Home Assistant Connection', () => {
         expect(typeof hass.services.climate.set_temperature).toBe('function');
     });
 
-    it('should reuse the same instance on subsequent calls', async () => {
+    test('should reuse the same instance on subsequent calls', async () => {
         const { get_hass } = await import('../../src/hass/index.js');
         const firstInstance = await get_hass();
         const secondInstance = await get_hass();

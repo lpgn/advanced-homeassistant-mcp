@@ -54,8 +54,8 @@ interface MockWebSocketConstructor extends jest.Mock<MockWebSocketInstance> {
 }
 
 // Mock the entire hass module
-jest.mock('../../src/hass/index.js', () => ({
-    get_hass: jest.fn()
+// // jest.mock('../../src/hass/index.js', () => ({
+    get_hass: mock()
 }));
 
 describe('Home Assistant API', () => {
@@ -66,11 +66,11 @@ describe('Home Assistant API', () => {
     beforeEach(() => {
         hass = new HassInstanceImpl('http://localhost:8123', 'test_token');
         mockWs = {
-            send: jest.fn(),
-            close: jest.fn(),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-            dispatchEvent: jest.fn(),
+            send: mock(),
+            close: mock(),
+            addEventListener: mock(),
+            removeEventListener: mock(),
+            dispatchEvent: mock(),
             onopen: null,
             onclose: null,
             onmessage: null,
@@ -84,7 +84,7 @@ describe('Home Assistant API', () => {
         } as MockWebSocketInstance;
 
         // Create a mock WebSocket constructor
-        MockWebSocket = jest.fn().mockImplementation(() => mockWs) as MockWebSocketConstructor;
+        MockWebSocket = mock().mockImplementation(() => mockWs) as MockWebSocketConstructor;
         MockWebSocket.CONNECTING = 0;
         MockWebSocket.OPEN = 1;
         MockWebSocket.CLOSING = 2;
@@ -96,7 +96,7 @@ describe('Home Assistant API', () => {
     });
 
     describe('State Management', () => {
-        it('should fetch all states', async () => {
+        test('should fetch all states', async () => {
             const mockStates: HomeAssistant.Entity[] = [
                 {
                     entity_id: 'light.living_room',
@@ -108,7 +108,7 @@ describe('Home Assistant API', () => {
                 }
             ];
 
-            global.fetch = jest.fn().mockResolvedValueOnce({
+            global.fetch = mock().mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockStates)
             });
@@ -121,7 +121,7 @@ describe('Home Assistant API', () => {
             );
         });
 
-        it('should fetch single state', async () => {
+        test('should fetch single state', async () => {
             const mockState: HomeAssistant.Entity = {
                 entity_id: 'light.living_room',
                 state: 'on',
@@ -131,7 +131,7 @@ describe('Home Assistant API', () => {
                 context: { id: '123', parent_id: null, user_id: null }
             };
 
-            global.fetch = jest.fn().mockResolvedValueOnce({
+            global.fetch = mock().mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve(mockState)
             });
@@ -144,16 +144,16 @@ describe('Home Assistant API', () => {
             );
         });
 
-        it('should handle state fetch errors', async () => {
-            global.fetch = jest.fn().mockRejectedValueOnce(new Error('Failed to fetch states'));
+        test('should handle state fetch errors', async () => {
+            global.fetch = mock().mockRejectedValueOnce(new Error('Failed to fetch states'));
 
             await expect(hass.fetchStates()).rejects.toThrow('Failed to fetch states');
         });
     });
 
     describe('Service Calls', () => {
-        it('should call service', async () => {
-            global.fetch = jest.fn().mockResolvedValueOnce({
+        test('should call service', async () => {
+            global.fetch = mock().mockResolvedValueOnce({
                 ok: true,
                 json: () => Promise.resolve({})
             });
@@ -175,8 +175,8 @@ describe('Home Assistant API', () => {
             );
         });
 
-        it('should handle service call errors', async () => {
-            global.fetch = jest.fn().mockRejectedValueOnce(new Error('Service call failed'));
+        test('should handle service call errors', async () => {
+            global.fetch = mock().mockRejectedValueOnce(new Error('Service call failed'));
 
             await expect(
                 hass.callService('invalid_domain', 'invalid_service', {})
@@ -185,8 +185,8 @@ describe('Home Assistant API', () => {
     });
 
     describe('Event Subscription', () => {
-        it('should subscribe to events', async () => {
-            const callback = jest.fn();
+        test('should subscribe to events', async () => {
+            const callback = mock();
             await hass.subscribeEvents(callback, 'state_changed');
 
             expect(MockWebSocket).toHaveBeenCalledWith(
@@ -194,8 +194,8 @@ describe('Home Assistant API', () => {
             );
         });
 
-        it('should handle subscription errors', async () => {
-            const callback = jest.fn();
+        test('should handle subscription errors', async () => {
+            const callback = mock();
             MockWebSocket.mockImplementation(() => {
                 throw new Error('WebSocket connection failed');
             });
@@ -207,14 +207,14 @@ describe('Home Assistant API', () => {
     });
 
     describe('WebSocket connection', () => {
-        it('should connect to WebSocket endpoint', async () => {
+        test('should connect to WebSocket endpoint', async () => {
             await hass.subscribeEvents(() => { });
             expect(MockWebSocket).toHaveBeenCalledWith(
                 'ws://localhost:8123/api/websocket'
             );
         });
 
-        it('should handle connection errors', async () => {
+        test('should handle connection errors', async () => {
             MockWebSocket.mockImplementation(() => {
                 throw new Error('Connection failed');
             });

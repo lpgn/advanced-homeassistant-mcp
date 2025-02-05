@@ -42,19 +42,19 @@ describe('SpeechToText', () => {
     });
 
     describe('Initialization', () => {
-        it('should create instance with default config', () => {
+        test('should create instance with default config', () => {
             const instance = new SpeechToText({ modelPath: '/models/whisper', modelType: 'base.en' });
             expect(instance instanceof EventEmitter).toBe(true);
             expect(instance instanceof SpeechToText).toBe(true);
         });
 
-        it('should initialize successfully', async () => {
+        test('should initialize successfully', async () => {
             const initSpy = spyOn(speechToText, 'initialize');
             await speechToText.initialize();
             expect(initSpy).toHaveBeenCalled();
         });
 
-        it('should not initialize twice', async () => {
+        test('should not initialize twice', async () => {
             await speechToText.initialize();
             const initSpy = spyOn(speechToText, 'initialize');
             await speechToText.initialize();
@@ -63,7 +63,7 @@ describe('SpeechToText', () => {
     });
 
     describe('Health Check', () => {
-        it('should return true when Docker container is running', async () => {
+        test('should return true when Docker container is running', async () => {
             const mockProcess = {
                 stdout: new EventEmitter(),
                 stderr: new EventEmitter(),
@@ -74,14 +74,14 @@ describe('SpeechToText', () => {
             spawnMock.mockImplementation(() => mockProcess);
 
             setTimeout(() => {
-                mockProcess.stdout.emit('data', Buffer.from('Up 2 hours'));
+                mockProcess.stdout.emtest('data', Buffer.from('Up 2 hours'));
             }, 0);
 
             const result = await speechToText.checkHealth();
             expect(result).toBe(true);
         });
 
-        it('should return false when Docker container is not running', async () => {
+        test('should return false when Docker container is not running', async () => {
             const mockProcess = {
                 stdout: new EventEmitter(),
                 stderr: new EventEmitter(),
@@ -95,7 +95,7 @@ describe('SpeechToText', () => {
             expect(result).toBe(false);
         });
 
-        it('should handle Docker command errors', async () => {
+        test('should handle Docker command errors', async () => {
             spawnMock.mockImplementation(() => {
                 throw new Error('Docker not found');
             });
@@ -106,7 +106,7 @@ describe('SpeechToText', () => {
     });
 
     describe('Wake Word Detection', () => {
-        it('should detect wake word and emit event', async () => {
+        test('should detect wake word and emit event', async () => {
             const testFile = path.join(testAudioDir, 'wake_word_test_123456.wav');
             const testMetadata = `${testFile}.json`;
 
@@ -126,7 +126,7 @@ describe('SpeechToText', () => {
             });
         });
 
-        it('should handle non-wake-word files', async () => {
+        test('should handle non-wake-word files', async () => {
             const testFile = path.join(testAudioDir, 'regular_audio.wav');
             let eventEmitted = false;
 
@@ -158,7 +158,7 @@ describe('SpeechToText', () => {
             }]
         };
 
-        it('should transcribe audio successfully', async () => {
+        test('should transcribe audio successfully', async () => {
             const mockProcess = {
                 stdout: new EventEmitter(),
                 stderr: new EventEmitter(),
@@ -171,14 +171,14 @@ describe('SpeechToText', () => {
             const transcriptionPromise = speechToText.transcribeAudio('/test/audio.wav');
 
             setTimeout(() => {
-                mockProcess.stdout.emit('data', Buffer.from(JSON.stringify(mockTranscriptionResult)));
+                mockProcess.stdout.emtest('data', Buffer.from(JSON.stringify(mockTranscriptionResult)));
             }, 0);
 
             const result = await transcriptionPromise;
             expect(result).toEqual(mockTranscriptionResult);
         });
 
-        it('should handle transcription errors', async () => {
+        test('should handle transcription errors', async () => {
             const mockProcess = {
                 stdout: new EventEmitter(),
                 stderr: new EventEmitter(),
@@ -191,13 +191,13 @@ describe('SpeechToText', () => {
             const transcriptionPromise = speechToText.transcribeAudio('/test/audio.wav');
 
             setTimeout(() => {
-                mockProcess.stderr.emit('data', Buffer.from('Transcription failed'));
+                mockProcess.stderr.emtest('data', Buffer.from('Transcription failed'));
             }, 0);
 
             await expect(transcriptionPromise).rejects.toThrow(TranscriptionError);
         });
 
-        it('should handle invalid JSON output', async () => {
+        test('should handle invalid JSON output', async () => {
             const mockProcess = {
                 stdout: new EventEmitter(),
                 stderr: new EventEmitter(),
@@ -210,13 +210,13 @@ describe('SpeechToText', () => {
             const transcriptionPromise = speechToText.transcribeAudio('/test/audio.wav');
 
             setTimeout(() => {
-                mockProcess.stdout.emit('data', Buffer.from('Invalid JSON'));
+                mockProcess.stdout.emtest('data', Buffer.from('Invalid JSON'));
             }, 0);
 
             await expect(transcriptionPromise).rejects.toThrow(TranscriptionError);
         });
 
-        it('should pass correct transcription options', async () => {
+        test('should pass correct transcription options', async () => {
             const options: TranscriptionOptions = {
                 model: 'large-v2',
                 language: 'en',
@@ -260,7 +260,7 @@ describe('SpeechToText', () => {
     });
 
     describe('Event Handling', () => {
-        it('should emit progress events', async () => {
+        test('should emit progress events', async () => {
             const mockProcess = {
                 stdout: new EventEmitter(),
                 stderr: new EventEmitter(),
@@ -285,12 +285,12 @@ describe('SpeechToText', () => {
 
                 void speechToText.transcribeAudio('/test/audio.wav');
 
-                mockProcess.stdout.emit('data', Buffer.from('Processing'));
-                mockProcess.stderr.emit('data', Buffer.from('Loading model'));
+                mockProcess.stdout.emtest('data', Buffer.from('Processing'));
+                mockProcess.stderr.emtest('data', Buffer.from('Loading model'));
             });
         });
 
-        it('should emit error events', async () => {
+        test('should emit error events', async () => {
             return new Promise<void>((resolve) => {
                 speechToText.on('error', (error) => {
                     expect(error instanceof Error).toBe(true);
@@ -298,13 +298,13 @@ describe('SpeechToText', () => {
                     resolve();
                 });
 
-                speechToText.emit('error', new Error('Test error'));
+                speechToText.emtest('error', new Error('Test error'));
             });
         });
     });
 
     describe('Cleanup', () => {
-        it('should stop wake word detection', () => {
+        test('should stop wake word detection', () => {
             speechToText.startWakeWordDetection(testAudioDir);
             speechToText.stopWakeWordDetection();
             // Verify no more file watching events are processed
@@ -317,7 +317,7 @@ describe('SpeechToText', () => {
             expect(eventEmitted).toBe(false);
         });
 
-        it('should clean up resources on shutdown', async () => {
+        test('should clean up resources on shutdown', async () => {
             await speechToText.initialize();
             const shutdownSpy = spyOn(speechToText, 'shutdown');
             await speechToText.shutdown();

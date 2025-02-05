@@ -80,7 +80,7 @@ describe('Context Tests', () => {
     });
 
     // Add your test cases here
-    it('should execute tool successfully', async () => {
+    test('should execute tool successfully', async () => {
         const result = await mockTool.execute({ test: 'value' });
         expect(result.success).toBe(true);
     });

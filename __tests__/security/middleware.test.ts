@@ -9,31 +9,31 @@ import {
 
 describe('Security Middleware Utilities', () => {
     describe('Rate Limiter', () => {
-        it('should allow requests under threshold', () => {
+        test('should allow requests under threshold', () => {
             const ip = '127.0.0.1';
-            expect(() => checkRateLimit(ip, 10)).not.toThrow();
+            expect(() => checkRateLimtest(ip, 10)).not.toThrow();
         });
 
-        it('should throw when requests exceed threshold', () => {
+        test('should throw when requests exceed threshold', () => {
             const ip = '127.0.0.2';
 
             // Simulate multiple requests
             for (let i = 0; i < 11; i++) {
                 if (i < 10) {
-                    expect(() => checkRateLimit(ip, 10)).not.toThrow();
+                    expect(() => checkRateLimtest(ip, 10)).not.toThrow();
                 } else {
-                    expect(() => checkRateLimit(ip, 10)).toThrow('Too many requests from this IP, please try again later');
+                    expect(() => checkRateLimtest(ip, 10)).toThrow('Too many requests from this IP, please try again later');
                 }
             }
         });
 
-        it('should reset rate limit after window expires', async () => {
+        test('should reset rate limit after window expires', async () => {
             const ip = '127.0.0.3';
 
             // Simulate multiple requests
             for (let i = 0; i < 11; i++) {
                 if (i < 10) {
-                    expect(() => checkRateLimit(ip, 10, 50)).not.toThrow();
+                    expect(() => checkRateLimtest(ip, 10, 50)).not.toThrow();
                 }
             }
 
@@ -41,12 +41,12 @@ describe('Security Middleware Utilities', () => {
             await new Promise(resolve => setTimeout(resolve, 100));
 
             // Should be able to make requests again
-            expect(() => checkRateLimit(ip, 10, 50)).not.toThrow();
+            expect(() => checkRateLimtest(ip, 10, 50)).not.toThrow();
         });
     });
 
     describe('Request Validation', () => {
-        it('should validate content type', () => {
+        test('should validate content type', () => {
             const mockRequest = new Request('http://localhost', {
                 method: 'POST',
                 headers: {
@@ -57,7 +57,7 @@ describe('Security Middleware Utilities', () => {
             expect(() => validateRequestHeaders(mockRequest)).not.toThrow();
         });
 
-        it('should reject invalid content type', () => {
+        test('should reject invalid content type', () => {
             const mockRequest = new Request('http://localhost', {
                 method: 'POST',
                 headers: {
@@ -68,7 +68,7 @@ describe('Security Middleware Utilities', () => {
             expect(() => validateRequestHeaders(mockRequest)).toThrow('Content-Type must be application/json');
         });
 
-        it('should reject large request bodies', () => {
+        test('should reject large request bodies', () => {
             const mockRequest = new Request('http://localhost', {
                 method: 'POST',
                 headers: {
@@ -82,13 +82,13 @@ describe('Security Middleware Utilities', () => {
     });
 
     describe('Input Sanitization', () => {
-        it('should sanitize HTML tags', () => {
+        test('should sanitize HTML tags', () => {
             const input = '<script>alert("xss")</script>Hello';
             const sanitized = sanitizeValue(input);
             expect(sanitized).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;Hello');
         });
 
-        it('should sanitize nested objects', () => {
+        test('should sanitize nested objects', () => {
             const input = {
                 text: '<script>alert("xss")</script>Hello',
                 nested: {
@@ -104,7 +104,7 @@ describe('Security Middleware Utilities', () => {
             });
         });
 
-        it('should preserve non-string values', () => {
+        test('should preserve non-string values', () => {
             const input = {
                 number: 123,
                 boolean: true,
@@ -116,7 +116,7 @@ describe('Security Middleware Utilities', () => {
     });
 
     describe('Security Headers', () => {
-        it('should apply security headers', () => {
+        test('should apply security headers', () => {
             const mockRequest = new Request('http://localhost');
             const headers = applySecurityHeaders(mockRequest);
 
@@ -129,7 +129,7 @@ describe('Security Middleware Utilities', () => {
     });
 
     describe('Error Handling', () => {
-        it('should handle errors in production mode', () => {
+        test('should handle errors in production mode', () => {
             const error = new Error('Test error');
             const result = handleError(error, 'production');
 
@@ -140,7 +140,7 @@ describe('Security Middleware Utilities', () => {
             });
         });
 
-        it('should include error details in development mode', () => {
+        test('should include error details in development mode', () => {
             const error = new Error('Test error');
             const result = handleError(error, 'development');
 

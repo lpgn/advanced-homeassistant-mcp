@@ -45,8 +45,8 @@ const PORT = parseInt(process.env.PORT || "4000", 10);
 
 console.log("Initializing Home Assistant connection...");
 
-// Define Tool interface
-interface Tool {
+// Define Tool interface and export it
+export interface Tool {
   name: string;
   description: string;
   parameters: z.ZodType<any>;
@@ -167,3 +167,6 @@ process.on("SIGTERM", async () => {
   }
   process.exit(0);
 });
+
+// Export tools for testing purposes
+export { tools };

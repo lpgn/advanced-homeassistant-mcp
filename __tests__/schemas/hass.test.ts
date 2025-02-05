@@ -1,14 +1,16 @@
 import { entitySchema, serviceSchema, stateChangedEventSchema, configSchema, automationSchema, deviceControlSchema } from '../../src/schemas/hass.js';
-import AjvModule from 'ajv';
-const Ajv = AjvModule.default || AjvModule;
+import Ajv from 'ajv';
+import { describe, expect, test } from "bun:test";
+
+const ajv = new Ajv();
+
+// Create validation functions for each schema
+const validateEntity = ajv.compile(entitySchema);
+const validateService = ajv.compile(serviceSchema);
 
 describe('Home Assistant Schemas', () => {
-    const ajv = new Ajv({ allErrors: true });
-
     describe('Entity Schema', () => {
-        const validate = ajv.compile(entitySchema);
-
-        it('should validate a valid entity', () => {
+        test('should validate a valid entity', () => {
             const validEntity = {
                 entity_id: 'light.living_room',
                 state: 'on',
@@ -24,28 +26,26 @@ describe('Home Assistant Schemas', () => {
                     user_id: null
                 }
             };
-            expect(validate(validEntity)).toBe(true);
+            expect(validateEntity(validEntity)).toBe(true);
         });
 
-        it('should reject entity with missing required fields', () => {
+        test('should reject entity with missing required fields', () => {
             const invalidEntity = {
                 entity_id: 'light.living_room',
                 state: 'on'
                 // missing attributes, last_changed, last_updated, context
             };
-            expect(validate(invalidEntity)).toBe(false);
-            expect(validate.errors).toBeDefined();
+            expect(validateEntity(invalidEntity)).toBe(false);
+            expect(validateEntity.errors).toBeDefined();
         });
 
-        it('should validate entity with additional attributes', () => {
-            const entityWithExtraAttrs = {
-                entity_id: 'climate.living_room',
-                state: '22',
+        test('should validate entity with additional attributes', () => {
+            const validEntity = {
+                entity_id: 'light.living_room',
+                state: 'on',
                 attributes: {
-                    temperature: 22,
-                    humidity: 45,
-                    mode: 'auto',
-                    custom_attr: 'value'
+                    brightness: 100,
+                    color_mode: 'brightness'
                 },
                 last_changed: '2024-01-01T00:00:00Z',
                 last_updated: '2024-01-01T00:00:00Z',
@@ -55,12 +55,12 @@ describe('Home Assistant Schemas', () => {
                     user_id: null
                 }
             };
-            expect(validate(entityWithExtraAttrs)).toBe(true);
+            expect(validateEntity(validEntity)).toBe(true);
         });
 
-        it('should reject invalid entity_id format', () => {
-            const invalidEntityId = {
-                entity_id: 'invalid_format',
+        test('should reject invalid entity_id format', () => {
+            const invalidEntity = {
+                entity_id: 'invalid_entity',
                 state: 'on',
                 attributes: {},
                 last_changed: '2024-01-01T00:00:00Z',
@@ -71,25 +71,26 @@ describe('Home Assistant Schemas', () => {
                     user_id: null
                 }
             };
-            expect(validate(invalidEntityId)).toBe(false);
+            expect(validateEntity(invalidEntity)).toBe(false);
         });
     });
 
     describe('Service Schema', () => {
-        const validate = ajv.compile(serviceSchema);
-
-        it('should validate a basic service call', () => {
+        test('should validate a basic service call', () => {
             const basicService = {
                 domain: 'light',
                 service: 'turn_on',
                 target: {
                     entity_id: ['light.living_room']
+                },
+                service_data: {
+                    brightness_pct: 100
                 }
             };
-            expect(validate(basicService)).toBe(true);
+            expect(validateService(basicService)).toBe(true);
         });
 
-        it('should validate service call with multiple targets', () => {
+        test('should validate service call with multiple targets', () => {
             const multiTargetService = {
                 domain: 'light',
                 service: 'turn_on',
@@ -102,18 +103,18 @@ describe('Home Assistant Schemas', () => {
                     brightness_pct: 100
                 }
             };
-            expect(validate(multiTargetService)).toBe(true);
+            expect(validateService(multiTargetService)).toBe(true);
         });
 
-        it('should validate service call without targets', () => {
+        test('should validate service call without targets', () => {
             const noTargetService = {
                 domain: 'homeassistant',
                 service: 'restart'
             };
-            expect(validate(noTargetService)).toBe(true);
+            expect(validateService(noTargetService)).toBe(true);
         });
 
-        it('should reject service call with invalid target type', () => {
+        test('should reject service call with invalid target type', () => {
             const invalidService = {
                 domain: 'light',
                 service: 'turn_on',
@@ -121,15 +122,26 @@ describe('Home Assistant Schemas', () => {
                     entity_id: 'not_an_array' // should be an array
                 }
             };
-            expect(validate(invalidService)).toBe(false);
-            expect(validate.errors).toBeDefined();
+            expect(validateService(invalidService)).toBe(false);
+            expect(validateService.errors).toBeDefined();
+        });
+
+        test('should reject service call with invalid domain', () => {
+            const invalidService = {
+                domain: 'invalid_domain',
+                service: 'turn_on',
+                target: {
+                    entity_id: ['light.living_room']
+                }
+            };
+            expect(validateService(invalidService)).toBe(false);
         });
     });
 
     describe('State Changed Event Schema', () => {
         const validate = ajv.compile(stateChangedEventSchema);
 
-        it('should validate a valid state changed event', () => {
+        test('should validate a valid state changed event', () => {
             const validEvent = {
                 event_type: 'state_changed',
                 data: {
@@ -172,7 +184,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(validEvent)).toBe(true);
         });
 
-        it('should validate event with null old_state', () => {
+        test('should validate event with null old_state', () => {
             const newEntityEvent = {
                 event_type: 'state_changed',
                 data: {
@@ -202,7 +214,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(newEntityEvent)).toBe(true);
         });
 
-        it('should reject event with invalid event_type', () => {
+        test('should reject event with invalid event_type', () => {
             const invalidEvent = {
                 event_type: 'wrong_type',
                 data: {
@@ -226,7 +238,7 @@ describe('Home Assistant Schemas', () => {
     describe('Config Schema', () => {
         const validate = ajv.compile(configSchema);
 
-        it('should validate a minimal config', () => {
+        test('should validate a minimal config', () => {
             const minimalConfig = {
                 latitude: 52.3731,
                 longitude: 4.8922,
@@ -245,7 +257,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(minimalConfig)).toBe(true);
         });
 
-        it('should reject config with missing required fields', () => {
+        test('should reject config with missing required fields', () => {
             const invalidConfig = {
                 latitude: 52.3731,
                 longitude: 4.8922
@@ -255,7 +267,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate.errors).toBeDefined();
         });
 
-        it('should reject config with invalid types', () => {
+        test('should reject config with invalid types', () => {
             const invalidConfig = {
                 latitude: '52.3731', // should be number
                 longitude: 4.8922,
@@ -279,7 +291,7 @@ describe('Home Assistant Schemas', () => {
     describe('Automation Schema', () => {
         const validate = ajv.compile(automationSchema);
 
-        it('should validate a basic automation', () => {
+        test('should validate a basic automation', () => {
             const basicAutomation = {
                 alias: 'Turn on lights at sunset',
                 description: 'Automatically turn on lights when the sun sets',
@@ -301,7 +313,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(basicAutomation)).toBe(true);
         });
 
-        it('should validate automation with conditions', () => {
+        test('should validate automation with conditions', () => {
             const automationWithConditions = {
                 alias: 'Conditional Light Control',
                 mode: 'single',
@@ -335,7 +347,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(automationWithConditions)).toBe(true);
         });
 
-        it('should validate automation with multiple triggers and actions', () => {
+        test('should validate automation with multiple triggers and actions', () => {
             const complexAutomation = {
                 alias: 'Complex Automation',
                 mode: 'parallel',
@@ -380,7 +392,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(complexAutomation)).toBe(true);
         });
 
-        it('should reject automation without required fields', () => {
+        test('should reject automation without required fields', () => {
             const invalidAutomation = {
                 description: 'Missing required fields'
                 // missing alias, trigger, and action
@@ -389,7 +401,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate.errors).toBeDefined();
         });
 
-        it('should validate all automation modes', () => {
+        test('should validate all automation modes', () => {
             const modes = ['single', 'parallel', 'queued', 'restart'];
             modes.forEach(mode => {
                 const automation = {
@@ -415,7 +427,7 @@ describe('Home Assistant Schemas', () => {
     describe('Device Control Schema', () => {
         const validate = ajv.compile(deviceControlSchema);
 
-        it('should validate light control command', () => {
+        test('should validate light control command', () => {
             const lightCommand = {
                 domain: 'light',
                 command: 'turn_on',
@@ -429,7 +441,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(lightCommand)).toBe(true);
         });
 
-        it('should validate climate control command', () => {
+        test('should validate climate control command', () => {
             const climateCommand = {
                 domain: 'climate',
                 command: 'set_temperature',
@@ -444,7 +456,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(climateCommand)).toBe(true);
         });
 
-        it('should validate cover control command', () => {
+        test('should validate cover control command', () => {
             const coverCommand = {
                 domain: 'cover',
                 command: 'set_position',
@@ -457,7 +469,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(coverCommand)).toBe(true);
         });
 
-        it('should validate fan control command', () => {
+        test('should validate fan control command', () => {
             const fanCommand = {
                 domain: 'fan',
                 command: 'set_speed',
@@ -471,7 +483,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(fanCommand)).toBe(true);
         });
 
-        it('should reject command with invalid domain', () => {
+        test('should reject command with invalid domain', () => {
             const invalidCommand = {
                 domain: 'invalid_domain',
                 command: 'turn_on',
@@ -481,7 +493,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate.errors).toBeDefined();
         });
 
-        it('should reject command with mismatched domain and entity_id', () => {
+        test('should reject command with mismatched domain and entity_id', () => {
             const mismatchedCommand = {
                 domain: 'light',
                 command: 'turn_on',
@@ -490,7 +502,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(mismatchedCommand)).toBe(false);
         });
 
-        it('should validate command with array of entity_ids', () => {
+        test('should validate command with array of entity_ids', () => {
             const multiEntityCommand = {
                 domain: 'light',
                 command: 'turn_on',
@@ -502,7 +514,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(multiEntityCommand)).toBe(true);
         });
 
-        it('should validate scene activation command', () => {
+        test('should validate scene activation command', () => {
             const sceneCommand = {
                 domain: 'scene',
                 command: 'turn_on',
@@ -514,7 +526,7 @@ describe('Home Assistant Schemas', () => {
             expect(validate(sceneCommand)).toBe(true);
         });
 
-        it('should validate script execution command', () => {
+        test('should validate script execution command', () => {
             const scriptCommand = {
                 domain: 'script',
                 command: 'turn_on',

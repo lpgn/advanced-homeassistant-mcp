@@ -11,9 +11,9 @@ import { MCP_SCHEMA } from '../../src/mcp/schema.js';
 config({ path: resolve(process.cwd(), '.env.test') });
 
 // Mock dependencies
-jest.mock('../../src/security/index.js', () => ({
+// // jest.mock('../../src/security/index.js', () => ({
     TokenManager: {
-        validateToken: jest.fn().mockImplementation((token) => token === 'valid-test-token'),
+        validateToken: mock().mockImplementation((token) => token === 'valid-test-token'),
     },
     rateLimiter: (req: any, res: any, next: any) => next(),
     securityHeaders: (req: any, res: any, next: any) => next(),
@@ -39,11 +39,11 @@ const mockEntity: Entity = {
 };
 
 // Mock Home Assistant module
-jest.mock('../../src/hass/index.js');
+// // jest.mock('../../src/hass/index.js');
 
 // Mock LiteMCP
-jest.mock('litemcp', () => ({
-    LiteMCP: jest.fn().mockImplementation(() => ({
+// // jest.mock('litemcp', () => ({
+    LiteMCP: mock().mockImplementation(() => ({
         name: 'home-assistant',
         version: '0.1.0',
         tools: []
@@ -61,7 +61,7 @@ app.get('/mcp', (_req, res) => {
 
 app.get('/state', (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== 'valid-test-token') {
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.spltest(' ')[1] !== 'valid-test-token') {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     res.json([mockEntity]);
@@ -69,7 +69,7 @@ app.get('/state', (req, res) => {
 
 app.post('/command', (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== 'valid-test-token') {
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.spltest(' ')[1] !== 'valid-test-token') {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -87,7 +87,7 @@ app.post('/command', (req, res) => {
 
 describe('API Endpoints', () => {
     describe('GET /mcp', () => {
-        it('should return MCP schema without authentication', async () => {
+        test('should return MCP schema without authentication', async () => {
             const response = await request(app)
                 .get('/mcp')
                 .expect('Content-Type', /json/)
@@ -102,13 +102,13 @@ describe('API Endpoints', () => {
 
     describe('Protected Endpoints', () => {
         describe('GET /state', () => {
-            it('should return 401 without authentication', async () => {
+            test('should return 401 without authentication', async () => {
                 await request(app)
                     .get('/state')
                     .expect(401);
             });
 
-            it('should return state with valid token', async () => {
+            test('should return state with valid token', async () => {
                 const response = await request(app)
                     .get('/state')
                     .set('Authorization', 'Bearer valid-test-token')
@@ -123,7 +123,7 @@ describe('API Endpoints', () => {
         });
 
         describe('POST /command', () => {
-            it('should return 401 without authentication', async () => {
+            test('should return 401 without authentication', async () => {
                 await request(app)
                     .post('/command')
                     .send({
@@ -133,7 +133,7 @@ describe('API Endpoints', () => {
                     .expect(401);
             });
 
-            it('should process valid command with authentication', async () => {
+            test('should process valid command with authentication', async () => {
                 const response = await request(app)
                     .set('Authorization', 'Bearer valid-test-token')
                     .post('/command')
@@ -148,7 +148,7 @@ describe('API Endpoints', () => {
                 expect(response.body).toHaveProperty('success', true);
             });
 
-            it('should validate command parameters', async () => {
+            test('should validate command parameters', async () => {
                 await request(app)
                     .post('/command')
                     .set('Authorization', 'Bearer valid-test-token')

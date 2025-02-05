@@ -5,10 +5,10 @@ import router from '../../../src/ai/endpoints/ai-router.js';
 import type { AIResponse, AIError } from '../../../src/ai/types/index.js';
 
 // Mock NLPProcessor
-jest.mock('../../../src/ai/nlp/processor.js', () => {
+// // jest.mock('../../../src/ai/nlp/processor.js', () => {
     return {
-        NLPProcessor: jest.fn().mockImplementation(() => ({
-            processCommand: jest.fn().mockImplementation(async () => ({
+        NLPProcessor: mock().mockImplementation(() => ({
+            processCommand: mock().mockImplementation(async () => ({
                 intent: {
                     action: 'turn_on',
                     target: 'light.living_room',
@@ -21,8 +21,8 @@ jest.mock('../../../src/ai/nlp/processor.js', () => {
                     context: 0.9
                 }
             })),
-            validateIntent: jest.fn().mockImplementation(async () => true),
-            suggestCorrections: jest.fn().mockImplementation(async () => [
+            validateIntent: mock().mockImplementation(async () => true),
+            suggestCorrections: mock().mockImplementation(async () => [
                 'Try using simpler commands',
                 'Specify the device name clearly'
             ])
@@ -57,7 +57,7 @@ describe('AI Router', () => {
             model: 'claude' as const
         };
 
-        it('should successfully interpret a valid command', async () => {
+        test('should successfully interpret a valid command', async () => {
             const response = await request(app)
                 .post('/ai/interpret')
                 .send(validRequest);
@@ -81,7 +81,7 @@ describe('AI Router', () => {
             expect(body.context).toBeDefined();
         });
 
-        it('should handle invalid input format', async () => {
+        test('should handle invalid input format', async () => {
             const response = await request(app)
                 .post('/ai/interpret')
                 .send({
@@ -97,7 +97,7 @@ describe('AI Router', () => {
             expect(Array.isArray(error.recovery_options)).toBe(true);
         });
 
-        it('should handle missing required fields', async () => {
+        test('should handle missing required fields', async () => {
             const response = await request(app)
                 .post('/ai/interpret')
                 .send({
@@ -111,7 +111,7 @@ describe('AI Router', () => {
             expect(typeof error.message).toBe('string');
         });
 
-        it('should handle rate limiting', async () => {
+        test('should handle rate limiting', async () => {
             // Make multiple requests to trigger rate limiting
             const requests = Array(101).fill(validRequest);
             const responses = await Promise.all(
@@ -145,7 +145,7 @@ describe('AI Router', () => {
             model: 'claude' as const
         };
 
-        it('should successfully execute a valid intent', async () => {
+        test('should successfully execute a valid intent', async () => {
             const response = await request(app)
                 .post('/ai/execute')
                 .send(validRequest);
@@ -169,7 +169,7 @@ describe('AI Router', () => {
             expect(body.context).toBeDefined();
         });
 
-        it('should handle invalid intent format', async () => {
+        test('should handle invalid intent format', async () => {
             const response = await request(app)
                 .post('/ai/execute')
                 .send({
@@ -199,7 +199,7 @@ describe('AI Router', () => {
             model: 'claude' as const
         };
 
-        it('should return a list of suggestions', async () => {
+        test('should return a list of suggestions', async () => {
             const response = await request(app)
                 .get('/ai/suggestions')
                 .send(validRequest);
@@ -209,7 +209,7 @@ describe('AI Router', () => {
             expect(response.body.suggestions.length).toBeGreaterThan(0);
         });
 
-        it('should handle missing context', async () => {
+        test('should handle missing context', async () => {
             const response = await request(app)
                 .get('/ai/suggestions')
                 .send({});

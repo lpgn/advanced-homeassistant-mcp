@@ -8,7 +8,7 @@ describe('IntentClassifier', () => {
     });
 
     describe('Basic Intent Classification', () => {
-        it('should classify turn_on commands', async () => {
+        test('should classify turn_on commands', async () => {
             const testCases = [
                 {
                     input: 'turn on the living room light',
@@ -35,7 +35,7 @@ describe('IntentClassifier', () => {
             }
         });
 
-        it('should classify turn_off commands', async () => {
+        test('should classify turn_off commands', async () => {
             const testCases = [
                 {
                     input: 'turn off the living room light',
@@ -62,7 +62,7 @@ describe('IntentClassifier', () => {
             }
         });
 
-        it('should classify set commands with parameters', async () => {
+        test('should classify set commands with parameters', async () => {
             const testCases = [
                 {
                     input: 'set the living room light brightness to 50',
@@ -99,7 +99,7 @@ describe('IntentClassifier', () => {
             }
         });
 
-        it('should classify query commands', async () => {
+        test('should classify query commands', async () => {
             const testCases = [
                 {
                     input: 'what is the living room temperature',
@@ -128,13 +128,13 @@ describe('IntentClassifier', () => {
     });
 
     describe('Edge Cases and Error Handling', () => {
-        it('should handle empty input gracefully', async () => {
+        test('should handle empty input gracefully', async () => {
             const result = await classifier.classify('', { parameters: {}, primary_target: '' });
             expect(result.action).toBe('unknown');
             expect(result.confidence).toBeLessThan(0.5);
         });
 
-        it('should handle unknown commands with low confidence', async () => {
+        test('should handle unknown commands with low confidence', async () => {
             const result = await classifier.classify(
                 'do something random',
                 { parameters: {}, primary_target: 'light.living_room' }
@@ -143,7 +143,7 @@ describe('IntentClassifier', () => {
             expect(result.confidence).toBeLessThan(0.5);
         });
 
-        it('should handle missing entities gracefully', async () => {
+        test('should handle missing entities gracefully', async () => {
             const result = await classifier.classify(
                 'turn on the lights',
                 { parameters: {}, primary_target: '' }
@@ -154,7 +154,7 @@ describe('IntentClassifier', () => {
     });
 
     describe('Confidence Calculation', () => {
-        it('should assign higher confidence to exact matches', async () => {
+        test('should assign higher confidence to exact matches', async () => {
             const exactMatch = await classifier.classify(
                 'turn on',
                 { parameters: {}, primary_target: 'light.living_room' }
@@ -166,7 +166,7 @@ describe('IntentClassifier', () => {
             expect(exactMatch.confidence).toBeGreaterThan(partialMatch.confidence);
         });
 
-        it('should boost confidence for polite phrases', async () => {
+        test('should boost confidence for polite phrases', async () => {
             const politeRequest = await classifier.classify(
                 'please turn on the lights',
                 { parameters: {}, primary_target: 'light.living_room' }
@@ -180,7 +180,7 @@ describe('IntentClassifier', () => {
     });
 
     describe('Context Inference', () => {
-        it('should infer set action when parameters are present', async () => {
+        test('should infer set action when parameters are present', async () => {
             const result = await classifier.classify(
                 'lights at 50%',
                 {
@@ -192,7 +192,7 @@ describe('IntentClassifier', () => {
             expect(result.parameters).toHaveProperty('brightness', 50);
         });
 
-        it('should infer query action for question-like inputs', async () => {
+        test('should infer query action for question-like inputs', async () => {
             const result = await classifier.classify(
                 'how warm is it',
                 { parameters: {}, primary_target: 'sensor.temperature' }

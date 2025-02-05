@@ -44,19 +44,19 @@ const mockWebSocket: WebSocketMock = {
     close: jest.fn<WebSocketCloseHandler>(),
     readyState: 1,
     OPEN: 1,
-    removeAllListeners: jest.fn()
+    removeAllListeners: mock()
 };
 
-jest.mock('ws', () => ({
-    WebSocket: jest.fn().mockImplementation(() => mockWebSocket)
+// // jest.mock('ws', () => ({
+    WebSocket: mock().mockImplementation(() => mockWebSocket)
 }));
 
 // Mock fetch globally
-const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+const mockFetch = mock() as jest.MockedFunction<typeof fetch>;
 global.fetch = mockFetch;
 
 // Mock get_hass
-jest.mock('../../src/hass/index.js', () => {
+// // jest.mock('../../src/hass/index.js', () => {
     let instance: TestHassInstance | null = null;
     const actual = jest.requireActual<typeof import('../../src/hass/index.js')>('../../src/hass/index.js');
     return {
@@ -85,12 +85,12 @@ describe('Home Assistant Integration', () => {
             jest.clearAllMocks();
         });
 
-        it('should create a WebSocket client with the provided URL and token', () => {
+        test('should create a WebSocket client with the provided URL and token', () => {
             expect(client).toBeInstanceOf(EventEmitter);
-            expect(jest.mocked(WebSocket)).toHaveBeenCalledWith(mockUrl);
+            expect(// // jest.mocked(WebSocket)).toHaveBeenCalledWith(mockUrl);
         });
 
-        it('should connect and authenticate successfully', async () => {
+        test('should connect and authenticate successfully', async () => {
             const connectPromise = client.connect();
 
             // Get and call the open callback
@@ -114,7 +114,7 @@ describe('Home Assistant Integration', () => {
             await connectPromise;
         });
 
-        it('should handle authentication failure', async () => {
+        test('should handle authentication failure', async () => {
             const connectPromise = client.connect();
 
             // Get and call the open callback
@@ -130,7 +130,7 @@ describe('Home Assistant Integration', () => {
             await expect(connectPromise).rejects.toThrow();
         });
 
-        it('should handle connection errors', async () => {
+        test('should handle connection errors', async () => {
             const connectPromise = client.connect();
 
             // Get and call the error callback
@@ -141,7 +141,7 @@ describe('Home Assistant Integration', () => {
             await expect(connectPromise).rejects.toThrow('Connection failed');
         });
 
-        it('should handle message parsing errors', async () => {
+        test('should handle message parsing errors', async () => {
             const connectPromise = client.connect();
 
             // Get and call the open callback
@@ -198,12 +198,12 @@ describe('Home Assistant Integration', () => {
             });
         });
 
-        it('should create instance with correct properties', () => {
+        test('should create instance with correct properties', () => {
             expect(instance['baseUrl']).toBe(mockBaseUrl);
             expect(instance['token']).toBe(mockToken);
         });
 
-        it('should fetch states', async () => {
+        test('should fetch states', async () => {
             const states = await instance.fetchStates();
             expect(states).toEqual([mockState]);
             expect(mockFetch).toHaveBeenCalledWith(
@@ -216,7 +216,7 @@ describe('Home Assistant Integration', () => {
             );
         });
 
-        it('should fetch single state', async () => {
+        test('should fetch single state', async () => {
             const state = await instance.fetchState('light.test');
             expect(state).toEqual(mockState);
             expect(mockFetch).toHaveBeenCalledWith(
@@ -229,7 +229,7 @@ describe('Home Assistant Integration', () => {
             );
         });
 
-        it('should call service', async () => {
+        test('should call service', async () => {
             await instance.callService('light', 'turn_on', { entity_id: 'light.test' });
             expect(mockFetch).toHaveBeenCalledWith(
                 `${mockBaseUrl}/api/services/light/turn_on`,
@@ -244,17 +244,17 @@ describe('Home Assistant Integration', () => {
             );
         });
 
-        it('should handle fetch errors', async () => {
+        test('should handle fetch errors', async () => {
             mockFetch.mockRejectedValueOnce(new Error('Network error'));
             await expect(instance.fetchStates()).rejects.toThrow('Network error');
         });
 
-        it('should handle invalid JSON responses', async () => {
+        test('should handle invalid JSON responses', async () => {
             mockFetch.mockResolvedValueOnce(new Response('invalid json'));
             await expect(instance.fetchStates()).rejects.toThrow();
         });
 
-        it('should handle non-200 responses', async () => {
+        test('should handle non-200 responses', async () => {
             mockFetch.mockResolvedValueOnce(new Response('Error', { status: 500 }));
             await expect(instance.fetchStates()).rejects.toThrow();
         });
@@ -263,15 +263,15 @@ describe('Home Assistant Integration', () => {
             let eventCallback: (event: HassEvent) => void;
 
             beforeEach(() => {
-                eventCallback = jest.fn();
+                eventCallback = mock();
             });
 
-            it('should subscribe to events', async () => {
+            test('should subscribe to events', async () => {
                 const subscriptionId = await instance.subscribeEvents(eventCallback);
                 expect(typeof subscriptionId).toBe('number');
             });
 
-            it('should unsubscribe from events', async () => {
+            test('should unsubscribe from events', async () => {
                 const subscriptionId = await instance.subscribeEvents(eventCallback);
                 await instance.unsubscribeEvents(subscriptionId);
             });
@@ -309,19 +309,19 @@ describe('Home Assistant Integration', () => {
             process.env = originalEnv;
         });
 
-        it('should create instance with default configuration', async () => {
+        test('should create instance with default configuration', async () => {
             const instance = await get_hass() as TestHassInstance;
             expect(instance._baseUrl).toBe('http://localhost:8123');
             expect(instance._token).toBe('test_token');
         });
 
-        it('should reuse existing instance', async () => {
+        test('should reuse existing instance', async () => {
             const instance1 = await get_hass();
             const instance2 = await get_hass();
             expect(instance1).toBe(instance2);
         });
 
-        it('should use custom configuration', async () => {
+        test('should use custom configuration', async () => {
             process.env.HASS_HOST = 'https://hass.example.com';
             process.env.HASS_TOKEN = 'prod_token';
             const instance = await get_hass() as TestHassInstance;

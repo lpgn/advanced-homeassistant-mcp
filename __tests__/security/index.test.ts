@@ -17,7 +17,7 @@ describe('Security Module', () => {
         const testToken = 'test-token';
         const encryptionKey = 'test-encryption-key-that-is-long-enough';
 
-        it('should encrypt and decrypt tokens', () => {
+        test('should encrypt and decrypt tokens', () => {
             const encrypted = TokenManager.encryptToken(testToken, encryptionKey);
             expect(encrypted).toContain('aes-256-gcm:');
 
@@ -25,20 +25,20 @@ describe('Security Module', () => {
             expect(decrypted).toBe(testToken);
         });
 
-        it('should validate tokens correctly', () => {
+        test('should validate tokens correctly', () => {
             const validToken = jwt.sign({ data: 'test' }, TEST_SECRET, { expiresIn: '1h' });
             const result = TokenManager.validateToken(validToken);
             expect(result.valid).toBe(true);
             expect(result.error).toBeUndefined();
         });
 
-        it('should handle empty tokens', () => {
+        test('should handle empty tokens', () => {
             const result = TokenManager.validateToken('');
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Invalid token format');
         });
 
-        it('should handle expired tokens', () => {
+        test('should handle expired tokens', () => {
             const now = Math.floor(Date.now() / 1000);
             const payload = {
                 data: 'test',
@@ -51,13 +51,13 @@ describe('Security Module', () => {
             expect(result.error).toBe('Token has expired');
         });
 
-        it('should handle invalid token format', () => {
+        test('should handle invalid token format', () => {
             const result = TokenManager.validateToken('invalid-token');
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Invalid token format');
         });
 
-        it('should handle missing JWT secret', () => {
+        test('should handle missing JWT secret', () => {
             delete process.env.JWT_SECRET;
             const payload = { data: 'test' };
             const token = jwt.sign(payload, 'some-secret');
@@ -66,7 +66,7 @@ describe('Security Module', () => {
             expect(result.error).toBe('JWT secret not configured');
         });
 
-        it('should handle rate limiting for failed attempts', () => {
+        test('should handle rate limiting for failed attempts', () => {
             const invalidToken = 'x'.repeat(64);
             const testIp = '127.0.0.1';
 
@@ -111,7 +111,7 @@ describe('Security Module', () => {
             mockNext = mock(() => { });
         });
 
-        it('should pass valid requests', () => {
+        test('should pass valid requests', () => {
             if (mockRequest.headers) {
                 mockRequest.headers.authorization = 'Bearer valid-token';
             }
@@ -123,7 +123,7 @@ describe('Security Module', () => {
             expect(mockNext).toHaveBeenCalled();
         });
 
-        it('should reject invalid content type', () => {
+        test('should reject invalid content type', () => {
             if (mockRequest.headers) {
                 mockRequest.headers['content-type'] = 'text/plain';
             }
@@ -139,7 +139,7 @@ describe('Security Module', () => {
             });
         });
 
-        it('should reject missing token', () => {
+        test('should reject missing token', () => {
             if (mockRequest.headers) {
                 delete mockRequest.headers.authorization;
             }
@@ -155,7 +155,7 @@ describe('Security Module', () => {
             });
         });
 
-        it('should reject invalid request body', () => {
+        test('should reject invalid request body', () => {
             mockRequest.body = null;
 
             validateRequest(mockRequest, mockResponse, mockNext);
@@ -197,7 +197,7 @@ describe('Security Module', () => {
             mockNext = mock(() => { });
         });
 
-        it('should sanitize HTML tags from request body', () => {
+        test('should sanitize HTML tags from request body', () => {
             sanitizeInput(mockRequest, mockResponse, mockNext);
 
             expect(mockRequest.body).toEqual({
@@ -209,7 +209,7 @@ describe('Security Module', () => {
             expect(mockNext).toHaveBeenCalled();
         });
 
-        it('should handle non-object body', () => {
+        test('should handle non-object body', () => {
             mockRequest.body = 'string body';
             sanitizeInput(mockRequest, mockResponse, mockNext);
             expect(mockNext).toHaveBeenCalled();
@@ -235,7 +235,7 @@ describe('Security Module', () => {
             mockNext = mock(() => { });
         });
 
-        it('should handle errors in production mode', () => {
+        test('should handle errors in production mode', () => {
             process.env.NODE_ENV = 'production';
             const error = new Error('Test error');
             errorHandler(error, mockRequest, mockResponse, mockNext);
@@ -248,7 +248,7 @@ describe('Security Module', () => {
             });
         });
 
-        it('should include error message in development mode', () => {
+        test('should include error message in development mode', () => {
             process.env.NODE_ENV = 'development';
             const error = new Error('Test error');
             errorHandler(error, mockRequest, mockResponse, mockNext);
@@ -265,7 +265,7 @@ describe('Security Module', () => {
     });
 
     describe('Rate Limiter', () => {
-        it('should limit requests after threshold', async () => {
+        test('should limit requests after threshold', async () => {
             const mockContext = {
                 request: new Request('http://localhost', {
                     headers: new Headers({
@@ -292,7 +292,7 @@ describe('Security Module', () => {
     });
 
     describe('Security Headers', () => {
-        it('should set security headers', async () => {
+        test('should set security headers', async () => {
             const mockHeaders = new Headers();
             const mockContext = {
                 request: new Request('http://localhost', {

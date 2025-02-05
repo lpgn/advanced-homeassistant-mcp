@@ -141,8 +141,9 @@ export const cleanupMocks = (mocks: {
     liteMcpInstance: MockLiteMCPInstance;
     mockFetch: Mock<() => Promise<Response>>;
 }) => {
-    mocks.liteMcpInstance.addTool.mock.calls = [];
-    mocks.liteMcpInstance.start.mock.calls = [];
+    // Reset mock calls by creating a new mock
+    mocks.liteMcpInstance.addTool = mock((tool: Tool) => undefined);
+    mocks.liteMcpInstance.start = mock(() => Promise.resolve());
     mocks.mockFetch = mock(() => Promise.resolve(new Response()));
     globalThis.fetch = mocks.mockFetch;
 }; 
