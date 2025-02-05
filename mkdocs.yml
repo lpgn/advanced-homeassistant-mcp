@@ -1,6 +1,6 @@
 site_name: Advanced Home Assistant MCP
-site_url: https://jango-blockchained.github.io/advanced-homeassitant-mcp
-repo_url: https://github.com/jango-blockchained/advanced-homeassitant-mcp
+site_url: https://jango-blockchained.github.io/advanced-homeassistant-mcp
+repo_url: https://github.com/jango-blockchained/advanced-homeassistant-mcp
 
 theme:
   name: material
@@ -28,6 +28,9 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - toc.integrate
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -39,34 +42,38 @@ markdown_extensions:
   - pymdownx.details
   - attr_list
   - md_in_html
+  - pymdownx.emoji
+  - pymdownx.tasklist
+  - footnotes
+  - tables
 
 plugins:
   - search
-  - git-revision-date-localized:
-      type: date
+  - minify:
+      minify_html: true
+  - git-revision-date
   - mkdocstrings:
       default_handler: python
-      handlers:
-        python:
-          options:
-            show_source: true
+  - social
+  - tags
+  - redirects
+  - gh-deploy
 
 nav:
   - Home: index.md
   - Usage: usage.md
-  - API: api.md
   - Configuration:
     - Claude Desktop Config: claude_desktop_config.md
-    - Cline Config: cline_config.md
+    - Client Config: client_config.md
   - Getting Started:
-    - Overview: getting-started.md
+    - Overview: getting-started/index.md
     - Installation: getting-started/installation.md
     - Configuration: getting-started/configuration.md
     - Docker Setup: getting-started/docker.md
     - Quick Start: getting-started/quickstart.md
   - API Reference:
     - Overview: api/index.md
-    - Core API: api.md
+    - Core API: api/core-api.md
     - SSE API: api/sse.md
     - Core Functions: api/core.md
   - Tools:
@@ -94,6 +101,7 @@ nav:
     - Interfaces: development/interfaces.md
     - Tool Development: development/tools.md
     - Testing Guide: testing.md
+    - Deployment Guide: deployment.md
   - Architecture: architecture.md
   - Contributing: contributing.md
   - Troubleshooting: troubleshooting.md

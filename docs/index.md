@@ -4,9 +4,18 @@ title: Home
 nav_order: 1
 ---
 
-# 🏠 MCP Server for Home Assistant
+# Advanced Home Assistant MCP
 
-Welcome to the Model Context Protocol (MCP) Server documentation! This guide will help you get started with integrating a lightweight automation tool with your Home Assistant setup.
+Welcome to the Advanced Home Assistant Master Control Program documentation.
+
+This documentation provides comprehensive information about setting up, configuring, and using the Advanced Home Assistant MCP system.
+
+## Quick Links
+
+- [Getting Started](getting-started/index.md)
+- [API Reference](api/index.md)
+- [Configuration Guide](getting-started/configuration.md)
+- [Docker Setup](getting-started/docker.md)
 
 ## What is MCP Server?
 
