@@ -33,36 +33,35 @@ RUN apt-get update && apt-get install -y \
     libasound2 \
     libasound2-plugins \
     pulseaudio \
-    && rm -rf /var/lib/apt/lists/*
+    pulseaudio-utils \
+    libpulse0 \
+    libportaudio2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /var/run/pulse /var/lib/pulse
 
 # Create necessary directories
-RUN mkdir -p /models/wake_word /audio
+RUN mkdir -p /models/wake_word /audio && \
+    chown -R 1000:1000 /models /audio && \
+    mkdir -p /home/user/.config/pulse && \
+    chown -R 1000:1000 /home/user
 
 # Set working directory
 WORKDIR /app
 
-# Copy the wake word detection script
+# Copy the wake word detection script and audio setup script
 COPY wake_word_detector.py .
+COPY setup-audio.sh /setup-audio.sh
+RUN chmod +x /setup-audio.sh
 
 # Set environment variables
 ENV WHISPER_MODEL_PATH=/models \
     WAKEWORD_MODEL_PATH=/models/wake_word \
     PYTHONUNBUFFERED=1 \
-    ASR_MODEL=base.en \
-    ASR_MODEL_PATH=/models
+    PULSE_SERVER=unix:/run/user/1000/pulse/native \
+    HOME=/home/user
 
-# Add resource limits to Python
-ENV PYTHONMALLOC=malloc \
-    MALLOC_TRIM_THRESHOLD_=100000 \
-    PYTHONDEVMODE=1
+# Run as the host user
+USER 1000:1000
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD ps aux | grep '[p]ython' || exit 1
-
-# Copy audio setup script
-COPY setup-audio.sh /setup-audio.sh
-RUN chmod +x /setup-audio.sh
-
-# Start command
-CMD ["/bin/bash", "-c", "/setup-audio.sh && python -u wake_word_detector.py"] 
+# Start the application
+CMD ["/setup-audio.sh"] 
