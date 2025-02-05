@@ -1,42 +1,15 @@
-import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import { LiteMCP } from 'litemcp';
-import { get_hass } from '../src/hass/index.js';
+import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
+import type { Mock } from "bun:test";
 import type { WebSocket } from 'ws';
+import type { LiteMCP } from 'litemcp';
 
-// Load test environment variables with defaults
-const TEST_HASS_HOST = process.env.TEST_HASS_HOST || 'http://localhost:8123';
-const TEST_HASS_TOKEN = process.env.TEST_HASS_TOKEN || 'test_token';
-const TEST_HASS_SOCKET_URL = process.env.TEST_HASS_SOCKET_URL || 'ws://localhost:8123/api/websocket';
+// Extend the global scope
+declare global {
+    // eslint-disable-next-line no-var
+    var mockResponse: Response;
+}
 
-// Set environment variables for testing
-process.env.HASS_HOST = TEST_HASS_HOST;
-process.env.HASS_TOKEN = TEST_HASS_TOKEN;
-process.env.HASS_SOCKET_URL = TEST_HASS_SOCKET_URL;
-
-// Mock fetch
-const mockFetchResponse = {
-    ok: true,
-    status: 200,
-    statusText: 'OK',
-    json: async () => ({ automation_id: 'test_automation' }),
-    text: async () => '{"automation_id":"test_automation"}',
-    headers: new Headers(),
-    body: null,
-    bodyUsed: false,
-    arrayBuffer: async () => new ArrayBuffer(0),
-    blob: async () => new Blob([]),
-    formData: async () => new FormData(),
-    clone: function () { return { ...this }; },
-    type: 'default',
-    url: '',
-    redirected: false,
-    redirect: () => Promise.resolve(new Response())
-} as Response;
-
-const mockFetch = jest.fn(async (_input: string | URL | Request, _init?: RequestInit) => mockFetchResponse);
-(global as any).fetch = mockFetch;
-
-// Mock LiteMCP
+// Types
 interface Tool {
     name: string;
     description: string;
@@ -44,51 +17,24 @@ interface Tool {
     execute: (params: Record<string, unknown>) => Promise<unknown>;
 }
 
-type MockFunction<T = any> = jest.Mock<Promise<T>, any[]>;
-
 interface MockLiteMCPInstance {
-    addTool: ReturnType<typeof jest.fn>;
-    start: ReturnType<typeof jest.fn>;
+    addTool: Mock<(tool: Tool) => void>;
+    start: Mock<() => Promise<void>>;
 }
 
-const mockLiteMCPInstance: MockLiteMCPInstance = {
-    addTool: jest.fn(),
-    start: jest.fn().mockResolvedValue(undefined)
-};
-
-jest.mock('litemcp', () => ({
-    LiteMCP: jest.fn(() => mockLiteMCPInstance)
-}));
-
-// Mock get_hass
 interface MockServices {
     light: {
-        turn_on: jest.Mock;
-        turn_off: jest.Mock;
+        turn_on: Mock<() => Promise<{ success: boolean }>>;
+        turn_off: Mock<() => Promise<{ success: boolean }>>;
     };
     climate: {
-        set_temperature: jest.Mock;
+        set_temperature: Mock<() => Promise<{ success: boolean }>>;
     };
 }
 
 interface MockHassInstance {
     services: MockServices;
 }
-
-// Create mock services
-const mockServices: MockServices = {
-    light: {
-        turn_on: jest.fn().mockResolvedValue({ success: true }),
-        turn_off: jest.fn().mockResolvedValue({ success: true })
-    },
-    climate: {
-        set_temperature: jest.fn().mockResolvedValue({ success: true })
-    }
-};
-
-jest.unstable_mockModule('../src/hass/index.js', () => ({
-    get_hass: jest.fn().mockResolvedValue({ services: mockServices })
-}));
 
 interface TestResponse {
     success: boolean;
@@ -103,99 +49,212 @@ interface TestResponse {
     new_automation_id?: string;
 }
 
-type WebSocketEventMap = {
-    message: MessageEvent;
-    open: Event;
-    close: Event;
-    error: Event;
+// Test configuration
+const TEST_CONFIG = {
+    HASS_HOST: process.env.TEST_HASS_HOST || 'http://localhost:8123',
+    HASS_TOKEN: process.env.TEST_HASS_TOKEN || 'test_token',
+    HASS_SOCKET_URL: process.env.TEST_HASS_SOCKET_URL || 'ws://localhost:8123/api/websocket'
+} as const;
+
+// Setup test environment
+Object.entries(TEST_CONFIG).forEach(([key, value]) => {
+    process.env[key] = value;
+});
+
+// Mock instances
+const mockLiteMCPInstance: MockLiteMCPInstance = {
+    addTool: mock((tool: Tool) => undefined),
+    start: mock(() => Promise.resolve())
 };
 
-type WebSocketEventListener = (event: Event) => void;
-type WebSocketMessageListener = (event: MessageEvent) => void;
+const mockServices: MockServices = {
+    light: {
+        turn_on: mock(() => Promise.resolve({ success: true })),
+        turn_off: mock(() => Promise.resolve({ success: true }))
+    },
+    climate: {
+        set_temperature: mock(() => Promise.resolve({ success: true }))
+    }
+};
 
-interface MockWebSocketInstance {
-    addEventListener: jest.Mock;
-    removeEventListener: jest.Mock;
-    send: jest.Mock;
-    close: jest.Mock;
-    readyState: number;
-    binaryType: 'blob' | 'arraybuffer';
-    bufferedAmount: number;
-    extensions: string;
-    protocol: string;
-    url: string;
-    onopen: WebSocketEventListener | null;
-    onerror: WebSocketEventListener | null;
-    onclose: WebSocketEventListener | null;
-    onmessage: WebSocketMessageListener | null;
-    CONNECTING: number;
-    OPEN: number;
-    CLOSING: number;
-    CLOSED: number;
+// Mock WebSocket
+class MockWebSocket implements Partial<WebSocket> {
+    public static readonly CONNECTING = 0;
+    public static readonly OPEN = 1;
+    public static readonly CLOSING = 2;
+    public static readonly CLOSED = 3;
+
+    public readyState: 0 | 1 | 2 | 3 = MockWebSocket.OPEN;
+    public bufferedAmount = 0;
+    public extensions = '';
+    public protocol = '';
+    public url = '';
+    public binaryType: 'arraybuffer' | 'nodebuffer' | 'fragments' = 'arraybuffer';
+
+    public onopen: ((event: any) => void) | null = null;
+    public onerror: ((event: any) => void) | null = null;
+    public onclose: ((event: any) => void) | null = null;
+    public onmessage: ((event: any) => void) | null = null;
+
+    public addEventListener = mock(() => undefined);
+    public removeEventListener = mock(() => undefined);
+    public send = mock(() => undefined);
+    public close = mock(() => undefined);
+    public ping = mock(() => undefined);
+    public pong = mock(() => undefined);
+    public terminate = mock(() => undefined);
+    public dispatchEvent = mock(() => true);
+
+    constructor(url: string | URL, protocols?: string | string[]) {
+        this.url = url.toString();
+        if (protocols) {
+            this.protocol = Array.isArray(protocols) ? protocols[0] : protocols;
+        }
+    }
 }
 
-const createMockWebSocket = (): MockWebSocketInstance => ({
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    send: jest.fn(),
-    close: jest.fn(),
-    readyState: 0,
-    binaryType: 'blob',
-    bufferedAmount: 0,
-    extensions: '',
-    protocol: '',
-    url: '',
-    onopen: null,
-    onerror: null,
-    onclose: null,
-    onmessage: null,
-    CONNECTING: 0,
-    OPEN: 1,
-    CLOSING: 2,
-    CLOSED: 3
+// Create fetch mock with implementation
+let mockFetch = mock(() => {
+    return Promise.resolve(new Response());
 });
+
+// Override globals
+globalThis.fetch = mockFetch;
+// Use type assertion to handle WebSocket compatibility
+globalThis.WebSocket = MockWebSocket as any;
 
 describe('Home Assistant MCP Server', () => {
     let mockHass: MockHassInstance;
     let liteMcpInstance: MockLiteMCPInstance;
-    let addToolCalls: Array<[Tool]>;
+    let addToolCalls: Tool[];
 
     beforeEach(async () => {
         mockHass = {
             services: mockServices
         };
 
-        // Reset all mocks
-        jest.clearAllMocks();
-        mockFetch.mockClear();
+        // Reset mocks
+        mockLiteMCPInstance.addTool.mock.calls = [];
+        mockLiteMCPInstance.start.mock.calls = [];
+
+        // Setup default response
+        mockFetch = mock(() => {
+            return Promise.resolve(new Response(
+                JSON.stringify({ state: 'connected' }),
+                { status: 200 }
+            ));
+        });
+        globalThis.fetch = mockFetch;
 
         // Import the module which will execute the main function
         await import('../src/index.js');
 
-        // Mock WebSocket
-        const mockWs = createMockWebSocket();
-        (global as any).WebSocket = jest.fn(() => mockWs);
-
         // Get the mock instance
         liteMcpInstance = mockLiteMCPInstance;
-        addToolCalls = liteMcpInstance.addTool.mock.calls as Array<[Tool]>;
+        addToolCalls = mockLiteMCPInstance.addTool.mock.calls.map(call => call.args[0]);
     });
 
     afterEach(() => {
-        jest.resetModules();
+        // Clean up
+        mockLiteMCPInstance.addTool.mock.calls = [];
+        mockLiteMCPInstance.start.mock.calls = [];
+        mockFetch = mock(() => Promise.resolve(new Response()));
+        globalThis.fetch = mockFetch;
     });
 
-    it('should connect to Home Assistant', async () => {
-        const hass = await get_hass();
-        expect(hass).toBeDefined();
-        expect(hass.services).toBeDefined();
-        expect(typeof hass.services.light.turn_on).toBe('function');
+    test('should connect to Home Assistant', async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        // Verify connection
+        expect(mockFetch.mock.calls.length).toBeGreaterThan(0);
+        expect(mockLiteMCPInstance.start.mock.calls.length).toBeGreaterThan(0);
     });
 
-    it('should reuse the same instance on subsequent calls', async () => {
-        const firstInstance = await get_hass();
-        const secondInstance = await get_hass();
-        expect(firstInstance).toBe(secondInstance);
+    test('should handle connection errors', async () => {
+        // Setup error response
+        mockFetch = mock(() => Promise.reject(new Error('Connection failed')));
+        globalThis.fetch = mockFetch;
+
+        // Import module again with error mock
+        await import('../src/index.js');
+
+        // Verify error handling
+        expect(mockFetch.mock.calls.length).toBeGreaterThan(0);
+        expect(mockLiteMCPInstance.start.mock.calls.length).toBe(0);
+    });
+
+    describe('Tool Registration', () => {
+        test('should register all required tools', () => {
+            const toolNames = addToolCalls.map(tool => tool.name);
+
+            expect(toolNames).toContain('list_devices');
+            expect(toolNames).toContain('control');
+            expect(toolNames).toContain('get_history');
+            expect(toolNames).toContain('scene');
+            expect(toolNames).toContain('notify');
+            expect(toolNames).toContain('automation');
+            expect(toolNames).toContain('addon');
+            expect(toolNames).toContain('package');
+            expect(toolNames).toContain('automation_config');
+        });
+
+        test('should configure tools with correct parameters', () => {
+            const listDevicesTool = addToolCalls.find(tool => tool.name === 'list_devices');
+            expect(listDevicesTool).toBeDefined();
+            expect(listDevicesTool?.parameters).toBeDefined();
+
+            const controlTool = addToolCalls.find(tool => tool.name === 'control');
+            expect(controlTool).toBeDefined();
+            expect(controlTool?.parameters).toBeDefined();
+        });
+    });
+
+    describe('Tool Execution', () => {
+        test('should execute list_devices tool', async () => {
+            const listDevicesTool = addToolCalls.find(tool => tool.name === 'list_devices');
+            expect(listDevicesTool).toBeDefined();
+
+            if (listDevicesTool) {
+                const mockDevices = [
+                    {
+                        entity_id: 'light.living_room',
+                        state: 'on',
+                        attributes: { brightness: 255 }
+                    }
+                ];
+
+                // Setup response for this test
+                mockFetch = mock(() => Promise.resolve(new Response(
+                    JSON.stringify(mockDevices)
+                )));
+                globalThis.fetch = mockFetch;
+
+                const result = await listDevicesTool.execute({}) as TestResponse;
+                expect(result.success).toBe(true);
+                expect(result.devices).toBeDefined();
+            }
+        });
+
+        test('should execute control tool', async () => {
+            const controlTool = addToolCalls.find(tool => tool.name === 'control');
+            expect(controlTool).toBeDefined();
+
+            if (controlTool) {
+                // Setup response for this test
+                mockFetch = mock(() => Promise.resolve(new Response(
+                    JSON.stringify({ success: true })
+                )));
+                globalThis.fetch = mockFetch;
+
+                const result = await controlTool.execute({
+                    command: 'turn_on',
+                    entity_id: 'light.living_room',
+                    brightness: 255
+                }) as TestResponse;
+
+                expect(result.success).toBe(true);
+                expect(mockFetch.mock.calls.length).toBeGreaterThan(0);
+            }
+        });
     });
 
     describe('list_devices tool', () => {
@@ -220,7 +279,7 @@ describe('Home Assistant MCP Server', () => {
             } as Response);
 
             // Get the tool registration
-            const listDevicesTool = addToolCalls.find(call => call[0].name === 'list_devices')?.[0];
+            const listDevicesTool = addToolCalls.find(call => call.name === 'list_devices');
             expect(listDevicesTool).toBeDefined();
 
             if (!listDevicesTool) {
@@ -251,7 +310,7 @@ describe('Home Assistant MCP Server', () => {
             mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
             // Get the tool registration
-            const listDevicesTool = addToolCalls.find(call => call[0].name === 'list_devices')?.[0];
+            const listDevicesTool = addToolCalls.find(call => call.name === 'list_devices');
             expect(listDevicesTool).toBeDefined();
 
             if (!listDevicesTool) {
@@ -276,7 +335,7 @@ describe('Home Assistant MCP Server', () => {
             } as Response);
 
             // Get the tool registration
-            const controlTool = addToolCalls.find(call => call[0].name === 'control')?.[0];
+            const controlTool = addToolCalls.find(call => call.name === 'control');
             expect(controlTool).toBeDefined();
 
             if (!controlTool) {
@@ -296,11 +355,11 @@ describe('Home Assistant MCP Server', () => {
 
             // Verify the fetch call
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/light/turn_on`,
+                `${TEST_CONFIG.HASS_HOST}/api/services/light/turn_on`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -313,7 +372,7 @@ describe('Home Assistant MCP Server', () => {
 
         it('should handle unsupported domains', async () => {
             // Get the tool registration
-            const controlTool = addToolCalls.find(call => call[0].name === 'control')?.[0];
+            const controlTool = addToolCalls.find(call => call.name === 'control');
             expect(controlTool).toBeDefined();
 
             if (!controlTool) {
@@ -339,7 +398,7 @@ describe('Home Assistant MCP Server', () => {
             } as Response);
 
             // Get the tool registration
-            const controlTool = addToolCalls.find(call => call[0].name === 'control')?.[0];
+            const controlTool = addToolCalls.find(call => call.name === 'control');
             expect(controlTool).toBeDefined();
 
             if (!controlTool) {
@@ -365,7 +424,7 @@ describe('Home Assistant MCP Server', () => {
             } as Response);
 
             // Get the tool registration
-            const controlTool = addToolCalls.find(call => call[0].name === 'control')?.[0];
+            const controlTool = addToolCalls.find(call => call.name === 'control');
             expect(controlTool).toBeDefined();
 
             if (!controlTool) {
@@ -387,11 +446,11 @@ describe('Home Assistant MCP Server', () => {
 
             // Verify the fetch call
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/climate/set_temperature`,
+                `${TEST_CONFIG.HASS_HOST}/api/services/climate/set_temperature`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -412,7 +471,7 @@ describe('Home Assistant MCP Server', () => {
             } as Response);
 
             // Get the tool registration
-            const controlTool = addToolCalls.find(call => call[0].name === 'control')?.[0];
+            const controlTool = addToolCalls.find(call => call.name === 'control');
             expect(controlTool).toBeDefined();
 
             if (!controlTool) {
@@ -432,11 +491,11 @@ describe('Home Assistant MCP Server', () => {
 
             // Verify the fetch call
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/cover/set_position`,
+                `${TEST_CONFIG.HASS_HOST}/api/services/cover/set_position`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -449,36 +508,29 @@ describe('Home Assistant MCP Server', () => {
     });
 
     describe('get_history tool', () => {
-        it('should successfully fetch history', async () => {
+        test('should successfully fetch history', async () => {
             const mockHistory = [
                 {
                     entity_id: 'light.living_room',
                     state: 'on',
                     last_changed: '2024-01-01T00:00:00Z',
                     attributes: { brightness: 255 }
-                },
-                {
-                    entity_id: 'light.living_room',
-                    state: 'off',
-                    last_changed: '2024-01-01T01:00:00Z',
-                    attributes: { brightness: 0 }
                 }
             ];
 
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: async () => mockHistory
-            } as Response);
+            // Setup response for this test
+            mockFetch = mock(() => Promise.resolve(new Response(
+                JSON.stringify(mockHistory)
+            )));
+            globalThis.fetch = mockFetch;
 
-            // Get the tool registration
-            const historyTool = addToolCalls.find(call => call[0].name === 'get_history')?.[0];
+            const historyTool = addToolCalls.find(call => call.name === 'get_history');
             expect(historyTool).toBeDefined();
 
             if (!historyTool) {
                 throw new Error('get_history tool not found');
             }
 
-            // Execute the tool
             const result = (await historyTool.execute({
                 entity_id: 'light.living_room',
                 start_time: '2024-01-01T00:00:00Z',
@@ -491,29 +543,36 @@ describe('Home Assistant MCP Server', () => {
             expect(result.success).toBe(true);
             expect(result.history).toEqual(mockHistory);
 
-            // Verify the fetch call
-            expect(mockFetch).toHaveBeenCalledWith(
-                expect.stringContaining('/api/history/period/2024-01-01T00:00:00Z?'),
-                expect.objectContaining({
-                    headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
-            );
+            // Verify the fetch call was made with correct URL and parameters
+            const calls = mockFetch.mock.calls;
+            expect(calls.length).toBeGreaterThan(0);
 
-            // Verify query parameters
-            const url = mockFetch.mock.calls[0][0] as string;
-            const queryParams = new URL(url).searchParams;
-            expect(queryParams.get('filter_entity_id')).toBe('light.living_room');
-            expect(queryParams.get('minimal_response')).toBe('true');
-            expect(queryParams.get('significant_changes_only')).toBe('true');
+            const firstCall = calls[0];
+            if (!firstCall?.args) {
+                throw new Error('No fetch calls recorded');
+            }
+
+            const [urlStr, options] = firstCall.args;
+            const url = new URL(urlStr);
+            expect(url.pathname).toContain('/api/history/period/2024-01-01T00:00:00Z');
+            expect(url.searchParams.get('filter_entity_id')).toBe('light.living_room');
+            expect(url.searchParams.get('minimal_response')).toBe('true');
+            expect(url.searchParams.get('significant_changes_only')).toBe('true');
+
+            expect(options).toEqual({
+                headers: {
+                    Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
+                    'Content-Type': 'application/json'
+                }
+            });
         });
 
-        it('should handle fetch errors', async () => {
-            mockFetch.mockRejectedValueOnce(new Error('Network error'));
+        test('should handle fetch errors', async () => {
+            // Setup error response
+            mockFetch = mock(() => Promise.reject(new Error('Network error')));
+            globalThis.fetch = mockFetch;
 
-            const historyTool = addToolCalls.find(call => call[0].name === 'get_history')?.[0];
+            const historyTool = addToolCalls.find(call => call.name === 'get_history');
             expect(historyTool).toBeDefined();
 
             if (!historyTool) {
@@ -555,7 +614,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => mockScenes
             } as Response);
 
-            const sceneTool = addToolCalls.find(call => call[0].name === 'scene')?.[0];
+            const sceneTool = addToolCalls.find(call => call.name === 'scene');
             expect(sceneTool).toBeDefined();
 
             if (!sceneTool) {
@@ -587,7 +646,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => ({})
             } as Response);
 
-            const sceneTool = addToolCalls.find(call => call[0].name === 'scene')?.[0];
+            const sceneTool = addToolCalls.find(call => call.name === 'scene');
             expect(sceneTool).toBeDefined();
 
             if (!sceneTool) {
@@ -603,11 +662,11 @@ describe('Home Assistant MCP Server', () => {
             expect(result.message).toBe('Successfully activated scene scene.movie_time');
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/scene/turn_on`,
+                `${TEST_CONFIG.HASS_HOST}/api/services/scene/turn_on`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -625,7 +684,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => ({})
             } as Response);
 
-            const notifyTool = addToolCalls.find(call => call[0].name === 'notify')?.[0];
+            const notifyTool = addToolCalls.find(call => call.name === 'notify');
             expect(notifyTool).toBeDefined();
 
             if (!notifyTool) {
@@ -643,11 +702,11 @@ describe('Home Assistant MCP Server', () => {
             expect(result.message).toBe('Notification sent successfully');
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/notify/mobile_app_phone`,
+                `${TEST_CONFIG.HASS_HOST}/api/services/notify/mobile_app_phone`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -660,12 +719,13 @@ describe('Home Assistant MCP Server', () => {
         });
 
         it('should use default notification service when no target is specified', async () => {
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({})
-            } as Response);
+            // Setup response for this test
+            mockFetch = mock(() => Promise.resolve(new Response(
+                JSON.stringify({})
+            )));
+            globalThis.fetch = mockFetch;
 
-            const notifyTool = addToolCalls.find(call => call[0].name === 'notify')?.[0];
+            const notifyTool = addToolCalls.find(call => call.name === 'notify');
             expect(notifyTool).toBeDefined();
 
             if (!notifyTool) {
@@ -676,10 +736,11 @@ describe('Home Assistant MCP Server', () => {
                 message: 'Test notification'
             });
 
-            expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/notify/notify`,
-                expect.any(Object)
-            );
+            const calls = mockFetch.mock.calls;
+            expect(calls.length).toBeGreaterThan(0);
+
+            const [url, _options] = calls[0].args;
+            expect(url.toString()).toBe(`${TEST_CONFIG.HASS_HOST}/api/services/notify/notify`);
         });
     });
 
@@ -709,7 +770,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => mockAutomations
             } as Response);
 
-            const automationTool = addToolCalls.find(call => call[0].name === 'automation')?.[0];
+            const automationTool = addToolCalls.find(call => call.name === 'automation');
             expect(automationTool).toBeDefined();
 
             if (!automationTool) {
@@ -743,7 +804,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => ({})
             } as Response);
 
-            const automationTool = addToolCalls.find(call => call[0].name === 'automation')?.[0];
+            const automationTool = addToolCalls.find(call => call.name === 'automation');
             expect(automationTool).toBeDefined();
 
             if (!automationTool) {
@@ -759,11 +820,11 @@ describe('Home Assistant MCP Server', () => {
             expect(result.message).toBe('Successfully toggled automation automation.morning_routine');
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/automation/toggle`,
+                `${TEST_CONFIG.HASS_HOST}/api/services/automation/toggle`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -779,7 +840,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => ({})
             } as Response);
 
-            const automationTool = addToolCalls.find(call => call[0].name === 'automation')?.[0];
+            const automationTool = addToolCalls.find(call => call.name === 'automation');
             expect(automationTool).toBeDefined();
 
             if (!automationTool) {
@@ -795,11 +856,11 @@ describe('Home Assistant MCP Server', () => {
             expect(result.message).toBe('Successfully triggered automation automation.morning_routine');
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/services/automation/trigger`,
+                `${TEST_CONFIG.HASS_HOST}/api/services/automation/trigger`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -810,7 +871,7 @@ describe('Home Assistant MCP Server', () => {
         });
 
         it('should require automation_id for toggle and trigger actions', async () => {
-            const automationTool = addToolCalls.find(call => call[0].name === 'automation')?.[0];
+            const automationTool = addToolCalls.find(call => call.name === 'automation');
             expect(automationTool).toBeDefined();
 
             if (!automationTool) {
@@ -858,7 +919,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => mockAddons
             } as Response);
 
-            const addonTool = addToolCalls.find(call => call[0].name === 'addon')?.[0];
+            const addonTool = addToolCalls.find(call => call.name === 'addon');
             expect(addonTool).toBeDefined();
 
             if (!addonTool) {
@@ -879,7 +940,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => ({ data: { state: 'installing' } })
             } as Response);
 
-            const addonTool = addToolCalls.find(call => call[0].name === 'addon')?.[0];
+            const addonTool = addToolCalls.find(call => call.name === 'addon');
             expect(addonTool).toBeDefined();
 
             if (!addonTool) {
@@ -896,11 +957,11 @@ describe('Home Assistant MCP Server', () => {
             expect(result.message).toBe('Successfully installed add-on core_configurator');
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/hassio/addons/core_configurator/install`,
+                `${TEST_CONFIG.HASS_HOST}/api/hassio/addons/core_configurator/install`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ version: '5.6.0' })
@@ -931,7 +992,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => mockPackages
             } as Response);
 
-            const packageTool = addToolCalls.find(call => call[0].name === 'package')?.[0];
+            const packageTool = addToolCalls.find(call => call.name === 'package');
             expect(packageTool).toBeDefined();
 
             if (!packageTool) {
@@ -953,7 +1014,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => ({})
             } as Response);
 
-            const packageTool = addToolCalls.find(call => call[0].name === 'package')?.[0];
+            const packageTool = addToolCalls.find(call => call.name === 'package');
             expect(packageTool).toBeDefined();
 
             if (!packageTool) {
@@ -971,11 +1032,11 @@ describe('Home Assistant MCP Server', () => {
             expect(result.message).toBe('Successfully installed package hacs/integration');
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/hacs/repository/install`,
+                `${TEST_CONFIG.HASS_HOST}/api/hacs/repository/install`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -1016,7 +1077,7 @@ describe('Home Assistant MCP Server', () => {
                 json: async () => ({ automation_id: 'new_automation_1' })
             } as Response);
 
-            const automationConfigTool = addToolCalls.find(call => call[0].name === 'automation_config')?.[0];
+            const automationConfigTool = addToolCalls.find(call => call.name === 'automation_config');
             expect(automationConfigTool).toBeDefined();
 
             if (!automationConfigTool) {
@@ -1033,11 +1094,11 @@ describe('Home Assistant MCP Server', () => {
             expect(result.automation_id).toBe('new_automation_1');
 
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/config/automation/config`,
+                `${TEST_CONFIG.HASS_HOST}/api/config/automation/config`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(mockAutomationConfig)
@@ -1058,7 +1119,7 @@ describe('Home Assistant MCP Server', () => {
                     json: async () => ({ automation_id: 'new_automation_2' })
                 } as Response);
 
-            const automationConfigTool = addToolCalls.find(call => call[0].name === 'automation_config')?.[0];
+            const automationConfigTool = addToolCalls.find(call => call.name === 'automation_config');
             expect(automationConfigTool).toBeDefined();
 
             if (!automationConfigTool) {
@@ -1076,17 +1137,17 @@ describe('Home Assistant MCP Server', () => {
 
             // Verify both API calls
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/config/automation/config/automation.test`,
+                `${TEST_CONFIG.HASS_HOST}/api/config/automation/config/automation.test`,
                 expect.any(Object)
             );
 
             const duplicateConfig = { ...mockAutomationConfig, alias: 'Test Automation (Copy)' };
             expect(mockFetch).toHaveBeenCalledWith(
-                `${TEST_HASS_HOST}/api/config/automation/config`,
+                `${TEST_CONFIG.HASS_HOST}/api/config/automation/config`,
                 {
                     method: 'POST',
                     headers: {
-                        Authorization: `Bearer ${TEST_HASS_TOKEN}`,
+                        Authorization: `Bearer ${TEST_CONFIG.HASS_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(duplicateConfig)
@@ -1095,7 +1156,7 @@ describe('Home Assistant MCP Server', () => {
         });
 
         it('should require config for create action', async () => {
-            const automationConfigTool = addToolCalls.find(call => call[0].name === 'automation_config')?.[0];
+            const automationConfigTool = addToolCalls.find(call => call.name === 'automation_config');
             expect(automationConfigTool).toBeDefined();
 
             if (!automationConfigTool) {

@@ -1,61 +1,81 @@
-import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import express from 'express';
-import { LiteMCP } from 'litemcp';
-import { logger } from '../src/utils/logger.js';
+import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
+import type { Mock } from "bun:test";
+import type { Express, Application } from 'express';
+import type { Logger } from 'winston';
+
+// Types for our mocks
+interface MockApp {
+    use: Mock<() => void>;
+    listen: Mock<(port: number, callback: () => void) => { close: Mock<() => void> }>;
+}
+
+interface MockLiteMCPInstance {
+    addTool: Mock<() => void>;
+    start: Mock<() => Promise<void>>;
+}
+
+type MockLogger = {
+    info: Mock<(message: string) => void>;
+    error: Mock<(message: string) => void>;
+    debug: Mock<(message: string) => void>;
+};
 
 // Mock express
-jest.mock('express', () => {
-    const mockApp = {
-        use: jest.fn(),
-        listen: jest.fn((port: number, callback: () => void) => {
-            callback();
-            return { close: jest.fn() };
-        })
-    };
-    return jest.fn(() => mockApp);
-});
+const mockApp: MockApp = {
+    use: mock(() => undefined),
+    listen: mock((port: number, callback: () => void) => {
+        callback();
+        return { close: mock(() => undefined) };
+    })
+};
+const mockExpress = mock(() => mockApp);
 
-// Mock LiteMCP
-jest.mock('litemcp', () => ({
-    LiteMCP: jest.fn(() => ({
-        addTool: jest.fn(),
-        start: jest.fn().mockImplementation(async () => { })
-    }))
-}));
+// Mock LiteMCP instance
+const mockLiteMCPInstance: MockLiteMCPInstance = {
+    addTool: mock(() => undefined),
+    start: mock(() => Promise.resolve())
+};
+const mockLiteMCP = mock((name: string, version: string) => mockLiteMCPInstance);
 
 // Mock logger
-jest.mock('../src/utils/logger.js', () => ({
-    logger: {
-        info: jest.fn(),
-        error: jest.fn(),
-        debug: jest.fn()
-    }
-}));
+const mockLogger: MockLogger = {
+    info: mock((message: string) => undefined),
+    error: mock((message: string) => undefined),
+    debug: mock((message: string) => undefined)
+};
 
 describe('Server Initialization', () => {
     let originalEnv: NodeJS.ProcessEnv;
-    let mockApp: ReturnType<typeof express>;
 
     beforeEach(() => {
         // Store original environment
         originalEnv = { ...process.env };
 
-        // Reset all mocks
-        jest.clearAllMocks();
+        // Setup mocks
+        (globalThis as any).express = mockExpress;
+        (globalThis as any).LiteMCP = mockLiteMCP;
+        (globalThis as any).logger = mockLogger;
 
-        // Get the mock express app
-        mockApp = express();
+        // Reset all mocks
+        mockApp.use.mockReset();
+        mockApp.listen.mockReset();
+        mockLogger.info.mockReset();
+        mockLogger.error.mockReset();
+        mockLogger.debug.mockReset();
+        mockLiteMCP.mockReset();
     });
 
     afterEach(() => {
         // Restore original environment
         process.env = originalEnv;
 
-        // Clear module cache to ensure fresh imports
-        jest.resetModules();
+        // Clean up mocks
+        delete (globalThis as any).express;
+        delete (globalThis as any).LiteMCP;
+        delete (globalThis as any).logger;
     });
 
-    it('should start Express server when not in Claude mode', async () => {
+    test('should start Express server when not in Claude mode', async () => {
         // Set OpenAI mode
         process.env.PROCESSOR_TYPE = 'openai';
 
@@ -63,13 +83,15 @@ describe('Server Initialization', () => {
         await import('../src/index.js');
 
         // Verify Express server was initialized
-        expect(express).toHaveBeenCalled();
-        expect(mockApp.use).toHaveBeenCalled();
-        expect(mockApp.listen).toHaveBeenCalled();
-        expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Server is running on port'));
+        expect(mockExpress.mock.calls.length).toBeGreaterThan(0);
+        expect(mockApp.use.mock.calls.length).toBeGreaterThan(0);
+        expect(mockApp.listen.mock.calls.length).toBeGreaterThan(0);
+
+        const infoMessages = mockLogger.info.mock.calls.map(([msg]) => msg);
+        expect(infoMessages.some(msg => msg.includes('Server is running on port'))).toBe(true);
     });
 
-    it('should not start Express server in Claude mode', async () => {
+    test('should not start Express server in Claude mode', async () => {
         // Set Claude mode
         process.env.PROCESSOR_TYPE = 'claude';
 
@@ -77,28 +99,38 @@ describe('Server Initialization', () => {
         await import('../src/index.js');
 
         // Verify Express server was not initialized
-        expect(express).not.toHaveBeenCalled();
-        expect(mockApp.use).not.toHaveBeenCalled();
-        expect(mockApp.listen).not.toHaveBeenCalled();
-        expect(logger.info).toHaveBeenCalledWith('Running in Claude mode - Express server disabled');
+        expect(mockExpress.mock.calls.length).toBe(0);
+        expect(mockApp.use.mock.calls.length).toBe(0);
+        expect(mockApp.listen.mock.calls.length).toBe(0);
+
+        const infoMessages = mockLogger.info.mock.calls.map(([msg]) => msg);
+        expect(infoMessages).toContain('Running in Claude mode - Express server disabled');
     });
 
-    it('should initialize LiteMCP in both modes', async () => {
+    test('should initialize LiteMCP in both modes', async () => {
         // Test OpenAI mode
         process.env.PROCESSOR_TYPE = 'openai';
         await import('../src/index.js');
-        expect(LiteMCP).toHaveBeenCalledWith('home-assistant', expect.any(String));
 
-        // Reset modules
-        jest.resetModules();
+        expect(mockLiteMCP.mock.calls.length).toBeGreaterThan(0);
+        const [name, version] = mockLiteMCP.mock.calls[0] ?? [];
+        expect(name).toBe('home-assistant');
+        expect(typeof version).toBe('string');
+
+        // Reset for next test
+        mockLiteMCP.mockReset();
 
         // Test Claude mode
         process.env.PROCESSOR_TYPE = 'claude';
         await import('../src/index.js');
-        expect(LiteMCP).toHaveBeenCalledWith('home-assistant', expect.any(String));
+
+        expect(mockLiteMCP.mock.calls.length).toBeGreaterThan(0);
+        const [name2, version2] = mockLiteMCP.mock.calls[0] ?? [];
+        expect(name2).toBe('home-assistant');
+        expect(typeof version2).toBe('string');
     });
 
-    it('should handle missing PROCESSOR_TYPE (default to Express server)', async () => {
+    test('should handle missing PROCESSOR_TYPE (default to Express server)', async () => {
         // Remove PROCESSOR_TYPE
         delete process.env.PROCESSOR_TYPE;
 
@@ -106,9 +138,11 @@ describe('Server Initialization', () => {
         await import('../src/index.js');
 
         // Verify Express server was initialized (default behavior)
-        expect(express).toHaveBeenCalled();
-        expect(mockApp.use).toHaveBeenCalled();
-        expect(mockApp.listen).toHaveBeenCalled();
-        expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Server is running on port'));
+        expect(mockExpress.mock.calls.length).toBeGreaterThan(0);
+        expect(mockApp.use.mock.calls.length).toBeGreaterThan(0);
+        expect(mockApp.listen.mock.calls.length).toBeGreaterThan(0);
+
+        const infoMessages = mockLogger.info.mock.calls.map(([msg]) => msg);
+        expect(infoMessages.some(msg => msg.includes('Server is running on port'))).toBe(true);
     });
 }); 
