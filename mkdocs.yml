@@ -52,8 +52,7 @@ plugins:
   - minify:
       minify_html: true
   - git-revision-date-plugin
-  - mkdocstrings:
-      default_handler: python
+  - mkdocstrings
   - social
   - tags
   - redirects
