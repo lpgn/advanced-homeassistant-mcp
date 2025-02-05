@@ -1,11 +1,23 @@
-site_name: Project Documentation
+site_name: MCP Server for Home Assistant
 site_url: https://jango-blockchained.github.io/advanced-homeassistant-mcp
 repo_url: https://github.com/jango-blockchained/advanced-homeassistant-mcp
+site_description: Home Assistant MCP Server Documentation
+# Add this to handle GitHub Pages serving from a subdirectory
+site_dir: site/advanced-homeassistant-mcp
 
 theme:
   name: material
   logo: assets/images/logo.png
   favicon: assets/images/favicon.ico
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
   palette:
     - scheme: default
       primary: indigo
@@ -19,18 +31,6 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  features:
-    - navigation.instant
-    - navigation.tracking
-    - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - search.suggest
-    - search.highlight
-    - content.code.copy
-    - content.tabs.link
-    - content.tooltips
-    - toc.integrate
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -61,8 +61,10 @@ plugins:
 
 nav:
   - Home: index.md
-  - Getting Started: getting-started.md
-  - API Reference: api.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - API Reference: api/index.md
   - Usage: usage.md
   - Configuration:
     - Claude Desktop Config: claude_desktop_config.md
