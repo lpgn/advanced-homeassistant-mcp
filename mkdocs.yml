@@ -1,4 +1,4 @@
-site_name: Advanced Home Assistant MCP
+site_name: Project Documentation
 site_url: https://jango-blockchained.github.io/advanced-homeassistant-mcp
 repo_url: https://github.com/jango-blockchained/advanced-homeassistant-mcp
 
@@ -61,21 +61,12 @@ plugins:
 
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
+  - API Reference: api.md
   - Usage: usage.md
   - Configuration:
     - Claude Desktop Config: claude_desktop_config.md
     - Client Config: client_config.md
-  - Getting Started:
-    - Overview: getting-started/index.md
-    - Installation: getting-started/installation.md
-    - Configuration: getting-started/configuration.md
-    - Docker Setup: getting-started/docker.md
-    - Quick Start: getting-started/quickstart.md
-  - API Reference:
-    - Overview: api/index.md
-    - Core API: api/core-api.md
-    - SSE API: api/sse.md
-    - Core Functions: api/core.md
   - Tools:
     - Overview: tools/tools.md
     - Device Management:
