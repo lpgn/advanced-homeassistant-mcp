@@ -312,4 +312,63 @@ tar -czf mcp-backup-$(date +%Y%m%d).tar.gz \
     .env \
     config/ \
     data/
-``` 
+```
+
+## FAQ
+
+### General Questions
+
+#### Q: What is MCP Server?
+A: MCP Server is a bridge between Home Assistant and Language Learning Models, enabling natural language control and automation of your smart home devices.
+
+#### Q: What are the system requirements?
+A: MCP Server requires:
+- Node.js 16 or higher
+- Home Assistant instance
+- 1GB RAM minimum
+- 1GB disk space
+
+#### Q: How do I update MCP Server?
+A: For Docker installation:
+```bash
+docker compose pull
+docker compose up -d
+```
+For manual installation:
+```bash
+git pull
+bun install
+bun run build
+```
+
+### Integration Questions
+
+#### Q: Can I use MCP Server with any Home Assistant instance?
+A: Yes, MCP Server works with any Home Assistant instance that has the REST API enabled and a valid long-lived access token.
+
+#### Q: Does MCP Server support all Home Assistant integrations?
+A: MCP Server supports all Home Assistant devices and services that are accessible via the REST API.
+
+### Security Questions
+
+#### Q: Is my Home Assistant token secure?
+A: Yes, your Home Assistant token is stored securely and only used for authenticated communication between MCP Server and your Home Assistant instance.
+
+#### Q: Can I use MCP Server remotely?
+A: Yes, but we recommend using a secure connection (HTTPS) and proper authentication when exposing MCP Server to the internet.
+
+### Troubleshooting Questions
+
+#### Q: Why are my device states not updating?
+A: Check:
+1. Home Assistant connection
+2. WebSocket connection status
+3. Device availability in Home Assistant
+4. Network connectivity
+
+#### Q: Why are my commands not working?
+A: Verify:
+1. Command syntax
+2. Device availability
+3. User permissions
+4. Home Assistant API access 

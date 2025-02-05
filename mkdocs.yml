@@ -91,7 +91,7 @@ nav:
   - API Reference:
     - Overview: api/index.md
     - Core API: api.md
-    - SSE API: sse-api.md
+    - SSE API: api/sse.md
     - Core Functions: api/core.md
   - Tools:
     - Overview: tools/tools.md
@@ -114,6 +114,9 @@ nav:
       - SSE Statistics: tools/events/sse-stats.md
   - Development:
     - Overview: development/development.md
+    - Best Practices: development/best-practices.md
+    - Interfaces: development/interfaces.md
+    - Tool Development: development/tools.md
     - Testing Guide: testing.md
   - Architecture: architecture.md
   - Contributing: contributing.md
