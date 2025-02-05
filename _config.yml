@@ -1,0 +1,78 @@
+title: Model Context Protocol (MCP)
+description: A bridge between Home Assistant and Language Learning Models
+theme: jekyll-theme-minimal
+markdown: kramdown
+
+# Repository settings
+repository: jango-blockchained/advanced-homeassistant-mcp
+github: [metadata]
+
+# Add base URL and URL settings
+baseurl: "/advanced-homeassistant-mcp" # the subpath of your site
+url: "https://jango-blockchained.github.io" # the base hostname & protocol
+
+# Theme settings
+logo: /assets/img/logo.png # path to logo (create this if you want a logo)
+show_downloads: true # show download buttons for your repo
+
+plugins:
+  - jekyll-relative-links
+  - jekyll-seo-tag
+  - jekyll-remote-theme
+  - jekyll-github-metadata
+
+# Enable relative links
+relative_links:
+  enabled: true
+  collections: true
+
+# Navigation structure
+header_pages:
+  - index.md
+  - getting-started.md
+  - api.md
+  - usage.md
+  - tools/tools.md
+  - development/development.md
+  - troubleshooting.md
+  - contributing.md
+  - roadmap.md
+
+# Collections
+collections:
+  tools:
+    output: true
+    permalink: /:collection/:name
+  development:
+    output: true
+    permalink: /:collection/:name
+
+# Default layouts
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: "tools"
+      type: "tools"
+    values:
+      layout: "default"
+  - scope:
+      path: "development"
+      type: "development"
+    values:
+      layout: "default"
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+
+# Sass settings
+sass:
+  style: compressed
+  sass_dir: _sass 

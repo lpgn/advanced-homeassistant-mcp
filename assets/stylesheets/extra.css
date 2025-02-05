@@ -1,0 +1,28 @@
+:root {
+  --md-primary-fg-color: #1a73e8;
+  --md-primary-fg-color--light: #5195ee;
+  --md-primary-fg-color--dark: #0d47a1;
+}
+
+.md-header {
+  box-shadow: 0 0 0.2rem rgba(0,0,0,.1), 0 0.2rem 0.4rem rgba(0,0,0,.2);
+}
+
+.md-main__inner {
+  margin-top: 1.5rem;
+}
+
+.md-typeset h1 {
+  font-weight: 700;
+  color: var(--md-primary-fg-color);
+}
+
+.md-typeset .admonition {
+  font-size: .8rem;
+}
+
+code {
+  background-color: rgba(175,184,193,0.2);
+  padding: .2em .4em;
+  border-radius: 6px;
+} 

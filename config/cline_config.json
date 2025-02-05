@@ -1,0 +1,18 @@
+{
+    "mcpServers": {
+        "homeassistant-mcp": {
+            "command": "bun",
+            "args": [
+                "run",
+                "start",
+                "--enable-cline",
+                "--config",
+                "${configDir}/.env"
+            ],
+            "env": {
+                "NODE_ENV": "production",
+                "CLINE_MODE": "true"
+            }
+        }
+    }
+}
