@@ -2,8 +2,9 @@ name: Deploy MkDocs
 on:
   push:
     branches:
-      - main  # or master, depending on your default branch
-  workflow_dispatch:
+      - main
+      - master
+  workflow_dispatch:  # Allow manual trigger
 
 permissions:
   contents: write
@@ -13,26 +14,49 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+          cache: 'pip'  # Enable pip caching
+      
+      - name: Cache MkDocs dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('docs/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
       - name: Install dependencies
         run: |
-          pip install mkdocs-material
-          pip install mkdocs-git-revision-date-localized-plugin
-          pip install mkdocstrings[python]
-      - name: Configure Git
+          python -m pip install --upgrade pip
+          pip install -r docs/requirements.txt
+      
+      - name: Check links
+        run: |
+          mkdocs build --strict
+          
+      - name: Test build
+        run: |
+          mkdocs build
+          if [ ! -d "site" ]; then
+            echo "Build failed - site directory not created"
+            exit 1
+          fi
+      
+      - name: Deploy
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Build docs
-        run: mkdocs build
-      - name: Deploy to GitHub Pages
+          mkdocs gh-deploy --force
+      
+      - name: Verify deployment
         run: |
-          git checkout --orphan gh-pages
-          git rm -rf .
-          mv site/* .
-          rm -rf site
-          git add .
-          git commit -m "docs: Update documentation"
-          git push origin gh-pages --force 
+          # Wait for GitHub Pages to update
+          sleep 30
+          # Check if the site is accessible
+          curl -s -f -o /dev/null "https://jango-blockchained.github.io/advanced-homeassistant-mcp" || exit 1 

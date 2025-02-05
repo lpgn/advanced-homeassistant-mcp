@@ -14,7 +14,7 @@ The documentation is automatically deployed when changes are pushed to the `main
 
 ### GitHub Actions Workflow
 
-The deployment is handled by the workflow in `.github/workflows/deploy-docs.yml`:
+The deployment is handled by the workflow in `.github/workflows/deploy-docs.yml`. This is the single source of truth for documentation deployment:
 
 ```yaml
 name: Deploy MkDocs
@@ -23,6 +23,7 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:  # Allow manual trigger
 ```
 
 ## Manual Deployment
@@ -30,8 +31,17 @@ on:
 If needed, you can deploy manually using:
 
 ```bash
+# Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+source venv/bin/activate
+
 # Install dependencies
 pip install -r docs/requirements.txt
+
+# Build the documentation
+mkdocs build
 
 # Deploy to GitHub Pages
 mkdocs gh-deploy --force
@@ -101,3 +111,31 @@ mkdocs-redirects
 - Check [GitHub Pages settings](https://github.com/jango-blockchained/advanced-homeassistant-mcp/settings/pages)
 - Monitor build status in Actions tab
 - Verify site accessibility 
+
+## Workflow Features
+
+### Caching
+The workflow implements caching for Python dependencies to speed up deployments:
+- Pip cache for Python packages
+- MkDocs dependencies cache
+
+### Deployment Checks
+Several checks are performed during deployment:
+1. Link validation with `mkdocs build --strict`
+2. Build verification
+3. Post-deployment site accessibility check
+
+### Manual Triggers
+You can manually trigger deployments using the "workflow_dispatch" event in GitHub Actions.
+
+## Cleanup
+
+To clean up duplicate workflow files, run:
+
+```bash
+# Make the script executable
+chmod +x scripts/cleanup-workflows.sh
+
+# Run the cleanup script
+./scripts/cleanup-workflows.sh
+``` 

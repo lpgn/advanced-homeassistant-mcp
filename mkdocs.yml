@@ -51,7 +51,7 @@ plugins:
   - search
   - minify:
       minify_html: true
-  - git-revision-date
+  - git-revision-date-plugin
   - mkdocstrings:
       default_handler: python
   - social
