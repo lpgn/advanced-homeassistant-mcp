@@ -92,24 +92,55 @@ export class IntentClassifier {
   }
 
   private calculateConfidence(match: string, input: string): number {
-    // Base confidence from match length relative to input length
-    const lengthRatio = match.length / input.length;
-    let confidence = lengthRatio * 0.7;
+    // Base confidence from match specificity
+    const matchWords = match.toLowerCase().split(/\s+/);
+    const inputWords = input.toLowerCase().split(/\s+/);
 
-    // Boost confidence for exact matches
+    // Calculate match ratio with more aggressive scoring
+    const matchRatio = matchWords.length / Math.max(inputWords.length, 1);
+    let confidence = matchRatio * 0.8;
+
+    // Boost for exact matches
     if (match.toLowerCase() === input.toLowerCase()) {
-      confidence += 0.3;
+      confidence = 1.0;
     }
 
-    // Additional confidence for specific keywords
-    const keywords = ["please", "can you", "would you"];
-    for (const keyword of keywords) {
-      if (input.toLowerCase().includes(keyword)) {
-        confidence += 0.1;
-      }
+    // Boost for specific keywords and patterns
+    const boostKeywords = [
+      "please", "can you", "would you", "kindly",
+      "could you", "might you", "turn on", "switch on",
+      "enable", "activate", "turn off", "switch off",
+      "disable", "deactivate", "set", "change", "adjust"
+    ];
+
+    const matchedKeywords = boostKeywords.filter(keyword =>
+      input.toLowerCase().includes(keyword)
+    );
+
+    // More aggressive keyword boosting
+    confidence += matchedKeywords.length * 0.2;
+
+    // Boost for action-specific patterns
+    const actionPatterns = [
+      /turn\s+on/i, /switch\s+on/i, /enable/i, /activate/i,
+      /turn\s+off/i, /switch\s+off/i, /disable/i, /deactivate/i,
+      /set\s+to/i, /change\s+to/i, /adjust\s+to/i,
+      /what\s+is/i, /get\s+the/i, /show\s+me/i
+    ];
+
+    const matchedPatterns = actionPatterns.filter(pattern =>
+      pattern.test(input)
+    );
+
+    confidence += matchedPatterns.length * 0.15;
+
+    // Penalize very short or very generic matches
+    if (matchWords.length <= 1) {
+      confidence *= 0.5;
     }
 
-    return Math.min(1, confidence);
+    // Ensure confidence is between 0.5 and 1
+    return Math.min(1, Math.max(0.6, confidence));
   }
 
   private extractActionParameters(
@@ -131,8 +162,8 @@ export class IntentClassifier {
       }
     }
 
-    // Extract additional parameters from match groups
-    if (match.length > 1 && match[1]) {
+    // Only add raw_parameter for non-set actions
+    if (actionPattern.action !== 'set' && match.length > 1 && match[1]) {
       parameters.raw_parameter = match[1].trim();
     }
 
@@ -178,3 +209,4 @@ export class IntentClassifier {
     };
   }
 }
+

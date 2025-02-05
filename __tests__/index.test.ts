@@ -45,6 +45,7 @@ describe('Home Assistant MCP Server', () => {
         // Setup default response
         mockFetch = createMockFetch({ state: 'connected' });
         globalThis.fetch = mockFetch;
+        await Promise.resolve();
     });
 
     afterEach(() => {
