@@ -1,6 +1,6 @@
-site_name: Claude Desktop
-site_url: https://your-username.github.io/your-repo-name
-repo_url: https://github.com/your-username/your-repo-name
+site_name: Advanced Home Assistant MCP
+site_url: https://jango-blockchained.github.io/advanced-homeassitant-mcp
+repo_url: https://github.com/jango-blockchained/advanced-homeassitant-mcp
 
 theme:
   name: material
@@ -117,4 +117,4 @@ extra_css:
 extra_javascript:
   - javascripts/extra.js
 
-copyright: Copyright &copy; 2024 Jango Blockchained 
+copyright: Copyright &copy; 2025 jango-blockchained
