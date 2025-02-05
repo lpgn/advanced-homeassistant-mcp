@@ -23,6 +23,16 @@ Before installing MCP Server, ensure you have:
 
 The easiest way to install MCP Server is through Smithery:
 
+#### Smithery Configuration
+
+The project includes a `smithery.yaml` configuration:
+
+```yaml
+# Add smithery.yaml contents and explanation
+```
+
+#### Installation Steps
+
 ```bash
 npx -y @smithery/cli install @jango-blockchained/advanced-homeassistant-mcp --client claude
 ```

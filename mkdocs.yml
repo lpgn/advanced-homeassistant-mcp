@@ -91,6 +91,12 @@ nav:
   - Architecture: architecture.md
   - Contributing: contributing.md
   - Troubleshooting: troubleshooting.md
+  - Examples:
+    - Overview: examples/index.md
+  - Development:
+    - Setup: development/setup.md
+    - Testing: development/testing.md
+    - CI/CD: development/cicd.md
 
 extra:
   social:
