@@ -82,21 +82,45 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started:
+    - Overview: getting-started.md
     - Installation: getting-started/installation.md
+    - Configuration: getting-started/configuration.md
+    - Docker Setup: getting-started/docker.md
     - Quick Start: getting-started/quickstart.md
+    - Usage: usage.md
   - API Reference:
     - Overview: api/index.md
-    - SSE API: api/sse.md
+    - Core API: api.md
+    - SSE API: sse-api.md
     - Core Functions: api/core.md
+  - Tools:
+    - Overview: tools/tools.md
+    - Device Management:
+      - List Devices: tools/device-management/list-devices.md
+      - Device Control: tools/device-management/control.md
+    - History & State:
+      - History: tools/history-state/history.md
+      - Scene Management: tools/history-state/scene.md
+    - Automation:
+      - Automation Management: tools/automation/automation.md
+      - Automation Configuration: tools/automation/automation-config.md
+    - Add-ons & Packages:
+      - Add-on Management: tools/addons-packages/addon.md
+      - Package Management: tools/addons-packages/package.md
+    - Notifications:
+      - Notify: tools/notifications/notify.md
+    - Events:
+      - Event Subscription: tools/events/subscribe-events.md
+      - SSE Statistics: tools/events/sse-stats.md
+  - Development:
+    - Overview: development/development.md
+    - Testing Guide: testing.md
   - Architecture: architecture.md
   - Contributing: contributing.md
   - Troubleshooting: troubleshooting.md
   - Examples:
     - Overview: examples/index.md
-  - Development:
-    - Setup: development/setup.md
-    - Testing: development/testing.md
-    - CI/CD: development/cicd.md
+  - Roadmap: roadmap.md
 
 extra:
   social:

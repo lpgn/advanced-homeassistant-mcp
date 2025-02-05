@@ -6,36 +6,36 @@ This section documents all available tools in the Home Assistant MCP.
 
 ### Device Management
 
-1. [List Devices](./list-devices.md)
+1. [List Devices](device-management/list-devices.md)
    - List all available Home Assistant devices
    - Group devices by domain
    - Get device states and attributes
 
-2. [Device Control](./control.md)
+2. [Device Control](device-management/control.md)
    - Control various device types
    - Support for lights, switches, covers, climate devices
    - Domain-specific commands and parameters
 
 ### History and State
 
-1. [History](./history.md)
+1. [History](history-state/history.md)
    - Fetch device state history
    - Filter by time range
    - Get significant changes
 
-2. [Scene Management](./scene.md)
+2. [Scene Management](history-state/scene.md)
    - List available scenes
    - Activate scenes
    - Scene state information
 
 ### Automation
 
-1. [Automation Management](./automation.md)
+1. [Automation Management](automation/automation.md)
    - List automations
    - Toggle automation state
    - Trigger automations manually
 
-2. [Automation Configuration](./automation-config.md)
+2. [Automation Configuration](automation/automation-config.md)
    - Create new automations
    - Update existing automations
    - Delete automations
@@ -43,32 +43,32 @@ This section documents all available tools in the Home Assistant MCP.
 
 ### Add-ons and Packages
 
-1. [Add-on Management](./addon.md)
+1. [Add-on Management](addons-packages/addon.md)
    - List available add-ons
    - Install/uninstall add-ons
    - Start/stop/restart add-ons
    - Get add-on information
 
-2. [Package Management](./package.md)
+2. [Package Management](addons-packages/package.md)
    - Manage HACS packages
    - Install/update/remove packages
    - List available packages by category
 
 ### Notifications
 
-1. [Notify](./notify.md)
+1. [Notify](notifications/notify.md)
    - Send notifications
    - Support for multiple notification services
    - Custom notification data
 
 ### Real-time Events
 
-1. [Event Subscription](./subscribe-events.md)
+1. [Event Subscription](events/subscribe-events.md)
    - Subscribe to Home Assistant events
    - Monitor specific entities
    - Domain-based monitoring
 
-2. [SSE Statistics](./sse-stats.md)
+2. [SSE Statistics](events/sse-stats.md)
    - Get SSE connection statistics
    - Monitor active subscriptions
    - Connection management
