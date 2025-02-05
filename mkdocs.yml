@@ -51,7 +51,7 @@ plugins:
   - search
   - minify:
       minify_html: true
-  - git-revision-date-plugin
+  - git-revision-date-localized
   - mkdocstrings
   - social:
       cards: false  # Disable social cards if they cause issues
