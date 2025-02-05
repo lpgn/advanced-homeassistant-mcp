@@ -130,25 +130,25 @@ Basic rate limiting is implemented:
 async function controlDevice(entityId: string, command: string, params?: Record<string, unknown>) {
   try {
     const response = await fetch('/api/control', {
-      method: 'POST',
-      headers: {
+    method: 'POST',
+    headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
+    },
+    body: JSON.stringify({
         entity_id: entityId,
         command,
         parameters: params
-      })
-    });
-
+    })
+  });
+  
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message);
     }
 
     return await response.json();
-  } catch (error) {
+} catch (error) {
     console.error('Device control failed:', error);
     throw error;
   }
