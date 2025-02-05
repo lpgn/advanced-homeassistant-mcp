@@ -1,345 +1,315 @@
-# Troubleshooting Guide
+---
+layout: default
+title: Troubleshooting
+nav_order: 6
+---
 
-This guide provides solutions to common issues encountered with the Home Assistant MCP Server.
+# Troubleshooting Guide 🔧
+
+This guide helps you diagnose and resolve common issues with MCP Server.
+
+## Quick Diagnostics
+
+### Health Check
+
+First, verify the server's health:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "version": "1.0.0",
+  "uptime": 3600,
+  "homeAssistant": {
+    "connected": true,
+    "version": "2024.1.0"
+  }
+}
+```
 
 ## Common Issues
 
-- **Server Not Starting:**
-  - Verify that all required environment variables are correctly set.
-  - Check for port conflicts or missing dependencies.
-  - Review the server logs for error details.
+### 1. Connection Issues
 
-- **Connection Problems:**
-  - Ensure your Home Assistant instance is reachable.
-  - Confirm that the authentication token is valid.
-  - Check network configurations and firewalls.
-
-## Tool Issues
-
-### Tool Not Found
+#### Cannot Connect to MCP Server
 
 **Symptoms:**
-- "Tool not found" errors or 404 responses.
+- Server not responding
+- Connection refused errors
+- Timeout errors
 
 **Solutions:**
-- Double-check the tool name spelling.
-- Verify that the tool is correctly registered.
-- Review tool imports and documentation.
 
-### Tool Execution Failures
+1. Check if the server is running:
+   ```bash
+   # For Docker installation
+   docker compose ps
+   
+   # For manual installation
+   ps aux | grep mcp
+   ```
+
+2. Verify port availability:
+   ```bash
+   # Check if port is in use
+   netstat -tuln | grep 3000
+   ```
+
+3. Check logs:
+   ```bash
+   # Docker logs
+   docker compose logs mcp
+   
+   # Manual installation logs
+   bun run dev
+   ```
+
+#### Home Assistant Connection Failed
 
 **Symptoms:**
-- Execution errors or timeouts.
+- "Connection Error" in health check
+- Cannot control devices
+- State updates not working
 
 **Solutions:**
-- Validate input parameters.
-- Check and review error logs.
-- Debug the tool implementation.
-- Ensure proper permissions in Home Assistant.
 
-## Debugging Steps
-
-### Server Logs
-
-1. Enable debug logging by setting:
+1. Verify Home Assistant URL and token in `.env`:
    ```env
-   LOG_LEVEL=debug
+   HA_URL=http://homeassistant:8123
+   HA_TOKEN=your_long_lived_access_token
    ```
-2. Check logs:
+
+2. Test Home Assistant connection:
    ```bash
-   npm run logs
+   curl -H "Authorization: Bearer YOUR_HA_TOKEN" \
+        http://your-homeassistant:8123/api/
    ```
-3. Filter errors:
+
+3. Check network connectivity:
    ```bash
-   npm run logs | grep "error"
+   # For Docker setup
+   docker compose exec mcp ping homeassistant
    ```
+
+### 2. Authentication Issues
+
+#### Invalid Token
+
+**Symptoms:**
+- 401 Unauthorized responses
+- "Invalid token" errors
+
+**Solutions:**
+
+1. Generate a new token:
+   ```bash
+   curl -X POST http://localhost:3000/auth/token \
+     -H "Content-Type: application/json" \
+     -d '{"username": "your_username", "password": "your_password"}'
+   ```
+
+2. Verify token format:
+   ```javascript
+   // Token should be in format:
+   Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+   ```
+
+#### Rate Limiting
+
+**Symptoms:**
+- 429 Too Many Requests
+- "Rate limit exceeded" errors
+
+**Solutions:**
+
+1. Check current rate limit status:
+   ```bash
+   curl -I http://localhost:3000/api/state
+   ```
+
+2. Adjust rate limits in configuration:
+   ```yaml
+   security:
+     rateLimit: 100  # Increase if needed
+     rateLimitWindow: 60000  # Window in milliseconds
+   ```
+
+### 3. Real-time Updates Issues
+
+#### SSE Connection Drops
+
+**Symptoms:**
+- Frequent disconnections
+- Missing state updates
+- EventSource errors
+
+**Solutions:**
+
+1. Implement proper reconnection logic:
+   ```javascript
+   class SSEClient {
+       constructor() {
+           this.connect();
+       }
+   
+       connect() {
+           this.eventSource = new EventSource('/subscribe_events');
+           this.eventSource.onerror = this.handleError.bind(this);
+       }
+   
+       handleError(error) {
+           console.error('SSE Error:', error);
+           this.eventSource.close();
+           setTimeout(() => this.connect(), 1000);
+       }
+   }
+   ```
+
+2. Check network stability:
+   ```bash
+   # Monitor connection stability
+   ping -c 100 localhost
+   ```
+
+### 4. Performance Issues
+
+#### High Latency
+
+**Symptoms:**
+- Slow response times
+- Command execution delays
+- UI lag
+
+**Solutions:**
+
+1. Enable Redis caching:
+   ```env
+   REDIS_ENABLED=true
+   REDIS_URL=redis://localhost:6379
+   ```
+
+2. Monitor system resources:
+   ```bash
+   # Check CPU and memory usage
+   docker stats
+   
+   # Or for manual installation
+   top -p $(pgrep -f mcp)
+   ```
+
+3. Optimize database queries and caching:
+   ```typescript
+   // Use batch operations
+   const results = await Promise.all([
+       cache.get('key1'),
+       cache.get('key2')
+   ]);
+   ```
+
+### 5. Device Control Issues
+
+#### Commands Not Executing
+
+**Symptoms:**
+- Commands appear successful but no device response
+- Inconsistent device states
+- Error messages from Home Assistant
+
+**Solutions:**
+
+1. Verify device availability:
+   ```bash
+   curl http://localhost:3000/api/state/light.living_room
+   ```
+
+2. Check command syntax:
+   ```bash
+   # Test basic command
+   curl -X POST http://localhost:3000/api/command \
+     -H "Content-Type: application/json" \
+     -d '{"command": "Turn on living room lights"}'
+   ```
+
+3. Review Home Assistant logs:
+   ```bash
+   docker compose exec homeassistant journalctl -f
+   ```
+
+## Debugging Tools
+
+### Log Analysis
+
+Enable debug logging:
+
+```env
+LOG_LEVEL=debug
+DEBUG=mcp:*
+```
 
 ### Network Debugging
 
-1. Test API endpoints:
-   ```bash
-   curl -v http://localhost:3000/api/health
-   ```
-2. Monitor SSE connections:
-   ```bash
-   curl -N http://localhost:3000/api/sse/stats
-   ```
-3. Test WebSocket connectivity:
-   ```bash
-   wscat -c ws://localhost:3000
-   ```
+Monitor network traffic:
 
-### Performance Issues
+```bash
+# TCP dump for API traffic
+tcpdump -i any port 3000 -w debug.pcap
+```
 
-- Monitor memory usage with:
-  ```bash
-  npm run stats
-  ```
+### Performance Profiling
 
-## Security Middleware Troubleshooting
+Enable performance monitoring:
 
-### Rate Limiting Problems
-
-**Symptoms:** Receiving 429 (Too Many Requests) errors.
-
-**Solutions:**
-- Adjust and fine-tune rate limit settings.
-- Consider different limits for critical versus non-critical endpoints.
-
-### Request Validation Failures
-
-**Symptoms:** 400 or 415 errors on valid requests.
-
-**Solutions:**
-- Verify that the `Content-Type` header is set correctly.
-- Inspect request payload size and format.
-
-### Input Sanitization Issues
-
-**Symptoms:** Unexpected data transformation or loss.
-
-**Solutions:**
-- Test sanitization with various input types.
-- Implement custom sanitization for complex data if needed.
-
-### Security Header Configuration
-
-**Symptoms:** Missing or improper security headers.
-
-**Solutions:**
-- Review and update security header configurations (e.g., Helmet settings).
-- Ensure environment-specific header settings are in place.
-
-### Error Handling and Logging
-
-**Symptoms:** Inconsistent error responses.
-
-**Solutions:**
-- Enhance logging for detailed error tracking.
-- Adjust error handlers for production and development differences.
-
-## Additional Resources
-
-- [OWASP Security Guidelines](https://owasp.org/www-project-top-ten/)
-- [Helmet.js Documentation](https://helmetjs.github.io/)
-- [JWT Security Best Practices](https://jwt.io/introduction)
+```env
+ENABLE_METRICS=true
+METRICS_PORT=9090
+```
 
 ## Getting Help
 
-If issues persist:
-1. Review detailed logs.
-2. Verify your configuration and environment.
-3. Consult the GitHub issue tracker or community forums.
+If you're still experiencing issues:
 
-## FAQ
-
-### Q: How do I reset my configuration?
-A: Delete `.env` and copy `.env.example` to start fresh.
-
-### Q: Why are my events delayed?
-A: Check network latency and server load. Consider adjusting buffer sizes.
-
-### Q: How do I update my token?
-A: Generate a new token in Home Assistant and update HASS_TOKEN.
-
-### Q: Why do I get "Maximum clients reached"?
-A: Adjust SSE_MAX_CLIENTS in configuration or clean up stale connections.
-
-## Error Codes
-
-- `E001`: Connection Error
-- `E002`: Authentication Error
-- `E003`: Rate Limit Error
-- `E004`: Tool Error
-- `E005`: Configuration Error
-
-## Support Resources
-
-1. Documentation
-   - [API Reference](./API.md)
-   - [Configuration Guide](./configuration/README.md)
-   - [Development Guide](./development/development.md)
-
-2. Community
-   - GitHub Issues
-   - Discussion Forums
-   - Stack Overflow
-
-3. Tools
-   - Diagnostic Scripts
-   - Testing Tools
-   - Monitoring Tools
-
-## Still Need Help?
-
-1. Create a detailed issue:
-   - Error messages
-   - Steps to reproduce
-   - Environment details
+1. Check the [GitHub Issues](https://github.com/jango-blockchained/advanced-homeassistant-mcp/issues)
+2. Search [Discussions](https://github.com/jango-blockchained/advanced-homeassistant-mcp/discussions)
+3. Create a new issue with:
+   - Detailed description
    - Logs
+   - Configuration (sanitized)
+   - Steps to reproduce
 
-2. Contact support:
-   - GitHub Issues
-   - Email Support
-   - Community Forums
+## Maintenance
 
-## Security Middleware Troubleshooting
+### Regular Health Checks
 
-### Common Issues and Solutions
+Run periodic health checks:
 
-#### Rate Limiting Problems
+```bash
+# Create a cron job
+*/5 * * * * curl -f http://localhost:3000/health || notify-admin
+```
 
-**Symptom**: Unexpected 429 (Too Many Requests) errors
+### Log Rotation
 
-**Possible Causes**:
-- Misconfigured rate limit settings
-- Shared IP addresses (e.g., behind NAT)
-- Aggressive client-side retry mechanisms
+Configure log rotation:
 
-**Solutions**:
-1. Adjust rate limit parameters
-   ```typescript
-   // Customize rate limit for specific scenarios
-   checkRateLimit(ip, maxRequests = 200, windowMs = 30 * 60 * 1000)
-   ```
+```yaml
+logging:
+  maxSize: "100m"
+  maxFiles: "7d"
+  compress: true
+```
 
-2. Implement more granular rate limiting
-   - Use different limits for different endpoints
-   - Consider user authentication level
+### Backup Configuration
 
-#### Request Validation Failures
+Regularly backup your configuration:
 
-**Symptom**: 400 or 415 status codes on valid requests
-
-**Possible Causes**:
-- Incorrect `Content-Type` header
-- Large request payloads
-- Malformed authorization headers
-
-**Debugging Steps**:
-1. Verify request headers
-   ```typescript
-   // Check content type and size
-   validateRequestHeaders(request, 'application/json')
-   ```
-
-2. Log detailed validation errors
-   ```typescript
-   try {
-     validateRequestHeaders(request);
-   } catch (error) {
-     console.error('Request validation failed:', error.message);
-   }
-   ```
-
-#### Input Sanitization Issues
-
-**Symptom**: Unexpected data transformation or loss
-
-**Possible Causes**:
-- Complex nested objects
-- Non-standard input formats
-- Overly aggressive sanitization
-
-**Troubleshooting**:
-1. Test sanitization with various input types
-   ```typescript
-   const input = {
-     text: '<script>alert("xss")</script>',
-     nested: { html: '<img src="x" onerror="alert(1)">World' }
-   };
-   const sanitized = sanitizeValue(input);
-   ```
-
-2. Custom sanitization for specific use cases
-   ```typescript
-   function customSanitize(value) {
-     // Add custom sanitization logic
-     return sanitizeValue(value);
-   }
-   ```
-
-#### Security Header Configuration
-
-**Symptom**: Missing or incorrect security headers
-
-**Possible Causes**:
-- Misconfigured Helmet options
-- Environment-specific header requirements
-
-**Solutions**:
-1. Custom security header configuration
-   ```typescript
-   const customHelmetConfig = {
-     contentSecurityPolicy: {
-       directives: {
-         defaultSrc: ["'self'"],
-         scriptSrc: ["'self'", 'trusted-cdn.com']
-       }
-     }
-   };
-   applySecurityHeaders(request, customHelmetConfig);
-   ```
-
-#### Error Handling and Logging
-
-**Symptom**: Inconsistent error responses
-
-**Possible Causes**:
-- Incorrect environment configuration
-- Unhandled error types
-
-**Debugging Techniques**:
-1. Verify environment settings
-   ```typescript
-   const errorResponse = handleError(error, process.env.NODE_ENV);
-   ```
-
-2. Add custom error handling
-   ```typescript
-   function enhancedErrorHandler(error, env) {
-     // Add custom logging or monitoring
-     console.error('Security error:', error);
-     return handleError(error, env);
-   }
-   ```
-
-### Performance and Security Monitoring
-
-1. **Logging**
-   - Enable debug logging for security events
-   - Monitor rate limit and validation logs
-
-2. **Metrics**
-   - Track rate limit hit rates
-   - Monitor request validation success/failure ratios
-
-3. **Continuous Improvement**
-   - Regularly review and update security configurations
-   - Conduct periodic security audits
-
-### Environment-Specific Considerations
-
-#### Development
-- More verbose error messages
-- Relaxed rate limiting
-- Detailed security logs
-
-#### Production
-- Minimal error details
-- Strict rate limiting
-- Comprehensive security headers
-
-### External Resources
-
-- [OWASP Security Guidelines](https://owasp.org/www-project-top-ten/)
-- [Helmet.js Documentation](https://helmetjs.github.io/)
-- [JWT Security Best Practices](https://jwt.io/introduction)
-
-### Getting Help
-
-If you encounter persistent issues:
-1. Check application logs
-2. Verify environment configurations
-3. Consult the project's issue tracker
-4. Reach out to the development team with detailed error information 
+```bash
+# Backup script
+tar -czf mcp-backup-$(date +%Y%m%d).tar.gz \
+    .env \
+    config/ \
+    data/
+``` 

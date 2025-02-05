@@ -1,68 +1,283 @@
-# Architecture Documentation for MCP Server
+---
+layout: default
+title: Architecture
+nav_order: 4
+---
 
-## Overview
+# Architecture Overview 🏗️
 
-The MCP Server is designed as a high-performance, secure, and scalable bridge between Home Assistant and Language Learning Models (LLMs). This document outlines the architectural design principles, core components, and deployment strategies that power the MCP Server.
+This document describes the architecture of the MCP Server, explaining how different components work together to provide a bridge between Home Assistant and Language Learning Models.
 
-## Key Architectural Components
+## System Architecture
 
-### High-Performance Runtime with Bun
+```mermaid
+graph TD
+    subgraph "Client Layer"
+        WC[Web Clients]
+        MC[Mobile Clients]
+        VC[Voice Assistants]
+    end
 
-- **Fast Startup & Efficiency:** Powered by Bun, the MCP Server benefits from rapid startup times, efficient memory utilization, and native TypeScript support.
-- **Optimized Build Process:** Bun's build tools allow for quick iteration and deployment, ensuring minimal downtime and swift performance enhancement.
+    subgraph "MCP Server"
+        API[API Gateway]
+        NLP[NLP Engine]
+        SSE[SSE Manager]
+        WS[WebSocket Server]
+        CM[Command Manager]
+        SC[Scene Controller]
+        Cache[Redis Cache]
+    end
 
-### Real-time Communication using Server-Sent Events (SSE)
+    subgraph "Home Assistant"
+        HA[Home Assistant Core]
+        Dev[Devices & Services]
+    end
 
-- **Continuous Updates:** The server leverages SSE to deliver real-time notifications and updates, ensuring that any changes in Home Assistant are immediately communicated to connected clients.
-- **Scalable Connection Handling:** SSE provides an event-driven model that efficiently manages multiple simultaneous client connections.
+    subgraph "AI Layer"
+        LLM[Language Models]
+        IC[Intent Classifier]
+        NER[Named Entity Recognition]
+    end
 
-### Modular & Extensible Design
+    WC --> |HTTP/WS| API
+    MC --> |HTTP/WS| API
+    VC --> |HTTP| API
+    
+    API --> |Events| SSE
+    API --> |Real-time| WS
+    API --> |Process| NLP
+    
+    NLP --> |Query| LLM
+    NLP --> |Extract| IC
+    NLP --> |Identify| NER
+    
+    CM --> |Execute| HA
+    HA --> |Control| Dev
+    
+    SSE --> |State Updates| WC
+    SSE --> |State Updates| MC
+    WS --> |Bi-directional| WC
+    
+    Cache --> |Fast Access| API
+    HA --> |Events| Cache
+```
 
-- **Plugin Architecture:** Designed with modularity in mind, the MCP Server supports plugins, add-ons, and custom automation scripts, enabling seamless feature expansion without disrupting core functionality.
-- **Separation of Concerns:** Different components, such as device management, automation control, and system monitoring, are clearly separated, allowing independent development, testing, and scaling.
+## Component Details
 
-### Secure API Integration
+### 1. Client Layer
 
-- **Token-Based Authentication:** Robust token-based authentication mechanisms restrict access to authorized users and systems.
-- **Rate Limiting & Error Handling:** Integrated rate limiting combined with comprehensive error handling ensures system stability and prevents misuse.
-- **Best Practices:** All API endpoints follow industry-standard security guidelines to protect data and maintain system integrity.
+The client layer consists of various interfaces that interact with the MCP Server:
 
-### Deployment & Scalability
+- **Web Clients**: Browser-based dashboards and control panels
+- **Mobile Clients**: Native mobile applications
+- **Voice Assistants**: Voice-enabled devices and interfaces
 
-- **Containerized Deployment with Docker:** The use of Docker Compose enables straightforward deployment, management, and scaling of the server and its dependencies.
-- **Flexible Environment Configuration:** Environment variables and configuration files (.env) facilitate smooth transitions between development, testing, and production setups.
+### 2. MCP Server Core
 
-## Future Enhancements
+#### API Gateway
+- Handles all incoming HTTP requests
+- Manages authentication and rate limiting
+- Routes requests to appropriate handlers
 
-- **Advanced Automation Logic:** Integration of more complex automation rules and conditional decision-making capabilities.
-- **Enhanced Security Measures:** Additional layers of security, such as multi-factor authentication and improved encryption techniques, are on the roadmap.
-- **Improved Monitoring & Analytics:** Future updates will introduce advanced performance metrics and real-time analytics to monitor system health and user interactions.
+```typescript
+interface APIGateway {
+    authenticate(): Promise<boolean>;
+    rateLimit(): Promise<boolean>;
+    route(request: Request): Promise<Response>;
+}
+```
 
-## Conclusion
+#### NLP Engine
+- Processes natural language commands
+- Integrates with Language Models
+- Extracts intents and entities
 
-The architecture of the MCP Server prioritizes performance, scalability, and security. By leveraging Bun's high-performance runtime, employing real-time communication through SSE, and maintaining a modular, secure design, the MCP Server provides a robust platform for integrating Home Assistant with modern LLM functionalities.
+```typescript
+interface NLPEngine {
+    processCommand(text: string): Promise<CommandIntent>;
+    extractEntities(text: string): Promise<Entity[]>;
+    validateIntent(intent: CommandIntent): boolean;
+}
+```
 
-*This document is a living document and will be updated as the system evolves.* 
+#### Event Management
+- **SSE Manager**: Handles Server-Sent Events
+- **WebSocket Server**: Manages bi-directional communication
+- **Command Manager**: Processes and executes commands
 
-## Key Components
+### 3. Home Assistant Integration
 
-- **API Module:** Handles RESTful endpoints, authentication, and error management.
-- **SSE Module:** Provides real-time updates through Server-Sent Events.
-- **Tools Module:** Offers various utilities for device control, automation, and data processing.
-- **Security Module:** Implements token-based authentication and secure communications.
-- **Integration Module:** Bridges data between Home Assistant and external systems.
+The server maintains a robust connection to Home Assistant through:
+
+- REST API calls
+- WebSocket connections
+- Event subscriptions
+
+```typescript
+interface HomeAssistantClient {
+    connect(): Promise<void>;
+    getState(entityId: string): Promise<EntityState>;
+    executeCommand(command: Command): Promise<CommandResult>;
+    subscribeToEvents(callback: EventCallback): Subscription;
+}
+```
+
+### 4. AI Layer
+
+#### Language Model Integration
+- Processes natural language input
+- Understands context and user intent
+- Generates appropriate responses
+
+#### Intent Classification
+- Identifies command types
+- Extracts parameters
+- Validates requests
 
 ## Data Flow
 
-1. Requests enter via the API endpoints.
-2. Security middleware validates and processes requests.
-3. Core modules process data and execute the necessary business logic.
-4. Real-time notifications are managed by the SSE module.
+### 1. Command Processing
 
-## Future Enhancements
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant NLP
+    participant LLM
+    participant HA
+    
+    Client->>API: Send command
+    API->>NLP: Process text
+    NLP->>LLM: Get intent
+    LLM-->>NLP: Return structured intent
+    NLP->>HA: Execute command
+    HA-->>API: Return result
+    API-->>Client: Send response
+```
 
-- Expand modularity with potential microservices.
-- Enhance security with multi-factor authentication.
-- Improve scalability through distributed architectures.
+### 2. Real-time Updates
 
-*Further diagrams and detailed breakdowns will be added in future updates.* 
+```mermaid
+sequenceDiagram
+    participant HA
+    participant Cache
+    participant SSE
+    participant Client
+    
+    HA->>Cache: State change
+    Cache->>SSE: Notify change
+    SSE->>Client: Send update
+    Note over Client: Update UI
+```
+
+### 3. [SSE API](api/sse.md)
+- Event Subscriptions
+- Real-time Updates
+- Connection Management
+
+## Security Architecture
+
+### Authentication Flow
+
+1. **JWT-based Authentication**
+   ```typescript
+   interface AuthToken {
+       token: string;
+       expires: number;
+       scope: string[];
+   }
+   ```
+
+2. **Rate Limiting**
+   ```typescript
+   interface RateLimit {
+       window: number;
+       max: number;
+       current: number;
+   }
+   ```
+
+### Security Measures
+
+- TLS encryption for all communications
+- Input sanitization
+- Request validation
+- Token-based authentication
+- Rate limiting
+- IP filtering
+
+## Performance Optimizations
+
+### Caching Strategy
+
+```mermaid
+graph LR
+    Request --> Cache{Cache?}
+    Cache -->|Hit| Response
+    Cache -->|Miss| HA[Home Assistant]
+    HA --> Cache
+    Cache --> Response
+```
+
+### Connection Management
+
+- Connection pooling
+- Automatic reconnection
+- Load balancing
+- Request queuing
+
+## Configuration
+
+The system is highly configurable through environment variables and configuration files:
+
+```yaml
+server:
+  port: 3000
+  host: '0.0.0.0'
+  
+homeAssistant:
+  url: 'http://homeassistant:8123'
+  token: 'YOUR_TOKEN'
+  
+security:
+  jwtSecret: 'your-secret'
+  rateLimit: 100
+  
+ai:
+  model: 'gpt-4'
+  temperature: 0.7
+  
+cache:
+  ttl: 300
+  maxSize: '100mb'
+```
+
+## Deployment Architecture
+
+### Docker Deployment
+
+```mermaid
+graph TD
+    subgraph "Docker Compose"
+        MCP[MCP Server]
+        Redis[Redis Cache]
+        HA[Home Assistant]
+    end
+    
+    MCP --> Redis
+    MCP --> HA
+```
+
+### Scaling Considerations
+
+- Horizontal scaling capabilities
+- Load balancing support
+- Redis cluster support
+- Multiple HA instance support
+
+## Further Reading
+
+- [API Documentation](api/index.md)
+- [Installation Guide](getting-started/installation.md)
+- [Contributing Guidelines](contributing.md)
+- [Troubleshooting](troubleshooting.md) 

@@ -1,124 +1,171 @@
-# Installation Guide
+---
+layout: default
+title: Installation
+parent: Getting Started
+nav_order: 1
+---
+
+# Installation Guide 🛠️
+
+This guide covers different methods to install and set up the MCP Server for Home Assistant. Choose the installation method that best suits your needs.
 
 ## Prerequisites
 
-### System Requirements
-- **Operating System:** Linux, macOS, or Windows (Docker recommended)
-- **Runtime:** Bun v1.0.26 or higher
-- **Home Assistant:** v2023.11 or higher
-- **Minimum Hardware:**
-  - 2 CPU cores
-  - 2GB RAM
-  - 10GB free disk space
+Before installing MCP Server, ensure you have:
 
-### Software Dependencies
-- Bun runtime
-- Docker (optional, recommended for deployment)
-- Git
-- Node.js (for some development tasks)
+- Home Assistant instance running and accessible
+- Node.js 18+ or Docker installed
+- Home Assistant Long-Lived Access Token ([How to get one](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token))
 
 ## Installation Methods
 
-### 1. Basic Setup
+### 1. 🔧 Smithery Installation (Recommended)
 
-#### Install Bun
+The easiest way to install MCP Server is through Smithery:
+
 ```bash
-curl -fsSL https://bun.sh/install | bash
+npx -y @smithery/cli install @jango-blockchained/advanced-homeassistant-mcp --client claude
 ```
 
-#### Clone Repository
-```bash
-git clone https://github.com/jango-blockchained/homeassistant-mcp.git
-cd homeassistant-mcp
-```
+### 2. 🐳 Docker Installation
 
-#### Install Dependencies
-```bash
-bun install
-```
+For a containerized deployment:
 
-#### Configure Environment
-1. Copy environment template
 ```bash
+# Clone the repository
+git clone --depth 1 https://github.com/jango-blockchained/advanced-homeassistant-mcp.git
+cd advanced-homeassistant-mcp
+
+# Configure environment variables
 cp .env.example .env
+# Edit .env with your Home Assistant details:
+# - HA_URL: Your Home Assistant URL
+# - HA_TOKEN: Your Long-Lived Access Token
+# - Other configuration options
+
+# Build and start containers
+docker compose up -d --build
+
+# View logs (optional)
+docker compose logs -f --tail=50
 ```
-2. Edit `.env` file with your Home Assistant configuration
-   - Set `HASS_HOST`
-   - Configure authentication tokens
-   - Adjust other settings as needed
 
-#### Build and Start
+### 3. 💻 Manual Installation
+
+For direct installation on your system:
+
 ```bash
-bun run build
-bun start
-```
+# Install Bun runtime
+curl -fsSL https://bun.sh/install | bash
 
-### 2. Docker Setup (Recommended)
-
-#### Prerequisites
-- Docker
-- Docker Compose
-
-#### Deployment Steps
-```bash
-# Clone repository
-git clone https://github.com/jango-blockchained/homeassistant-mcp.git
-cd homeassistant-mcp
+# Clone and install
+git clone https://github.com/jango-blockchained/advanced-homeassistant-mcp.git
+cd advanced-homeassistant-mcp
+bun install --frozen-lockfile
 
 # Configure environment
 cp .env.example .env
-# Edit .env file with your settings
+# Edit .env with your configuration
 
-# Deploy with Docker Compose
-docker compose up -d
+# Start the server
+bun run dev --watch
 ```
 
-### 3. Home Assistant Add-on (Coming Soon)
-We're working on a direct Home Assistant add-on for even easier installation.
+## Configuration
+
+### Environment Variables
+
+Key configuration options in your `.env` file:
+
+```env
+# Home Assistant Configuration
+HA_URL=http://your-homeassistant:8123
+HA_TOKEN=your_long_lived_access_token
+
+# Server Configuration
+PORT=3000
+HOST=0.0.0.0
+NODE_ENV=production
+
+# Security Settings
+JWT_SECRET=your_secure_jwt_secret
+RATE_LIMIT=100
+```
+
+### Client Integration
+
+#### Cursor Integration
+
+Add to `.cursor/config/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "bun",
+      "args": ["run", "start"],
+      "cwd": "${workspaceRoot}",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}
+```
+
+#### Claude Desktop Integration
+
+Add to your Claude configuration:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "bun",
+      "args": ["run", "start", "--port", "8080"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+```
 
 ## Verification
 
-### Check Installation
-- Web Interface: [http://localhost:3000](http://localhost:3000)
-- Logs: `docker compose logs` or check `logs/` directory
+To verify your installation:
 
-### Troubleshooting
-- Ensure all environment variables are correctly set
-- Check network connectivity to Home Assistant
-- Verify authentication tokens
+1. Check server status:
+   ```bash
+   curl http://localhost:3000/health
+   ```
 
-## Updating
+2. Test Home Assistant connection:
+   ```bash
+   curl http://localhost:3000/api/state
+   ```
 
-### Basic Setup
-```bash
-git pull
-bun install
-bun run build
-bun start
-```
+## Troubleshooting
 
-### Docker
-```bash
-git pull
-docker compose up -d --build
-```
+If you encounter issues:
 
-## Uninstallation
-
-### Basic Setup
-```bash
-cd homeassistant-mcp
-bun stop  # Stop the application
-rm -rf node_modules dist
-```
-
-### Docker
-```bash
-docker compose down
-docker rmi homeassistant-mcp  # Remove image
-```
+1. Check the [Troubleshooting Guide](../troubleshooting.md)
+2. Verify your environment variables
+3. Check server logs:
+   ```bash
+   # For Docker installation
+   docker compose logs -f
+   
+   # For manual installation
+   bun run dev
+   ```
 
 ## Next Steps
-- [Configuration Guide](configuration.md)
-- [Usage Instructions](../usage.md)
-- [Troubleshooting](../troubleshooting.md) 
+
+- Follow the [Quick Start Guide](quickstart.md) to begin using MCP Server
+- Read the [API Documentation](../api/index.md) for integration details
+- Check the [Architecture Overview](../architecture.md) to understand the system
+
+## Support
+
+Need help? Check our [Support Resources](../index.md#support) or [open an issue](https://github.com/jango-blockchained/advanced-homeassistant-mcp/issues). 
