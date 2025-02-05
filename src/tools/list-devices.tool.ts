@@ -22,20 +22,9 @@ export const listDevicesTool: Tool = {
 
       const states = (await response.json()) as HassState[];
       const devices: Record<string, HassState[]> = {
-        light: [],
-        climate: []
+        light: states.filter(state => state.entity_id.startsWith('light.')),
+        climate: states.filter(state => state.entity_id.startsWith('climate.'))
       };
-
-      // Group devices by domain with specific order
-      states.forEach((state) => {
-        const [domain] = state.entity_id.split(".");
-
-        // Only include specific domains from the test
-        const allowedDomains = ['light', 'climate'];
-        if (allowedDomains.includes(domain)) {
-          devices[domain].push(state);
-        }
-      });
 
       return {
         success: true,

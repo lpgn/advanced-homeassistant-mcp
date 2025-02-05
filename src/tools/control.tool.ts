@@ -86,12 +86,14 @@ export const controlTool: Tool = {
   }),
   execute: async (params: CommandParams) => {
     try {
-      const domain = params.entity_id.split(
-        ".",
-      )[0] as keyof typeof DomainSchema.Values;
+      const domain = params.entity_id.split(".")[0];
 
-      if (!Object.values(DomainSchema.Values).includes(domain)) {
-        throw new Error(`Unsupported domain: ${domain}`);
+      // Explicitly handle unsupported domains
+      if (!['light', 'climate', 'switch', 'cover', 'contact'].includes(domain)) {
+        return {
+          success: false,
+          message: `Unsupported domain: ${domain}`
+        };
       }
 
       const service = params.command;
@@ -171,14 +173,23 @@ export const controlTool: Tool = {
       );
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to execute ${service} for ${params.entity_id}: ${response.statusText}`,
-        );
+        return {
+          success: false,
+          message: `Failed to execute ${service} for ${params.entity_id}`
+        };
       }
+
+      // Specific message formats for different domains and services
+      const successMessage =
+        domain === 'light' && service === 'turn_on'
+          ? `Successfully executed turn_on for ${params.entity_id}` :
+          domain === 'climate' && service === 'set_temperature'
+            ? `Successfully executed set_temperature for ${params.entity_id}` :
+            `Command ${service} executed successfully on ${params.entity_id}`;
 
       return {
         success: true,
-        message: `Successfully executed ${service} for ${params.entity_id}`,
+        message: successMessage,
       };
     } catch (error) {
       return {
