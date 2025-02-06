@@ -237,6 +237,6 @@ The current API version is v1. Include the version in the URL:
 
 The Advanced Home Assistant MCP provides several APIs for integration and automation:
 
-- [Core API](core-api.md) - Primary interface for system control
+- [Core API](core.md) - Primary interface for system control
 - [SSE API](sse.md) - Server-Sent Events for real-time updates
 - [Core Functions](core.md) - Essential system functions 

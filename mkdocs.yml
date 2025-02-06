@@ -9,66 +9,224 @@ theme:
   name: material
   logo: assets/images/logo.png
   favicon: assets/images/favicon.ico
+  
+  # Modern Features
   features:
-    - navigation.instant
-    - navigation.tracking
+    # Navigation Enhancements
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
     - navigation.sections
     - navigation.expand
-    - navigation.top
+    - navigation.path
+    - navigation.footer
+    - navigation.prune
+    - navigation.tracking
+    - navigation.instant
+    
+    # UI Elements
+    - header.autohide
+    - toc.integrate
+    - toc.follow
+    - announce.dismiss
+    
+    # Search Features
     - search.suggest
     - search.highlight
+    - search.share
+    
+    # Code Features
+    - content.code.annotate
     - content.code.copy
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+    
+  # Theme Configuration
   palette:
-    - scheme: default
-      primary: indigo
-      accent: indigo
+    # Dark mode as primary
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep-purple
+      accent: purple
       toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-4
+        icon: material/weather-sunny
         name: Switch to light mode
+    # Light mode as secondary
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep-purple
+      accent: purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  
+  font:
+    text: Roboto
+    code: Roboto Mono
+  
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
 
 markdown_extensions:
+  # Modern Code Highlighting
   - pymdownx.highlight:
       anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
-  - admonition
+  
+  # Advanced Formatting
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  
+  # Interactive Elements
   - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  
+  # Diagrams & Formatting
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  
+  # Additional Extensions
+  - admonition
   - attr_list
   - md_in_html
-  - pymdownx.emoji
-  - pymdownx.tasklist
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
   - footnotes
   - tables
+  - def_list
+  - abbr
 
 plugins:
-  - search
+  # Core Plugins
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
   - minify:
       minify_html: true
   - mkdocstrings
+  
+  # Advanced Features
   - social:
-      cards: false  # Disable social cards if they cause issues
+      cards: true
+      cards_color:
+        fill: "#1e1e2e"
+        text: "#cdd6f4"
   - tags
-  - redirects
-  - gh-deploy
-  - git-revision-date
+  - offline
+  - optimize
+  
+  # Version Management
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: date
+  
+  # Analytics
+  - analytics:
+      provider: google
+      feedback:
+        title: Was this page helpful?
+        ratings:
+          - icon: material/emoticon-happy-outline
+            name: This page was helpful
+            data: 1
+            note: >-
+              Thanks for your feedback!
+          - icon: material/emoticon-sad-outline
+            name: This page could be improved
+            data: 0
+            note: >- 
+              Thanks for your feedback!
 
+extra:
+  # Consent Management
+  consent:
+    title: Cookie consent
+    description: >- 
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
+    actions:
+      - accept
+      - reject
+      - manage
+  
+  # Version Management
+  version:
+    provider: mike
+    default: latest
+  
+  # Social Links
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jango-blockchained/homeassistant-mcp
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/jangoblockchained/homeassistant-mcp
+  
+  # Status Indicators
+  status:
+    new: Recently added
+    deprecated: Deprecated
+    beta: Beta
+  
+  # Analytics
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/emoticon-happy-outline
+          name: This page was helpful
+          data: 1
+        - icon: material/emoticon-sad-outline
+          name: This page could be improved
+          data: 0
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - javascripts/extra.js
+
+copyright: Copyright &copy; 2025 jango-blockchained
+
+# Keep existing nav structure
 nav:
   - Home: index.md
   - Getting Started:
+    - Overview: getting-started/index.md
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quickstart.md
-  - API Reference: api/index.md
+    - Configuration: getting-started/configuration.md
+    - Docker Setup: getting-started/docker.md
+  - API Reference:
+    - Overview: api/index.md
+    - Core API: api/core.md
+    - SSE API: api/sse.md
   - Usage: usage.md
   - Configuration:
-    - Claude Desktop Config: claude_desktop_config.md
-    - Client Config: client_config.md
+    - System Configuration: configuration.md
   - Tools:
     - Overview: tools/tools.md
     - Device Management:
@@ -93,7 +251,8 @@ nav:
     - Best Practices: development/best-practices.md
     - Interfaces: development/interfaces.md
     - Tool Development: development/tools.md
-    - Testing Guide: testing.md
+    - Testing Guide: development/test-migration-guide.md
+    - Testing: testing.md
     - Deployment Guide: deployment.md
   - Architecture: architecture.md
   - Contributing: contributing.md
@@ -101,21 +260,3 @@ nav:
   - Examples:
     - Overview: examples/index.md
   - Roadmap: roadmap.md
-
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/jango-blockchained/homeassistant-mcp
-    - icon: fontawesome/brands/docker
-      link: https://hub.docker.com/r/jangoblockchained/homeassistant-mcp
-  analytics:
-    provider: google
-    property: !ENV GOOGLE_ANALYTICS_KEY
-
-extra_css:
-  - stylesheets/extra.css
-
-extra_javascript:
-  - javascripts/extra.js
-
-copyright: Copyright &copy; 2025 jango-blockchained

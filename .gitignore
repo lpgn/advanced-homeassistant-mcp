@@ -31,7 +31,7 @@ wheels/
 venv/
 ENV/
 env/
-
+.venv/
 # Logs
 logs
 *.log
@@ -90,3 +90,5 @@ __pycache__/
 *$py.class
 
 models/
+
+*.code-workspace
