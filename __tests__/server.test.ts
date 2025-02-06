@@ -1,149 +1,149 @@
-import { describe, expect, test } from "bun:test";
-import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
+import { describe, expect, test, beforeEach, afterEach, mock, spyOn } from "bun:test";
 import type { Mock } from "bun:test";
-import type { Express, Application } from 'express';
-import type { Logger } from 'winston';
+import type { Elysia } from "elysia";
 
-// Types for our mocks
-interface MockApp {
-    use: Mock<() => void>;
-    listen: Mock<(port: number, callback: () => void) => { close: Mock<() => void> }>;
-}
-
-interface MockLiteMCPInstance {
-    addTool: Mock<() => void>;
-    start: Mock<() => Promise<void>>;
-}
-
-type MockLogger = {
-    info: Mock<(message: string) => void>;
-    error: Mock<(message: string) => void>;
-    debug: Mock<(message: string) => void>;
-};
-
-// Mock express
-const mockApp: MockApp = {
-    use: mock(() => undefined),
-    listen: mock((port: number, callback: () => void) => {
-        callback();
-        return { close: mock(() => undefined) };
+// Create mock instances
+const mockApp = {
+    use: mock(() => mockApp),
+    get: mock(() => mockApp),
+    post: mock(() => mockApp),
+    listen: mock((port: number, callback?: () => void) => {
+        callback?.();
+        return mockApp;
     })
 };
-const mockExpress = mock(() => mockApp);
 
-// Mock LiteMCP instance
-const mockLiteMCPInstance: MockLiteMCPInstance = {
-    addTool: mock(() => undefined),
-    start: mock(() => Promise.resolve())
+// Create mock constructors
+const MockElysia = mock(() => mockApp);
+const mockCors = mock(() => (app: any) => app);
+const mockSwagger = mock(() => (app: any) => app);
+const mockSpeechService = {
+    initialize: mock(() => Promise.resolve()),
+    shutdown: mock(() => Promise.resolve())
 };
-const mockLiteMCP = mock((name: string, version: string) => mockLiteMCPInstance);
 
-// Mock logger
-const mockLogger: MockLogger = {
-    info: mock((message: string) => undefined),
-    error: mock((message: string) => undefined),
-    debug: mock((message: string) => undefined)
+// Mock the modules
+const mockModules = {
+    Elysia: MockElysia,
+    cors: mockCors,
+    swagger: mockSwagger,
+    speechService: mockSpeechService,
+    config: mock(() => ({})),
+    resolve: mock((...args: string[]) => args.join('/')),
+    z: { object: mock(() => ({})), enum: mock(() => ({})) }
+};
+
+// Mock module resolution
+const mockResolver = {
+    resolve(specifier: string) {
+        const mocks: Record<string, any> = {
+            'elysia': { Elysia: mockModules.Elysia },
+            '@elysiajs/cors': { cors: mockModules.cors },
+            '@elysiajs/swagger': { swagger: mockModules.swagger },
+            '../speech/index.js': { speechService: mockModules.speechService },
+            'dotenv': { config: mockModules.config },
+            'path': { resolve: mockModules.resolve },
+            'zod': { z: mockModules.z }
+        };
+        return mocks[specifier] || {};
+    }
 };
 
 describe('Server Initialization', () => {
     let originalEnv: NodeJS.ProcessEnv;
+    let consoleLog: Mock<typeof console.log>;
+    let consoleError: Mock<typeof console.error>;
+    let originalResolve: any;
 
     beforeEach(() => {
         // Store original environment
         originalEnv = { ...process.env };
 
-        // Setup mocks
-        (globalThis as any).express = mockExpress;
-        (globalThis as any).LiteMCP = mockLiteMCP;
-        (globalThis as any).logger = mockLogger;
+        // Mock console methods
+        consoleLog = mock(() => { });
+        consoleError = mock(() => { });
+        console.log = consoleLog;
+        console.error = consoleError;
 
         // Reset all mocks
-        mockApp.use.mockReset();
-        mockApp.listen.mockReset();
-        mockLogger.info.mockReset();
-        mockLogger.error.mockReset();
-        mockLogger.debug.mockReset();
-        mockLiteMCP.mockReset();
+        for (const key in mockModules) {
+            const module = mockModules[key as keyof typeof mockModules];
+            if (typeof module === 'object' && module !== null) {
+                Object.values(module).forEach(value => {
+                    if (typeof value === 'function' && 'mock' in value) {
+                        (value as Mock<any>).mockReset();
+                    }
+                });
+            } else if (typeof module === 'function' && 'mock' in module) {
+                (module as Mock<any>).mockReset();
+            }
+        }
+
+        // Set default environment variables
+        process.env.NODE_ENV = 'test';
+        process.env.PORT = '4000';
+
+        // Setup module resolution mock
+        originalResolve = (globalThis as any).Bun?.resolveSync;
+        (globalThis as any).Bun = {
+            ...(globalThis as any).Bun,
+            resolveSync: (specifier: string) => mockResolver.resolve(specifier)
+        };
     });
 
     afterEach(() => {
         // Restore original environment
         process.env = originalEnv;
 
-        // Clean up mocks
-        delete (globalThis as any).express;
-        delete (globalThis as any).LiteMCP;
-        delete (globalThis as any).logger;
+        // Restore module resolution
+        if (originalResolve) {
+            (globalThis as any).Bun.resolveSync = originalResolve;
+        }
     });
 
-    test('should start Express server when not in Claude mode', async () => {
-        // Set OpenAI mode
-        process.env.PROCESSOR_TYPE = 'openai';
+    test('should initialize server with middleware', async () => {
+        // Import and initialize server
+        const mod = await import('../src/index');
 
-        // Import the main module
-        await import('../src/index.js');
+        // Verify server initialization
+        expect(MockElysia.mock.calls.length).toBe(1);
+        expect(mockCors.mock.calls.length).toBe(1);
+        expect(mockSwagger.mock.calls.length).toBe(1);
 
-        // Verify Express server was initialized
-        expect(mockExpress.mock.calls.length).toBeGreaterThan(0);
-        expect(mockApp.use.mock.calls.length).toBeGreaterThan(0);
-        expect(mockApp.listen.mock.calls.length).toBeGreaterThan(0);
-
-        const infoMessages = mockLogger.info.mock.calls.map(([msg]) => msg);
-        expect(infoMessages.some(msg => msg.includes('Server is running on port'))).toBe(true);
+        // Verify console output
+        const logCalls = consoleLog.mock.calls;
+        expect(logCalls.some(call =>
+            typeof call.args[0] === 'string' &&
+            call.args[0].includes('Server is running on port')
+        )).toBe(true);
     });
 
-    test('should not start Express server in Claude mode', async () => {
-        // Set Claude mode
-        process.env.PROCESSOR_TYPE = 'claude';
+    test('should initialize speech service when enabled', async () => {
+        // Enable speech service
+        process.env.SPEECH_ENABLED = 'true';
 
-        // Import the main module
-        await import('../src/index.js');
+        // Import and initialize server
+        const mod = await import('../src/index');
 
-        // Verify Express server was not initialized
-        expect(mockExpress.mock.calls.length).toBe(0);
-        expect(mockApp.use.mock.calls.length).toBe(0);
-        expect(mockApp.listen.mock.calls.length).toBe(0);
-
-        const infoMessages = mockLogger.info.mock.calls.map(([msg]) => msg);
-        expect(infoMessages).toContain('Running in Claude mode - Express server disabled');
+        // Verify speech service initialization
+        expect(mockSpeechService.initialize.mock.calls.length).toBe(1);
     });
 
-    test('should initialize LiteMCP in both modes', async () => {
-        // Test OpenAI mode
-        process.env.PROCESSOR_TYPE = 'openai';
-        await import('../src/index.js');
+    test('should handle server shutdown gracefully', async () => {
+        // Enable speech service for shutdown test
+        process.env.SPEECH_ENABLED = 'true';
 
-        expect(mockLiteMCP.mock.calls.length).toBeGreaterThan(0);
-        const [name, version] = mockLiteMCP.mock.calls[0] ?? [];
-        expect(name).toBe('home-assistant');
-        expect(typeof version).toBe('string');
+        // Import and initialize server
+        const mod = await import('../src/index');
 
-        // Reset for next test
-        mockLiteMCP.mockReset();
+        // Simulate SIGTERM
+        process.emit('SIGTERM');
 
-        // Test Claude mode
-        process.env.PROCESSOR_TYPE = 'claude';
-        await import('../src/index.js');
-
-        expect(mockLiteMCP.mock.calls.length).toBeGreaterThan(0);
-        const [name2, version2] = mockLiteMCP.mock.calls[0] ?? [];
-        expect(name2).toBe('home-assistant');
-        expect(typeof version2).toBe('string');
-    });
-
-    test('should handle missing PROCESSOR_TYPE (default to Express server)', async () => {
-        // Remove PROCESSOR_TYPE
-        delete process.env.PROCESSOR_TYPE;
-
-        // Import the main module
-        await import('../src/index.js');
-
-        // Verify Express server was initialized (default behavior)
-        expect(mockExpress.mock.calls.length).toBeGreaterThan(0);
-        expect(mockApp.use.mock.calls.length).toBeGreaterThan(0);
-        expect(mockApp.listen.mock.calls.length).toBeGreaterThan(0);
-
-        const infoMessages = mockLogger.info.mock.calls.map(([msg]) => msg);
-        expect(infoMessages.some(msg => msg.includes('Server is running on port'))).toBe(true);
+        // Verify shutdown behavior
+        expect(mockSpeechService.shutdown.mock.calls.length).toBe(1);
+        expect(consoleLog.mock.calls.some(call =>
+            typeof call.args[0] === 'string' &&
+            call.args[0].includes('Shutting down gracefully')
+        )).toBe(true);
     });
 }); 
