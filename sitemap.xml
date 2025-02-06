@@ -1,139 +1,159 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/index.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/api/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/api.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/architecture/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/architecture.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/contributing/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/configuration.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/getting-started/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/contributing.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/roadmap/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/deployment.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/testing/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/roadmap.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/troubleshooting/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/security.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/usage/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/testing.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/api/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/troubleshooting.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/api/core/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/usage.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/api/sse/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/api/index.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/development/best-practices/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/api/core.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/development/development/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/api/sse.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/development/interfaces/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/config/index.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/development/test-migration-guide/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/development/index.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/development/tools/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/development/best-practices.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/examples/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/development/environment.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/getting-started/configuration/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/development/interfaces.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/getting-started/docker/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/development/test-migration-guide.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/getting-started/installation/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/development/tools.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/getting-started/quickstart/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/examples/index.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/tools/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/getting-started/index.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/addons-packages/addon/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/getting-started/configuration.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/addons-packages/package/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/getting-started/docker.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/automation/automation-config/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/getting-started/installation.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/automation/automation/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/getting-started/quickstart.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/device-management/control/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/index.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/device-management/list-devices/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/addons-packages/addon.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/events/sse-stats/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/addons-packages/package.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/events/subscribe-events/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/automation/automation-config.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/history-state/history/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/automation/automation.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/history-state/scene/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/device-management/control.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
     <url>
-         <loc>https://jango-blockchained.github.io/advanced-homeassitant-mcp/tools/notifications/notify/</loc>
-         <lastmod>2025-02-05</lastmod>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/device-management/list-devices.html</loc>
+         <lastmod>2025-02-06</lastmod>
+    </url>
+    <url>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/events/sse-stats.html</loc>
+         <lastmod>2025-02-06</lastmod>
+    </url>
+    <url>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/events/subscribe-events.html</loc>
+         <lastmod>2025-02-06</lastmod>
+    </url>
+    <url>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/history-state/history.html</loc>
+         <lastmod>2025-02-06</lastmod>
+    </url>
+    <url>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/history-state/scene.html</loc>
+         <lastmod>2025-02-06</lastmod>
+    </url>
+    <url>
+         <loc>https://jango-blockchained.github.io/advanced-homeassistant-mcp/tools/notifications/notify.html</loc>
+         <lastmod>2025-02-06</lastmod>
     </url>
 </urlset>
