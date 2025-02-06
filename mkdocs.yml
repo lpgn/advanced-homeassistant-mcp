@@ -107,8 +107,8 @@ markdown_extensions:
   - attr_list
   - md_in_html
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - footnotes
   - tables
   - def_list
@@ -124,35 +124,14 @@ plugins:
   
   # Advanced Features
   - social:
-      cards: true
-      cards_color:
-        fill: "#1e1e2e"
-        text: "#cdd6f4"
+      cards: false
   - tags
   - offline
-  - optimize
   
   # Version Management
   - git-revision-date-localized:
       enable_creation_date: true
       type: date
-  
-  # Analytics
-  - analytics:
-      provider: google
-      feedback:
-        title: Was this page helpful?
-        ratings:
-          - icon: material/emoticon-happy-outline
-            name: This page was helpful
-            data: 1
-            note: >-
-              Thanks for your feedback!
-          - icon: material/emoticon-sad-outline
-            name: This page could be improved
-            data: 0
-            note: >- 
-              Thanks for your feedback!
 
 extra:
   # Consent Management
@@ -196,9 +175,13 @@ extra:
         - icon: material/emoticon-happy-outline
           name: This page was helpful
           data: 1
+          note: >-
+            Thanks for your feedback!
         - icon: material/emoticon-sad-outline
           name: This page could be improved
           data: 0
+          note: >-
+            Thanks for your feedback! Please consider creating an issue to help us improve.
 
 extra_css:
   - stylesheets/extra.css
@@ -224,11 +207,14 @@ nav:
     - Overview: api/index.md
     - Core API: api/core.md
     - SSE API: api/sse.md
+    - API Documentation: api.md
   - Usage: usage.md
   - Configuration:
+    - Overview: config/index.md
     - System Configuration: configuration.md
+    - Security: security.md
   - Tools:
-    - Overview: tools/tools.md
+    - Overview: tools/index.md
     - Device Management:
       - List Devices: tools/device-management/list-devices.md
       - Device Control: tools/device-management/control.md
@@ -247,16 +233,17 @@ nav:
       - Event Subscription: tools/events/subscribe-events.md
       - SSE Statistics: tools/events/sse-stats.md
   - Development:
-    - Overview: development/development.md
+    - Overview: development/index.md
+    - Environment Setup: development/environment.md
+    - Architecture: architecture.md
+    - Contributing: contributing.md
+    - Testing: testing.md
     - Best Practices: development/best-practices.md
     - Interfaces: development/interfaces.md
     - Tool Development: development/tools.md
-    - Testing Guide: development/test-migration-guide.md
-    - Testing: testing.md
-    - Deployment Guide: deployment.md
-  - Architecture: architecture.md
-  - Contributing: contributing.md
-  - Troubleshooting: troubleshooting.md
+    - Test Migration Guide: development/test-migration-guide.md
+    - Troubleshooting: troubleshooting.md
+    - Deployment: deployment.md
+    - Roadmap: roadmap.md
   - Examples:
     - Overview: examples/index.md
-  - Roadmap: roadmap.md
