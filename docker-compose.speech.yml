@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   homeassistant-mcp:
+    image: homeassistant-mcp:latest
     environment:
       - ENABLE_SPEECH_FEATURES=${ENABLE_SPEECH_FEATURES:-true}
       - ENABLE_WAKE_WORD=${ENABLE_WAKE_WORD:-true}
@@ -26,7 +27,7 @@ services:
           cpus: '4.0'
           memory: 2G
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/asr/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
