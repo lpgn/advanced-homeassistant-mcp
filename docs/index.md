@@ -4,22 +4,108 @@ title: Home
 nav_order: 1
 ---
 
-# Advanced Home Assistant MCP
+# Home Assistant MCP Documentation 🏠🤖
 
-Welcome to the Advanced Home Assistant Master Control Program documentation.
+Welcome to the documentation for my Home Assistant MCP (Model Context Protocol) Server. This documentation will help you get started with installation, configuration, and usage of the MCP server.
 
-This documentation provides comprehensive information about setting up, configuring, and using the Advanced Home Assistant MCP system.
+## What is MCP? 🤔
 
-## Quick Links
+MCP is a lightweight integration tool for Home Assistant that provides:
 
-- [Getting Started](getting-started/index.md)
-- [API Reference](api/index.md)
+- 🔌 REST API for device control
+- 📡 WebSocket/SSE for real-time updates
+- 🤖 AI-powered automation analysis
+- 🎤 Optional speech processing
+- 🔐 Secure authentication
+
+## Quick Links 🔗
+
+- [Quick Start Guide](getting-started/quick-start.md)
 - [Configuration Guide](getting-started/configuration.md)
-- [Docker Setup](getting-started/docker.md)
+- [API Reference](api/overview.md)
+- [Tools & Extras](tools/overview.md)
 
-## What is MCP Server?
+## System Architecture 📊
 
-MCP Server is a bridge between Home Assistant and custom automation tools, enabling basic device control and real-time monitoring of your smart home environment. It provides a flexible interface for managing and interacting with your home automation setup.
+```mermaid
+flowchart TB
+    subgraph Client["Client Applications"]
+        direction TB
+        Web["Web Interface"]
+        Mobile["Mobile Apps"]
+        Voice["Voice Control"]
+    end
+
+    subgraph MCP["MCP Server"]
+        direction TB
+        API["REST API"]
+        WS["WebSocket/SSE"]
+        Auth["Authentication"]
+        
+        subgraph Speech["Speech Processing (Optional)"]
+            direction TB
+            Wake["Wake Word Detection"]
+            STT["Speech-to-Text"]
+            
+            subgraph STT_Options["STT Options"]
+                direction LR
+                Whisper["Whisper"]
+                FastWhisper["Fast Whisper"]
+            end
+            
+            Wake --> STT
+            STT --> STT_Options
+        end
+    end
+
+    subgraph HA["Home Assistant"]
+        direction TB
+        HASS_API["HASS API"]
+        HASS_WS["HASS WebSocket"]
+        Devices["Smart Devices"]
+    end
+
+    Client --> MCP
+    MCP --> HA
+    HA --> Devices
+
+    style Speech fill:#f9f,stroke:#333,stroke-width:2px
+    style STT_Options fill:#bbf,stroke:#333,stroke-width:1px
+```
+
+## Prerequisites 📋
+
+- 🚀 [Bun runtime](https://bun.sh) (v1.0.26+)
+- 🏡 [Home Assistant](https://www.home-assistant.io/) instance
+- 🐳 Docker (optional, recommended for deployment)
+- 🖥️ Node.js 18+ (optional, for speech features)
+- 🎮 NVIDIA GPU with CUDA support (optional, for faster speech processing)
+
+## Why Bun? 🚀
+
+I chose Bun as the runtime for several key benefits:
+
+- ⚡ **Blazing Fast Performance**
+  - Up to 4x faster than Node.js
+  - Built-in TypeScript support
+  - Optimized file system operations
+
+- 🎯 **All-in-One Solution**
+  - Package manager (faster than npm/yarn)
+  - Bundler (no webpack needed)
+  - Test runner (built-in testing)
+  - TypeScript transpiler
+
+- 🔋 **Built-in Features**
+  - SQLite3 driver
+  - .env file loading
+  - WebSocket client/server
+  - File watcher
+  - Test runner
+
+## Getting Started 🚀
+
+Check out the [Quick Start Guide](getting-started/quick-start.md) to begin your journey with Home Assistant MCP!
 
 ## Key Features
 

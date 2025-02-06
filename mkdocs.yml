@@ -1,249 +1,107 @@
-site_name: MCP Server for Home Assistant
-site_url: https://jango-blockchained.github.io/advanced-homeassistant-mcp
-repo_url: https://github.com/jango-blockchained/advanced-homeassistant-mcp
-site_description: Home Assistant MCP Server Documentation
-# Add this to handle GitHub Pages serving from a subdirectory
-site_dir: site/advanced-homeassistant-mcp
+site_name: Home Assistant MCP
+site_url: https://jango-blockchained.github.io/homeassistant-mcp
+repo_url: https://github.com/jango-blockchained/homeassistant-mcp
+repo_name: jango-blockchained/homeassistant-mcp
+edit_uri: edit/main/docs/
 
 theme:
   name: material
-  logo: assets/images/logo.png
-  favicon: assets/images/favicon.ico
-  
-  # Modern Features
   features:
-    # Navigation Enhancements
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.indexes
+    - navigation.instant
+    - navigation.tracking
     - navigation.sections
     - navigation.expand
-    - navigation.path
-    - navigation.footer
-    - navigation.prune
-    - navigation.tracking
-    - navigation.instant
-    
-    # UI Elements
-    - header.autohide
-    - toc.integrate
+    - navigation.indexes
     - toc.follow
-    - announce.dismiss
-    
-    # Search Features
     - search.suggest
     - search.highlight
-    - search.share
-    
-    # Code Features
-    - content.code.annotate
-    - content.code.copy
-    - content.code.select
-    - content.tabs.link
-    - content.tooltips
-    
-  # Theme Configuration
   palette:
-    # Dark mode as primary
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: deep-purple
-      accent: purple
+    - scheme: default
+      primary: indigo
+      accent: indigo
       toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
-    # Light mode as secondary
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: deep-purple
-      accent: purple
-      toggle:
-        icon: material/weather-night
+        icon: material/brightness-7
         name: Switch to dark mode
-  
-  font:
-    text: Roboto
-    code: Roboto Mono
-  
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   icon:
     repo: fontawesome/brands/github
-    edit: material/pencil
-    view: material/eye
+  favicon: assets/favicon.png
+  logo: assets/logo.png
+
+plugins:
+  - search
+  - mermaid2
+  - git-revision-date-localized:
+      type: date
+  - minify:
+      minify_html: true
 
 markdown_extensions:
-  # Modern Code Highlighting
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  
-  # Advanced Formatting
-  - pymdownx.critic
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - meta
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
   - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
   - pymdownx.keys
   - pymdownx.mark
-  - pymdownx.tilde
-  
-  # Interactive Elements
-  - pymdownx.details
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  
-  # Diagrams & Formatting
+  - pymdownx.smartsymbols
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.arithmatex:
-      generic: true
-  
-  # Additional Extensions
-  - admonition
-  - attr_list
-  - md_in_html
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - footnotes
-  - tables
-  - def_list
-  - abbr
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
 
-plugins:
-  # Core Plugins
-  - search:
-      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
-  - minify:
-      minify_html: true
-  - mkdocstrings
-  
-  # Advanced Features
-  - social:
-      cards: false
-  - tags
-  - offline
-  
-  # Version Management
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: date
-
-extra:
-  # Consent Management
-  consent:
-    title: Cookie consent
-    description: >- 
-      We use cookies to recognize your repeated visits and preferences, as well
-      as to measure the effectiveness of our documentation and whether users
-      find what they're searching for. With your consent, you're helping us to
-      make our documentation better.
-    actions:
-      - accept
-      - reject
-      - manage
-  
-  # Version Management
-  version:
-    provider: mike
-    default: latest
-  
-  # Social Links
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/jango-blockchained/homeassistant-mcp
-    - icon: fontawesome/brands/docker
-      link: https://hub.docker.com/r/jangoblockchained/homeassistant-mcp
-  
-  # Status Indicators
-  status:
-    new: Recently added
-    deprecated: Deprecated
-    beta: Beta
-  
-  # Analytics
-  analytics:
-    provider: google
-    property: !ENV GOOGLE_ANALYTICS_KEY
-    feedback:
-      title: Was this page helpful?
-      ratings:
-        - icon: material/emoticon-happy-outline
-          name: This page was helpful
-          data: 1
-          note: >-
-            Thanks for your feedback!
-        - icon: material/emoticon-sad-outline
-          name: This page could be improved
-          data: 0
-          note: >-
-            Thanks for your feedback! Please consider creating an issue to help us improve.
-
-extra_css:
-  - stylesheets/extra.css
-
-extra_javascript:
-  - javascripts/mathjax.js
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
-  - javascripts/extra.js
-
-copyright: Copyright &copy; 2025 jango-blockchained
-
-# Keep existing nav structure
 nav:
   - Home: index.md
   - Getting Started:
-    - Overview: getting-started/index.md
+    - Quick Start: getting-started/quick-start.md
     - Installation: getting-started/installation.md
-    - Quick Start: getting-started/quickstart.md
     - Configuration: getting-started/configuration.md
-    - Docker Setup: getting-started/docker.md
+  - Features:
+    - Core Features: features/core-features.md
+    - Speech Processing: features/speech-processing.md
+    - NLP Integration: features/nlp.md
+    - Custom Prompts: features/prompts.md
+  - Tools & Extras:
+    - Overview: tools/overview.md
+    - Analyzer CLI: tools/analyzer-cli.md
+    - Speech Examples: tools/speech-examples.md
+    - Claude Desktop: tools/claude-desktop.md
   - API Reference:
-    - Overview: api/index.md
-    - Core API: api/core.md
-    - SSE API: api/sse.md
-    - API Documentation: api.md
-  - Usage: usage.md
-  - Configuration:
-    - Overview: config/index.md
-    - System Configuration: configuration.md
-    - Security: security.md
-  - Tools:
-    - Overview: tools/index.md
-    - Device Management:
-      - List Devices: tools/device-management/list-devices.md
-      - Device Control: tools/device-management/control.md
-    - History & State:
-      - History: tools/history-state/history.md
-      - Scene Management: tools/history-state/scene.md
-    - Automation:
-      - Automation Management: tools/automation/automation.md
-      - Automation Configuration: tools/automation/automation-config.md
-    - Add-ons & Packages:
-      - Add-on Management: tools/addons-packages/addon.md
-      - Package Management: tools/addons-packages/package.md
-    - Notifications:
-      - Notify: tools/notifications/notify.md
-    - Events:
-      - Event Subscription: tools/events/subscribe-events.md
-      - SSE Statistics: tools/events/sse-stats.md
+    - Overview: api/overview.md
+    - REST API: api/rest.md
+    - WebSocket API: api/websocket.md
+    - Events: api/events.md
   - Development:
-    - Overview: development/index.md
-    - Environment Setup: development/environment.md
-    - Architecture: architecture.md
-    - Contributing: contributing.md
-    - Testing: testing.md
-    - Best Practices: development/best-practices.md
-    - Interfaces: development/interfaces.md
-    - Tool Development: development/tools.md
-    - Test Migration Guide: development/test-migration-guide.md
-    - Troubleshooting: troubleshooting.md
-    - Deployment: deployment.md
-    - Roadmap: roadmap.md
-  - Examples:
-    - Overview: examples/index.md
+    - Setup: development/setup.md
+    - Contributing: development/contributing.md
+    - Testing: development/testing.md
+  - Troubleshooting:
+    - Common Issues: troubleshooting/common-issues.md
+    - FAQ: troubleshooting/faq.md
+  - About:
+    - License: about/license.md
+    - Author: about/author.md

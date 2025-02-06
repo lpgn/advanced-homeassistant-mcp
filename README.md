@@ -228,9 +228,38 @@ bun run start
 
 ## Documentation 📚
 
+### Core Documentation
 - [Configuration Guide](docs/configuration.md)
 - [API Documentation](docs/api.md)
 - [Troubleshooting](docs/troubleshooting.md)
+
+### Advanced Features
+- [Natural Language Processing](docs/nlp.md) - AI-powered automation analysis and control
+- [Custom Prompts Guide](docs/prompts.md) - Create and customize AI behavior
+- [Extras & Tools](docs/extras.md) - Additional utilities and advanced features
+
+### Extra Tools 🛠️
+
+I've included several powerful tools in the `extra/` directory to enhance your Home Assistant experience:
+
+1. **Home Assistant Analyzer CLI** (`ha-analyzer-cli.ts`)
+   - Deep automation analysis using AI models
+   - Security vulnerability scanning
+   - Performance optimization suggestions
+   - System health metrics
+
+2. **Speech-to-Text Example** (`speech-to-text-example.ts`)
+   - Wake word detection
+   - Speech-to-text transcription
+   - Multiple language support
+   - GPU acceleration support
+
+3. **Claude Desktop Setup** (`claude-desktop-macos-setup.sh`)
+   - Automated Claude Desktop installation for macOS
+   - Environment configuration
+   - MCP integration setup
+
+See [Extras Documentation](docs/extras.md) for detailed usage instructions and examples.
 
 ## Client Integration 🔗
 
