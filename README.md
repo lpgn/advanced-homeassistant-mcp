@@ -133,10 +133,63 @@ NODE_ENV=production ./scripts/setup-env.sh
 - Edit `.env` file with your Home Assistant details
 - Required: Add your `HASS_TOKEN` (long-lived access token)
 
-4. Launch with Docker:
+4. Build and launch with Docker:
 ```bash
+# Build options:
+# Standard build
+./docker-build.sh
+
+# Build with speech support
+./docker-build.sh --speech
+
+# Build with speech and GPU support
+./docker-build.sh --speech --gpu
+
+# Launch:
 docker compose up -d
+
+# With speech features:
+docker compose -f docker-compose.yml -f docker-compose.speech.yml up -d
 ```
+
+## Docker Build Options 🐳
+
+My Docker build script (`docker-build.sh`) supports different configurations:
+
+### 1. Standard Build
+```bash
+./docker-build.sh
+```
+- Basic MCP server functionality
+- REST API and WebSocket support
+- No speech features
+
+### 2. Speech-Enabled Build
+```bash
+./docker-build.sh --speech
+```
+- Includes wake word detection
+- Speech-to-text capabilities
+- Pulls required images:
+  - `onerahmet/openai-whisper-asr-webservice`
+  - `rhasspy/wyoming-openwakeword`
+
+### 3. GPU-Accelerated Build
+```bash
+./docker-build.sh --speech --gpu
+```
+- All speech features
+- CUDA GPU acceleration
+- Optimized for faster processing
+- Float16 compute type for better performance
+
+### Build Features
+- 🔄 Automatic resource allocation
+- 💾 Memory-aware building
+- 📊 CPU quota management
+- 🧹 Automatic cleanup
+- 📝 Detailed build logs
+- 📊 Build summary and status
 
 ## Environment Configuration 🔧
 
