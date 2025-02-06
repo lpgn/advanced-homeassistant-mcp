@@ -4,103 +4,126 @@ This document provides detailed information about configuring the Home Assistant
 
 ## Configuration File Structure
 
-The MCP Server uses a hierarchical configuration structure:
+The MCP Server uses environment variables for configuration, with support for different environments (development, test, production):
 
-```yaml
-server:
-  host: 0.0.0.0
-  port: 8123
-  log_level: INFO
-
-security:
-  jwt_secret: YOUR_SECRET_KEY
-  allowed_origins:
-    - http://localhost:3000
-    - https://your-domain.com
-
-devices:
-  scan_interval: 30
-  default_timeout: 10
+```bash
+# .env, .env.development, or .env.test
+PORT=4000
+NODE_ENV=development
+HASS_HOST=http://192.168.178.63:8123
+HASS_TOKEN=your_token_here
+JWT_SECRET=your_secret_key
 ```
 
 ## Server Settings
 
 ### Basic Server Configuration
-- `host`: Server binding address (default: 0.0.0.0)
-- `port`: Server port number (default: 8123)
-- `log_level`: Logging level (INFO, DEBUG, WARNING, ERROR)
+- `PORT`: Server port number (default: 4000)
+- `NODE_ENV`: Environment mode (development, production, test)
+- `HASS_HOST`: Home Assistant instance URL
+- `HASS_TOKEN`: Home Assistant long-lived access token
 
 ### Security Settings
-- `jwt_secret`: Secret key for JWT token generation
-- `allowed_origins`: CORS allowed origins list
-- `ssl_cert`: Path to SSL certificate (optional)
-- `ssl_key`: Path to SSL private key (optional)
+- `JWT_SECRET`: Secret key for JWT token generation
+- `RATE_LIMIT`: Rate limiting configuration
+  - `windowMs`: Time window in milliseconds (default: 15 minutes)
+  - `max`: Maximum requests per window (default: 100)
 
-### Device Management
-- `scan_interval`: Device state scan interval in seconds
-- `default_timeout`: Default device command timeout
-- `retry_attempts`: Number of retry attempts for failed commands
+### WebSocket Settings
+- `SSE`: Server-Sent Events configuration
+  - `MAX_CLIENTS`: Maximum concurrent clients (default: 1000)
+  - `PING_INTERVAL`: Keep-alive ping interval in ms (default: 30000)
 
 ## Environment Variables
 
-Environment variables override configuration file settings:
+All configuration is managed through environment variables:
 
 ```bash
-MCP_HOST=0.0.0.0
-MCP_PORT=8123
-MCP_LOG_LEVEL=INFO
-MCP_JWT_SECRET=your-secret-key
+# Server
+PORT=4000
+NODE_ENV=development
+
+# Home Assistant
+HASS_HOST=http://your-hass-instance:8123
+HASS_TOKEN=your_token_here
+
+# Security
+JWT_SECRET=your-secret-key
+
+# Logging
+LOG_LEVEL=info
+LOG_DIR=logs
+LOG_MAX_SIZE=20m
+LOG_MAX_DAYS=14d
+LOG_COMPRESS=true
+LOG_REQUESTS=true
 ```
 
 ## Advanced Configuration
 
-### Rate Limiting
-```yaml
-rate_limit:
-  enabled: true
-  requests_per_minute: 100
-  burst: 20
-```
+### Security Rate Limiting
+Rate limiting is enabled by default to protect against brute force attacks:
 
-### Caching
-```yaml
-cache:
-  enabled: true
-  ttl: 300  # seconds
-  max_size: 1000  # entries
+```typescript
+RATE_LIMIT: {
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 100  // limit each IP to 100 requests per window
+}
 ```
 
 ### Logging
-```yaml
-logging:
-  file: /var/log/mcp-server.log
-  max_size: 10MB
-  backup_count: 5
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+The server uses Bun's built-in logging capabilities with additional configuration:
+
+```typescript
+LOGGING: {
+  LEVEL: "info",  // debug, info, warn, error
+  DIR: "logs",
+  MAX_SIZE: "20m",
+  MAX_DAYS: "14d",
+  COMPRESS: true,
+  TIMESTAMP_FORMAT: "YYYY-MM-DD HH:mm:ss:ms",
+  LOG_REQUESTS: true
+}
+```
+
+For production deployments, we recommend using system tools like `logrotate` for log management.
+
+Example logrotate configuration (`/etc/logrotate.d/mcp-server`):
+```
+/var/log/mcp-server.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 644 mcp mcp
+}
 ```
 
 ## Best Practices
 
 1. Always use environment variables for sensitive information
-2. Keep configuration files in a secure location
-3. Regularly backup your configuration
-4. Use SSL in production environments
+2. Keep .env files secure and never commit them to version control
+3. Use different environment files for development, test, and production
+4. Enable SSL/TLS in production (preferably via reverse proxy)
 5. Monitor log files for issues
+6. Regularly rotate logs in production
 
 ## Validation
 
-The server validates configuration on startup:
-- Required fields are checked
+The server validates configuration on startup using Zod schemas:
+- Required fields are checked (e.g., HASS_TOKEN)
 - Value types are verified
-- Ranges are validated
-- Security settings are assessed
+- Enums are validated (e.g., LOG_LEVEL)
+- Default values are applied when not specified
 
 ## Troubleshooting
 
 Common configuration issues:
-1. Permission denied accessing files
-2. Invalid YAML syntax
-3. Missing required fields
-4. Type mismatches in values
+1. Missing required environment variables
+2. Invalid environment variable values
+3. Permission issues with log directories
+4. Rate limiting too restrictive
 
 See the [Troubleshooting Guide](troubleshooting.md) for solutions. 
