@@ -1,9 +1,15 @@
 import { SpeechToText, TranscriptionResult, WakeWordEvent } from '../src/speech/speechToText';
 import path from 'path';
+import recorder from 'node-record-lpcm16';
+import { Writable } from 'stream';
 
 async function main() {
     // Initialize the speech-to-text service
-    const speech = new SpeechToText('fast-whisper');
+    const speech = new SpeechToText({
+        modelPath: 'base.en',
+        modelType: 'whisper',
+        containerName: 'fast-whisper'
+    });
 
     // Check if the service is available
     const isHealthy = await speech.checkHealth();
@@ -45,12 +51,51 @@ async function main() {
         console.error('❌ Error:', error.message);
     });
 
+    // Create audio directory if it doesn't exist
+    const audioDir = path.join(__dirname, '..', 'audio');
+    if (!require('fs').existsSync(audioDir)) {
+        require('fs').mkdirSync(audioDir, { recursive: true });
+    }
+
+    // Start microphone recording
+    console.log('Starting microphone recording...');
+    let audioBuffer = Buffer.alloc(0);
+
+    const audioStream = new Writable({
+        write(chunk: Buffer, encoding, callback) {
+            audioBuffer = Buffer.concat([audioBuffer, chunk]);
+            callback();
+        }
+    });
+
+    const recording = recorder.record({
+        sampleRate: 16000,
+        channels: 1,
+        audioType: 'wav'
+    });
+
+    recording.stream().pipe(audioStream);
+
+    // Process audio every 5 seconds
+    setInterval(async () => {
+        if (audioBuffer.length > 0) {
+            try {
+                const result = await speech.transcribe(audioBuffer);
+                console.log('\n🎤 Live transcription:', result);
+                // Reset buffer after processing
+                audioBuffer = Buffer.alloc(0);
+            } catch (error) {
+                console.error('❌ Transcription error:', error);
+            }
+        }
+    }, 5000);
+
     // Example of manual transcription
     async function transcribeFile(filepath: string) {
         try {
             console.log(`\n🎯 Manually transcribing: ${filepath}`);
             const result = await speech.transcribeAudio(filepath, {
-                model: 'base.en',  // You can change this to tiny.en, small.en, medium.en, or large-v2
+                model: 'base.en',
                 language: 'en',
                 temperature: 0,
                 beamSize: 5
@@ -63,22 +108,13 @@ async function main() {
         }
     }
 
-    // Create audio directory if it doesn't exist
-    const audioDir = path.join(__dirname, '..', 'audio');
-    if (!require('fs').existsSync(audioDir)) {
-        require('fs').mkdirSync(audioDir, { recursive: true });
-    }
-
     // Start wake word detection
     speech.startWakeWordDetection(audioDir);
 
-    // Example: You can also manually transcribe files
-    // Uncomment the following line and replace with your audio file:
-    // await transcribeFile('/path/to/your/audio.wav');
-
-    // Keep the process running
+    // Handle cleanup on exit
     process.on('SIGINT', () => {
         console.log('\nStopping speech service...');
+        recording.stop();
         speech.stopWakeWordDetection();
         process.exit(0);
     });
