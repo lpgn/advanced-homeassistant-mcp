@@ -1,7 +1,8 @@
-import { describe, expect, test } from "bun:test";
-import { HassInstanceImpl } from '../../src/hass/index.js';
+import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
+import { get_hass } from '../../src/hass/index.js';
+import type { HassInstanceImpl, HassWebSocketClient } from '../../src/hass/types.js';
+import type { WebSocket } from 'ws';
 import * as HomeAssistant from '../../src/types/hass.js';
-import { HassWebSocketClient } from '../../src/websocket/client.js';
 
 // Add DOM types for WebSocket and events
 type CloseEvent = {
@@ -39,14 +40,14 @@ interface WebSocketLike {
 }
 
 interface MockWebSocketInstance extends WebSocketLike {
-    send: jest.Mock;
-    close: jest.Mock;
-    addEventListener: jest.Mock;
-    removeEventListener: jest.Mock;
-    dispatchEvent: jest.Mock;
+    send: mock.Mock;
+    close: mock.Mock;
+    addEventListener: mock.Mock;
+    removeEventListener: mock.Mock;
+    dispatchEvent: mock.Mock;
 }
 
-interface MockWebSocketConstructor extends jest.Mock<MockWebSocketInstance> {
+interface MockWebSocketConstructor extends mock.Mock<MockWebSocketInstance> {
     CONNECTING: 0;
     OPEN: 1;
     CLOSING: 2;
@@ -54,35 +55,53 @@ interface MockWebSocketConstructor extends jest.Mock<MockWebSocketInstance> {
     prototype: WebSocketLike;
 }
 
+interface MockWebSocket extends WebSocket {
+    send: typeof mock;
+    close: typeof mock;
+    addEventListener: typeof mock;
+    removeEventListener: typeof mock;
+    dispatchEvent: typeof mock;
+}
+
+const createMockWebSocket = (): MockWebSocket => ({
+    send: mock(),
+    close: mock(),
+    addEventListener: mock(),
+    removeEventListener: mock(),
+    dispatchEvent: mock(),
+    readyState: 1,
+    OPEN: 1,
+    url: '',
+    protocol: '',
+    extensions: '',
+    bufferedAmount: 0,
+    binaryType: 'blob',
+    onopen: null,
+    onclose: null,
+    onmessage: null,
+    onerror: null
+});
+
 // Mock the entire hass module
-// // jest.mock('../../src/hass/index.js', () => ({
+mock.module('../../src/hass/index.js', () => ({
     get_hass: mock()
 }));
 
 describe('Home Assistant API', () => {
     let hass: HassInstanceImpl;
-    let mockWs: MockWebSocketInstance;
+    let mockWs: MockWebSocket;
     let MockWebSocket: MockWebSocketConstructor;
 
     beforeEach(() => {
-        hass = new HassInstanceImpl('http://localhost:8123', 'test_token');
-        mockWs = {
-            send: mock(),
-            close: mock(),
-            addEventListener: mock(),
-            removeEventListener: mock(),
-            dispatchEvent: mock(),
-            onopen: null,
-            onclose: null,
-            onmessage: null,
-            onerror: null,
-            url: '',
-            readyState: 1,
-            bufferedAmount: 0,
-            extensions: '',
-            protocol: '',
-            binaryType: 'blob'
-        } as MockWebSocketInstance;
+        mockWs = createMockWebSocket();
+        hass = {
+            baseUrl: 'http://localhost:8123',
+            token: 'test-token',
+            connect: mock(async () => { }),
+            disconnect: mock(async () => { }),
+            getStates: mock(async () => []),
+            callService: mock(async () => { })
+        };
 
         // Create a mock WebSocket constructor
         MockWebSocket = mock().mockImplementation(() => mockWs) as MockWebSocketConstructor;
@@ -94,6 +113,10 @@ describe('Home Assistant API', () => {
 
         // Mock WebSocket globally
         (global as any).WebSocket = MockWebSocket;
+    });
+
+    afterEach(() => {
+        mock.restore();
     });
 
     describe('State Management', () => {

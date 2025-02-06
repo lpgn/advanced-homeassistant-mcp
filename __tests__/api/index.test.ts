@@ -1,5 +1,4 @@
-import { describe, expect, test } from "bun:test";
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, expect, test, mock, beforeEach } from "bun:test";
 import express from 'express';
 import request from 'supertest';
 import { config } from 'dotenv';
@@ -9,12 +8,12 @@ import { TokenManager } from '../../src/security/index.js';
 import { MCP_SCHEMA } from '../../src/mcp/schema.js';
 
 // Load test environment variables
-config({ path: resolve(process.cwd(), '.env.test') });
+void config({ path: resolve(process.cwd(), '.env.test') });
 
 // Mock dependencies
-// // jest.mock('../../src/security/index.js', () => ({
+mock.module('../../src/security/index.js', () => ({
     TokenManager: {
-        validateToken: mock().mockImplementation((token) => token === 'valid-test-token'),
+        validateToken: mock((token) => token === 'valid-test-token')
     },
     rateLimiter: (req: any, res: any, next: any) => next(),
     securityHeaders: (req: any, res: any, next: any) => next(),
@@ -22,7 +21,7 @@ config({ path: resolve(process.cwd(), '.env.test') });
     sanitizeInput: (req: any, res: any, next: any) => next(),
     errorHandler: (err: any, req: any, res: any, next: any) => {
         res.status(500).json({ error: err.message });
-    },
+    }
 }));
 
 // Create mock entity
@@ -39,12 +38,9 @@ const mockEntity: Entity = {
     }
 };
 
-// Mock Home Assistant module
-// // jest.mock('../../src/hass/index.js');
-
 // Mock LiteMCP
-// // jest.mock('litemcp', () => ({
-    LiteMCP: mock().mockImplementation(() => ({
+mock.module('litemcp', () => ({
+    LiteMCP: mock(() => ({
         name: 'home-assistant',
         version: '0.1.0',
         tools: []
@@ -62,7 +58,7 @@ app.get('/mcp', (_req, res) => {
 
 app.get('/state', (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.spltest(' ')[1] !== 'valid-test-token') {
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== 'valid-test-token') {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     res.json([mockEntity]);
@@ -70,7 +66,7 @@ app.get('/state', (req, res) => {
 
 app.post('/command', (req, res) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.spltest(' ')[1] !== 'valid-test-token') {
+    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== 'valid-test-token') {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -136,8 +132,8 @@ describe('API Endpoints', () => {
 
             test('should process valid command with authentication', async () => {
                 const response = await request(app)
-                    .set('Authorization', 'Bearer valid-test-token')
                     .post('/command')
+                    .set('Authorization', 'Bearer valid-test-token')
                     .send({
                         command: 'turn_on',
                         entity_id: 'light.living_room'

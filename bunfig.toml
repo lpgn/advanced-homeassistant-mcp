@@ -1,5 +1,5 @@
 [test]
-preload = ["./src/__tests__/setup.ts"]
+preload = ["./test/setup.ts"]
 coverage = true
 coverageThreshold = {
   statements = 80,
@@ -7,7 +7,7 @@ coverageThreshold = {
   functions = 80,
   lines = 80
 }
-timeout = 30000
+timeout = 10000
 testMatch = ["**/__tests__/**/*.test.ts"]
 testPathIgnorePatterns = ["/node_modules/", "/dist/"]
 collectCoverageFrom = [
@@ -47,4 +47,7 @@ reload = true
 
 [performance]
 gc = true
-optimize = true 
+optimize = true
+
+[test.env]
+NODE_ENV = "test" 

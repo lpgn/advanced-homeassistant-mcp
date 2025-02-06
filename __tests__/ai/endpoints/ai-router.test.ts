@@ -1,35 +1,32 @@
-import { describe, expect, test } from "bun:test";
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
 import express from 'express';
 import request from 'supertest';
 import router from '../../../src/ai/endpoints/ai-router.js';
 import type { AIResponse, AIError } from '../../../src/ai/types/index.js';
 
 // Mock NLPProcessor
-// // jest.mock('../../../src/ai/nlp/processor.js', () => {
-    return {
-        NLPProcessor: mock().mockImplementation(() => ({
-            processCommand: mock().mockImplementation(async () => ({
-                intent: {
-                    action: 'turn_on',
-                    target: 'light.living_room',
-                    parameters: {}
-                },
-                confidence: {
-                    overall: 0.9,
-                    intent: 0.95,
-                    entities: 0.85,
-                    context: 0.9
-                }
-            })),
-            validateIntent: mock().mockImplementation(async () => true),
-            suggestCorrections: mock().mockImplementation(async () => [
-                'Try using simpler commands',
-                'Specify the device name clearly'
-            ])
-        }))
-    };
-});
+mock.module('../../../src/ai/nlp/processor.js', () => ({
+    NLPProcessor: mock(() => ({
+        processCommand: mock(async () => ({
+            intent: {
+                action: 'turn_on',
+                target: 'light.living_room',
+                parameters: {}
+            },
+            confidence: {
+                overall: 0.9,
+                intent: 0.95,
+                entities: 0.85,
+                context: 0.9
+            }
+        })),
+        validateIntent: mock(async () => true),
+        suggestCorrections: mock(async () => [
+            'Try using simpler commands',
+            'Specify the device name clearly'
+        ])
+    }))
+}));
 
 describe('AI Router', () => {
     let app: express.Application;
@@ -41,7 +38,7 @@ describe('AI Router', () => {
     });
 
     afterEach(() => {
-        jest.clearAllMocks();
+        mock.clearAllMocks();
     });
 
     describe('POST /ai/interpret', () => {

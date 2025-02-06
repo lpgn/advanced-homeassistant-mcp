@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
+    "target": "ESNext",
+    "module": "ESNext",
     "lib": [
       "esnext",
       "dom"
     ],
-    "strict": false,
+    "strict": true,
     "strictNullChecks": false,
     "strictFunctionTypes": false,
     "strictPropertyInitialization": false,
@@ -15,7 +15,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -27,15 +27,16 @@
       "@types/ws",
       "@types/jsonwebtoken",
       "@types/sanitize-html",
-      "@types/jest"
+      "@types/jest",
+      "@types/express"
     ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
-        "./src/*"
+        "src/*"
       ],
       "@test/*": [
-        "__tests__/*"
+        "test/*"
       ]
     },
     "experimentalDecorators": true,
@@ -45,10 +46,12 @@
     "declarationMap": true,
     "allowUnreachableCode": true,
     "allowUnusedLabels": true,
-    "suppressImplicitAnyIndexErrors": true
+    "outDir": "dist",
+    "rootDir": "."
   },
   "include": [
     "src/**/*",
+    "test/**/*",
     "__tests__/**/*",
     "*.d.ts"
   ],

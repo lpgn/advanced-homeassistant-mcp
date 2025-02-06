@@ -7,7 +7,7 @@
   "scripts": {
     "start": "bun run dist/index.js",
     "dev": "bun --hot --watch src/index.ts",
-    "build": "bun build ./src/index.ts --outdir ./dist --target node --minify",
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun --minify",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
@@ -36,6 +36,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
+    "node-record-lpcm16": "^1.0.1",
     "openai": "^4.82.0",
     "sanitize-html": "^2.11.0",
     "typescript": "^5.3.3",
@@ -45,6 +46,10 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
+    "@types/bun": "latest",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",
@@ -55,8 +60,7 @@
     "husky": "^9.0.11",
     "prettier": "^3.2.5",
     "supertest": "^6.3.3",
-    "uuid": "^11.0.5",
-    "@types/bun": "latest"
+    "uuid": "^11.0.5"
   },
   "engines": {
     "bun": ">=1.0.0"
