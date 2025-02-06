@@ -12,12 +12,22 @@ MCP (Model Context Protocol) Server is a lightweight integration tool for Home A
 - 📡 WebSocket/Server-Sent Events (SSE) for state updates
 - 🤖 Simple automation rule management
 - 🔐 JWT-based authentication
+- 🎤 Real-time device control and monitoring
+- 🎤 Server-Sent Events (SSE) for live updates
+- 🎤 Comprehensive logging
+- 🎤 Optional speech features:
+  - 🎤 Wake word detection ("hey jarvis", "ok google", "alexa")
+  - 🎤 Speech-to-text using fast-whisper
+  - 🎤 Multiple language support
+  - 🎤 GPU acceleration support
 
 ## Prerequisites 📋
 
 - 🚀 Bun runtime (v1.0.26+)
 - 🏡 Home Assistant instance
-- 🐳 Docker (optional, recommended for deployment)
+- 🐳 Docker (optional, recommended for deployment and speech features)
+- 🖥️ Node.js 18+ (optional, for speech features)
+- 🖥️ NVIDIA GPU with CUDA support (optional, for faster speech processing)
 
 ## Installation 🛠️
 
@@ -30,7 +40,7 @@ cd homeassistant-mcp
 
 # Copy and edit environment configuration
 cp .env.example .env
-# Edit .env with your Home Assistant credentials
+# Edit .env with your Home Assistant credentials and speech features settings
 
 # Build and start containers
 docker compose up -d --build
@@ -79,33 +89,69 @@ ws.onmessage = (event) => {
 };
 ```
 
-## Current Limitations ⚠️
+## Speech Features (Optional)
 
-- 🎙️ Basic voice command support (work in progress)
-- 🧠 Limited advanced NLP capabilities
-- 🔗 Minimal third-party device integration
-- 🐛 Early-stage error handling
+The MCP Server includes optional speech processing capabilities:
 
-## Contributing 🤝
+### Prerequisites
+1. Docker installed and running
+2. NVIDIA GPU with CUDA support (optional)
+3. At least 4GB RAM (8GB+ recommended for larger models)
 
-1. Fork the repository
-2. Create a feature branch:
-   ```bash
-   git checkout -b feature/your-feature
-   ```
-3. Make your changes
-4. Run tests:
-   ```bash
-   bun test
-   ```
-5. Submit a pull request
+### Setup
 
-## Roadmap 🗺️
+1. Enable speech features in your .env:
+```bash
+ENABLE_SPEECH_FEATURES=true
+ENABLE_WAKE_WORD=true
+ENABLE_SPEECH_TO_TEXT=true
+WHISPER_MODEL_PATH=/models
+WHISPER_MODEL_TYPE=base
+```
 
-- 🎤 Enhance voice command processing
-- 🔌 Improve device compatibility
-- 🤖 Expand automation capabilities
-- 🛡️ Implement more robust error handling
+2. Start the speech services:
+```bash
+docker-compose up -d
+```
+
+### Available Models
+
+Choose a model based on your needs:
+- `tiny.en`: Fastest, basic accuracy
+- `base.en`: Good balance (recommended)
+- `small.en`: Better accuracy, slower
+- `medium.en`: High accuracy, resource intensive
+- `large-v2`: Best accuracy, very resource intensive
+
+### Usage
+
+1. Wake word detection listens for:
+   - "hey jarvis"
+   - "ok google"
+   - "alexa"
+
+2. After wake word detection:
+   - Audio is automatically captured
+   - Speech is transcribed
+   - Commands are processed
+
+3. Manual transcription is also available:
+```typescript
+const speech = speechService.getSpeechToText();
+const text = await speech.transcribe(audioBuffer);
+```
+
+## Configuration
+
+See [Configuration Guide](docs/configuration.md) for detailed settings.
+
+## API Documentation
+
+See [API Documentation](docs/api/index.md) for available endpoints.
+
+## Development
+
+See [Development Guide](docs/development/index.md) for contribution guidelines.
 
 ## License 📄
 
