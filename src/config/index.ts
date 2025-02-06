@@ -1,16 +1,7 @@
-import { config } from "dotenv";
-import { resolve } from "path";
+import { loadEnvironmentVariables } from "./loadEnv";
 
-// Load environment variables based on NODE_ENV
-const envFile =
-  process.env.NODE_ENV === "production"
-    ? ".env"
-    : process.env.NODE_ENV === "test"
-      ? ".env.test"
-      : ".env.development";
-
-console.log(`Loading environment from ${envFile}`);
-config({ path: resolve(process.cwd(), envFile) });
+// Load environment variables from the appropriate files
+loadEnvironmentVariables();
 
 // Home Assistant Configuration
 export const HASS_CONFIG = {

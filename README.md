@@ -38,7 +38,7 @@ MCP (Model Context Protocol) Server is a lightweight integration tool for Home A
 git clone https://github.com/jango-blockchained/homeassistant-mcp.git
 cd homeassistant-mcp
 
-# Copy and edit environment configuration
+# Copy environment template:
 cp .env.example .env
 # Edit .env with your Home Assistant credentials and speech features settings
 

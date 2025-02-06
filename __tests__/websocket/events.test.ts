@@ -119,22 +119,17 @@ describe('WebSocket Event Handling', () => {
 
     test('should handle connection errors', async () => {
         const errorPromise = new Promise((resolve) => {
-            client.on('error', resolve);
+            client.once('error', resolve);
         });
 
-        const connectPromise = client.connect().catch(() => { });
+        const connectPromise = client.connect().catch(() => { /* Expected error */ });
         onOpenCallback();
 
-        const errorEvent = {
-            error: new Error('Connection failed'),
-            message: 'Connection failed',
-            target: mockWebSocket
-        };
-
-        onErrorCallback(errorEvent);
+        const errorEvent = new Error('Connection failed');
+        onErrorCallback({ error: errorEvent });
 
         const error = await errorPromise;
-        expect(error).toBeDefined();
+        expect(error instanceof Error).toBe(true);
         expect((error as Error).message).toBe('Connection failed');
     });
 

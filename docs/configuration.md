@@ -2,6 +2,46 @@
 
 This document provides detailed information about configuring the Home Assistant MCP Server.
 
+## Environment File Structure
+
+The MCP Server uses a flexible environment configuration system with support for different environments and local overrides:
+
+### Environment Files
+
+1. `.env.example` - Template file containing all available configuration options with example values
+   - Use this as a reference to create your environment-specific configuration files
+   - Not loaded by the application
+
+2. Environment-specific files (loaded based on NODE_ENV):
+   - `.env.dev` - Development environment (default)
+   - `.env.test` - Test environment
+   - `.env.prod` - Production environment
+
+3. `.env` - Optional local override file
+   - If present, values in this file override those from the environment-specific file
+   - Useful for local development without modifying the environment-specific files
+
+### File Loading Order
+
+1. First, the environment-specific file is loaded based on NODE_ENV:
+   - `NODE_ENV=production` → `.env.prod`
+   - `NODE_ENV=development` → `.env.dev` (default)
+   - `NODE_ENV=test` → `.env.test`
+
+2. Then, if a `.env` file exists, its values override any previously loaded values
+
+Example setup:
+```bash
+# .env.dev - Development configuration
+PORT=4000
+HASS_HOST=http://homeassistant.local:8123
+LOG_LEVEL=debug
+
+# .env - Local overrides
+PORT=3000  # Overrides PORT from .env.dev
+HASS_HOST=http://localhost:8123  # Overrides HASS_HOST from .env.dev
+```
+
 ## Configuration File Structure
 
 The MCP Server uses environment variables for configuration, with support for different environments (development, test, production):

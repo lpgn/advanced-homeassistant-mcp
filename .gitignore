@@ -71,7 +71,7 @@ coverage/
 # Environment files
 .env
 .env.*
-!.env.*.template
+!.env.example
 
 .cursor/
 .cursor/*

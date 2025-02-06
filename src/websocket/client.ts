@@ -74,8 +74,11 @@ export class HassWebSocketClient extends EventEmitter {
         };
 
         this.ws.onerror = (event: WebSocket.ErrorEvent) => {
-          this.emit('error', event);
-          reject(event);
+          const error = event.error || new Error(event.message || 'WebSocket error');
+          this.emit('error', error);
+          if (!this.authenticated) {
+            reject(error);
+          }
         };
 
         this.ws.onmessage = (event: WebSocket.MessageEvent) => {

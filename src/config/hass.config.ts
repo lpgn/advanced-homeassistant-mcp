@@ -11,6 +11,7 @@ const envFile =
 
 config({ path: resolve(process.cwd(), envFile) });
 
+// Base configuration for Home Assistant
 export const HASS_CONFIG = {
   // Base configuration
   BASE_URL: process.env.HASS_HOST || "http://localhost:8123",

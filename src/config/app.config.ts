@@ -1,22 +1,4 @@
-import { config } from "dotenv";
-import { resolve } from "path";
 import { z } from "zod";
-
-/**
- * Load environment variables based on NODE_ENV
- * Development: .env.development
- * Test: .env.test
- * Production: .env
- */
-const envFile =
-  process.env.NODE_ENV === "production"
-    ? ".env"
-    : process.env.NODE_ENV === "test"
-      ? ".env.test"
-      : ".env.development";
-
-console.log(`Loading environment from ${envFile}`);
-config({ path: resolve(process.cwd(), envFile) });
 
 /**
  * Application configuration object
