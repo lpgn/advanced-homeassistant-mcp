@@ -210,101 +210,220 @@ See the [Troubleshooting Guide](troubleshooting.md) for solutions.
 
 # Configuration Guide
 
-This document describes all available configuration options for the Home Assistant MCP Server.
+This document describes the environment configuration system for the Home Assistant MCP Server.
 
-## Environment Variables
+## Environment Setup
+
+### Using the Setup Script
+
+The MCP Server provides a setup script to help manage your environment configuration:
+
+```bash
+# Make the script executable
+chmod +x scripts/setup-env.sh
+
+# Basic usage (uses NODE_ENV or defaults to development)
+./scripts/setup-env.sh
+
+# Specify an environment
+NODE_ENV=production ./scripts/setup-env.sh
+
+# Force override existing files
+./scripts/setup-env.sh --force
+```
+
+The setup script will:
+1. Check for `.env.example` and create `.env` if it doesn't exist
+2. Detect the environment (development/production/test)
+3. Optionally override `.env` with environment-specific settings
+4. Maintain your existing configuration unless forced to override
+
+### Manual Setup
+
+If you prefer to set up manually:
+
+```bash
+# Copy the example configuration
+cp .env.example .env
+
+# Then copy the appropriate environment override
+cp .env.dev .env     # For development
+cp .env.prod .env    # For production
+cp .env.test .env    # For testing
+```
+
+## Environment File Hierarchy
+
+### Base Configuration Files
+- `.env.example` - Template with all available options and documentation
+- `.env` - Your main configuration file (copied from .env.example)
+
+### Environment-Specific Files
+- `.env.dev` - Development environment settings
+- `.env.prod` - Production environment settings
+- `.env.test` - Test environment settings
+
+### Loading Order and Priority
+
+Files are loaded in the following sequence, with later files overriding earlier ones:
+
+1. `.env` (base configuration)
+2. Environment-specific file based on NODE_ENV:
+   - `NODE_ENV=development` → `.env.dev`
+   - `NODE_ENV=production` → `.env.prod`
+   - `NODE_ENV=test` → `.env.test`
+
+### Docker Environment Handling
+
+When using Docker, the environment is loaded as follows:
+
+1. `.env` file (base configuration)
+2. `.env.${NODE_ENV}` file (environment-specific overrides)
+3. Environment variables from docker-compose.yml
+4. Command-line environment variables
+
+Example docker-compose.yml configuration:
+```yaml
+services:
+  homeassistant-mcp:
+    env_file:
+      - .env
+      - .env.${NODE_ENV:-development}
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=4000
+      - HASS_HOST
+      - HASS_TOKEN
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+```
+
+Override examples:
+```bash
+# Override NODE_ENV
+NODE_ENV=production docker compose up -d
+
+# Override multiple variables
+NODE_ENV=production LOG_LEVEL=debug docker compose up -d
+```
+
+## Configuration Options
 
 ### Required Settings
 
 ```bash
 # Server Configuration
-PORT=3000                      # Server port
-HOST=localhost                 # Server host
+PORT=4000                     # Server port number
+NODE_ENV=development         # Environment (development/production/test)
 
 # Home Assistant
-HASS_URL=http://localhost:8123 # Home Assistant URL
-HASS_TOKEN=your_token         # Long-lived access token
+HASS_HOST=http://homeassistant.local:8123  # Home Assistant URL
+HASS_TOKEN=your_token_here                # Long-lived access token
 
 # Security
-JWT_SECRET=your_secret        # JWT signing secret
+JWT_SECRET=your_secret_key   # JWT signing secret
 ```
 
 ### Optional Settings
 
+#### Security
 ```bash
 # Rate Limiting
-RATE_LIMIT_WINDOW=60000       # Time window in ms (default: 60000)
-RATE_LIMIT_MAX=100           # Max requests per window (default: 100)
+RATE_LIMIT_WINDOW=900000     # Time window in ms (15 minutes)
+RATE_LIMIT_MAX_REQUESTS=100  # Max requests per window
+RATE_LIMIT_REGULAR=100       # Regular endpoint rate limit
+RATE_LIMIT_WEBSOCKET=1000    # WebSocket connection rate limit
 
-# Logging
-LOG_LEVEL=info               # debug, info, warn, error (default: info)
-LOG_DIR=logs                 # Log directory (default: logs)
-LOG_MAX_SIZE=10m            # Max log file size (default: 10m)
-LOG_MAX_FILES=5             # Max number of log files (default: 5)
+# CORS Configuration
+CORS_ORIGINS=http://localhost:3000,http://localhost:8123
+CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With
+CORS_EXPOSED_HEADERS=
+CORS_CREDENTIALS=true
+CORS_MAX_AGE=86400
 
-# WebSocket/SSE
-WS_HEARTBEAT=30000          # WebSocket heartbeat interval in ms (default: 30000)
-SSE_RETRY=3000             # SSE retry interval in ms (default: 3000)
-
-# Speech Features
-ENABLE_SPEECH_FEATURES=false # Enable speech processing (default: false)
-ENABLE_WAKE_WORD=false      # Enable wake word detection (default: false)
-ENABLE_SPEECH_TO_TEXT=false # Enable speech-to-text (default: false)
-
-# Speech Model Configuration
-WHISPER_MODEL_PATH=/models  # Path to whisper models (default: /models)
-WHISPER_MODEL_TYPE=base     # Model type: tiny|base|small|medium|large-v2 (default: base)
-WHISPER_LANGUAGE=en        # Primary language (default: en)
-WHISPER_TASK=transcribe    # Task type: transcribe|translate (default: transcribe)
-WHISPER_DEVICE=cuda        # Processing device: cpu|cuda (default: cuda if available, else cpu)
-
-# Wake Word Configuration
-WAKE_WORDS=hey jarvis,ok google,alexa  # Comma-separated wake words (default: hey jarvis)
-WAKE_WORD_SENSITIVITY=0.5   # Detection sensitivity 0-1 (default: 0.5)
+# Cookie Security
+COOKIE_SECRET=your_cookie_secret_key_min_32_chars
+COOKIE_SECURE=true
+COOKIE_HTTP_ONLY=true
+COOKIE_SAME_SITE=Strict
 ```
 
-## Speech Features
+#### Logging
+```bash
+# Logging Configuration
+LOG_LEVEL=info              # debug, info, warn, error
+LOG_DIR=logs               # Log directory
+LOG_MAX_SIZE=20m          # Max log file size
+LOG_MAX_DAYS=14d         # Log retention period
+LOG_COMPRESS=true        # Enable log compression
+LOG_REQUESTS=true       # Log HTTP requests
+```
 
-### Model Selection
+#### Speech Features
+```bash
+# Speech Processing
+ENABLE_SPEECH_FEATURES=false    # Master switch for speech features
+ENABLE_WAKE_WORD=false         # Enable wake word detection
+ENABLE_SPEECH_TO_TEXT=false    # Enable speech-to-text
+WHISPER_MODEL_PATH=/models     # Path to Whisper models
+WHISPER_MODEL_TYPE=base        # Whisper model type
 
-Choose a model based on your needs:
+# Audio Configuration
+NOISE_THRESHOLD=0.05
+MIN_SPEECH_DURATION=1.0
+SILENCE_DURATION=0.5
+SAMPLE_RATE=16000
+CHANNELS=1
+CHUNK_SIZE=1024
+PULSE_SERVER=unix:/run/user/1000/pulse/native
+```
 
-| Model      | Size  | Memory Required | Speed | Accuracy |
-|------------|-------|-----------------|-------|----------|
-| tiny.en    | 75MB  | 1GB            | Fast  | Basic    |
-| base.en    | 150MB | 2GB            | Good  | Good     |
-| small.en   | 500MB | 4GB            | Med   | Better   |
-| medium.en  | 1.5GB | 8GB            | Slow  | High     |
-| large-v2   | 3GB   | 16GB           | Slow  | Best     |
+## Best Practices
 
-### GPU Acceleration
+1. **Version Control**
+   - Never commit `.env` files to version control
+   - Always commit `.env.example` with documentation
+   - Consider committing `.env.dev` and `.env.test` for team development
 
-When `WHISPER_DEVICE=cuda`:
-- NVIDIA GPU with CUDA support required
-- Significantly faster processing
-- Higher memory requirements
+2. **Security**
+   - Use strong, unique values for secrets
+   - Enable HTTPS in production
+   - Keep tokens and secrets in `.env` only
 
-### Wake Word Detection
+3. **Development**
+   - Use `.env.dev` for shared development settings
+   - Keep `.env` for personal overrides
+   - Enable debug logging in development
 
-- Multiple wake words supported via comma-separated list
-- Adjustable sensitivity (0-1):
-  - Lower values: Fewer false positives, may miss some triggers
-  - Higher values: More responsive, may have false triggers
-  - Default (0.5): Balanced detection
+4. **Production**
+   - Use `.env.prod` for production defaults
+   - Set appropriate rate limits
+   - Configure proper logging
+   - Enable all security features
 
-### Best Practices
+5. **Testing**
+   - Use `.env.test` for test configuration
+   - Use mock tokens and endpoints
+   - Enable detailed logging for debugging
 
-1. Model Selection:
-   - Start with `base.en` model
-   - Upgrade if better accuracy needed
-   - Downgrade if performance issues
+## Troubleshooting
 
-2. Resource Management:
-   - Monitor memory usage
-   - Use GPU acceleration when available
-   - Consider model size vs available resources
+### Common Issues
 
-3. Wake Word Configuration:
-   - Use distinct wake words
-   - Adjust sensitivity based on environment
-   - Limit number of wake words for better performance 
+1. **Missing Required Variables**
+   - Error: "Missing required environment variable: HASS_TOKEN"
+   - Solution: Ensure HASS_TOKEN is set in your .env file
+
+2. **Permission Issues**
+   - Error: "EACCES: permission denied, access '/app/logs'"
+   - Solution: Ensure proper permissions on the logs directory
+
+3. **Invalid Configuration**
+   - Error: "Invalid configuration value for PORT"
+   - Solution: Check the value format in your .env file
+
+4. **Environment Override Issues**
+   - Problem: Environment-specific settings not applying
+   - Solution: Check NODE_ENV value and file naming
+
+See [Troubleshooting Guide](troubleshooting.md) for more solutions. 
