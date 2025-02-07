@@ -12,7 +12,7 @@ export const AppConfigSchema = z.object({
     .default("development"),
 
   /** Home Assistant Configuration */
-  HASS_HOST: z.string().default("http://192.168.178.63:8123"),
+  HASS_HOST: z.string().default("http://homeassistant.local:8123"),
   HASS_TOKEN: z.string().optional(),
 
   /** Speech Features Configuration */
@@ -31,7 +31,7 @@ export const AppConfigSchema = z.object({
   }),
 
   /** Security Configuration */
-  JWT_SECRET: z.string().default("your-secret-key"),
+  JWT_SECRET: z.string().default("your-secret-key-must-be-32-char-min"),
   RATE_LIMIT: z.object({
     /** Time window for rate limiting in milliseconds */
     windowMs: z.number().default(15 * 60 * 1000), // 15 minutes

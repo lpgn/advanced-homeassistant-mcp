@@ -64,7 +64,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:4000/health || exit 1
 
 # Expose port
-EXPOSE 4000
+EXPOSE ${PORT:-4000}
 
 # Start the application with optimized flags
 CMD ["bun", "--smol", "run", "start"] 
