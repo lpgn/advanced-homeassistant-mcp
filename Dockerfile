@@ -11,9 +11,32 @@ RUN npm install -g bun@1.0.25
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    pulseaudio \
+    alsa-utils \
+    python3-full \
+    python3-pip \
+    python3-dev \
+    python3-venv \
+    portaudio19-dev \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
     && rm -rf /var/cache/apt/*
+
+# Create and activate virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/opt/venv"
+
+# Upgrade pip in virtual environment
+RUN /opt/venv/bin/python -m pip install --upgrade pip
+
+# Install Python packages in virtual environment
+RUN /opt/venv/bin/python -m pip install --no-cache-dir \
+    numpy \
+    sounddevice \
+    openwakeword \
+    faster-whisper \
+    requests
 
 # Set build-time environment variables
 ENV NODE_ENV=production \
@@ -38,23 +61,69 @@ FROM node:20-slim as runner
 # Install bun in production image
 RUN npm install -g bun@1.0.25
 
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pulseaudio \
+    alsa-utils \
+    libasound2 \
+    libasound2-plugins \
+    python3-full \
+    python3-pip \
+    python3-dev \
+    python3-venv \
+    portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && rm -rf /var/cache/apt/*
+
+# Configure ALSA
+COPY docker/speech/asound.conf /etc/asound.conf
+
+# Create and activate virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV VIRTUAL_ENV="/opt/venv"
+
+# Upgrade pip in virtual environment
+RUN /opt/venv/bin/python -m pip install --upgrade pip
+
+# Install Python packages in virtual environment
+RUN /opt/venv/bin/python -m pip install --no-cache-dir \
+    numpy \
+    sounddevice \
+    openwakeword \
+    faster-whisper \
+    requests
+
+# Set Python path to use virtual environment
+ENV PYTHONPATH="/opt/venv/lib/python3.11/site-packages:$PYTHONPATH"
+
 # Set production environment variables
 ENV NODE_ENV=production \
     NODE_OPTIONS="--max-old-space-size=1024"
 
-# Create a non-root user
+# Create a non-root user and add to audio group
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 bunjs
+    adduser --system --uid 1001 --gid 1001 bunjs && \
+    adduser bunjs audio
 
 WORKDIR /app
+
+# Copy Python virtual environment from builder
+COPY --from=builder --chown=bunjs:nodejs /opt/venv /opt/venv
+
+# Copy source files
+COPY --chown=bunjs:nodejs . .
 
 # Copy only the necessary files from builder
 COPY --from=builder --chown=bunjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=bunjs:nodejs /app/node_modules ./node_modules
-COPY --chown=bunjs:nodejs package.json ./
 
-# Create logs directory with proper permissions
-RUN mkdir -p /app/logs && chown -R bunjs:nodejs /app/logs
+# Ensure audio setup script is executable
+RUN chmod +x /app/docker/speech/setup-audio.sh
+
+# Create logs and audio directories with proper permissions
+RUN mkdir -p /app/logs /app/audio && chown -R bunjs:nodejs /app/logs /app/audio
 
 # Switch to non-root user
 USER bunjs
@@ -66,5 +135,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE ${PORT:-4000}
 
-# Start the application with optimized flags
-CMD ["bun", "--smol", "run", "start"] 
+# Start the application with audio setup
+CMD ["/bin/bash", "-c", "/app/docker/speech/setup-audio.sh & bun --smol run start"] 

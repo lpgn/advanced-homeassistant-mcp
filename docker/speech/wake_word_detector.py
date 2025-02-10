@@ -30,6 +30,9 @@ MAX_MODEL_LOAD_RETRIES = 3
 MODEL_LOAD_RETRY_DELAY = 5  # seconds
 MODEL_DOWNLOAD_TIMEOUT = 600  # 10 minutes timeout for model download
 
+# ALSA device configuration
+AUDIO_DEVICE = 'hw:0,0'  # Use ALSA hardware device directly
+
 # Audio processing parameters
 NOISE_THRESHOLD = 0.08  # Increased threshold for better noise filtering
 MIN_SPEECH_DURATION = 2.0  # Longer minimum duration to avoid fragments
@@ -44,7 +47,7 @@ WAKE_WORD_ENABLED = os.environ.get('ENABLE_WAKE_WORD', 'false').lower() == 'true
 SPEECH_ENABLED = os.environ.get('ENABLE_SPEECH_FEATURES', 'true').lower() == 'true'
 
 # Wake word models to use (only if wake word is enabled)
-WAKE_WORDS = ["alexa"]  # Using 'alexa' as temporary replacement for 'gaja'
+WAKE_WORDS = ["hey_jarvis"]  # Using hey_jarvis as it's more similar to "hey gaja"
 WAKE_WORD_ALIAS = "gaja"  # What we print when wake word is detected
 
 # Home Assistant Configuration
@@ -235,7 +238,22 @@ class AudioProcessor:
         self.buffer = np.zeros(SAMPLE_RATE * BUFFER_DURATION)
         self.buffer_lock = threading.Lock()
         self.last_transcription_time = 0
-        self.stream = None
+        
+        try:
+            logger.info(f"Opening audio device: {AUDIO_DEVICE}")
+            self.stream = sd.InputStream(
+                device=AUDIO_DEVICE,
+                samplerate=SAMPLE_RATE,
+                channels=CHANNELS,
+                dtype=np.int16,
+                blocksize=CHUNK_SIZE,
+                callback=self._audio_callback
+            )
+            logger.info("Audio stream initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize audio stream: {e}")
+            raise
+
         self.speech_detected = False
         self.silence_frames = 0
         self.speech_frames = 0
@@ -272,7 +290,7 @@ class AudioProcessor:
                     return True
         return False
 
-    def audio_callback(self, indata, frames, time, status):
+    def _audio_callback(self, indata, frames, time, status):
         """Callback for audio input"""
         if status:
             logger.warning(f"Audio callback status: {status}")
@@ -382,7 +400,7 @@ class AudioProcessor:
                     channels=CHANNELS,
                     samplerate=SAMPLE_RATE,
                     blocksize=CHUNK_SIZE,
-                    callback=self.audio_callback
+                    callback=self._audio_callback
                 ):
                     logger.info("Audio input stream started successfully")
                     logger.info("Listening for audio input...")

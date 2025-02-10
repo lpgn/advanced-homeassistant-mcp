@@ -1,6 +1,4 @@
-import "./polyfills.js";
-import { config } from "dotenv";
-import { resolve } from "path";
+import { file } from "bun";
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
@@ -27,17 +25,11 @@ import {
 } from "./commands.js";
 import { speechService } from "./speech/index.js";
 import { APP_CONFIG } from "./config/app.config.js";
+import { loadEnvironmentVariables } from "./config/loadEnv.js";
+import { MCP_SCHEMA } from "./mcp/schema.js";
 
 // Load environment variables based on NODE_ENV
-const envFile =
-  process.env.NODE_ENV === "production"
-    ? ".env"
-    : process.env.NODE_ENV === "test"
-      ? ".env.test"
-      : ".env.development";
-
-console.log(`Loading environment from ${envFile}`);
-config({ path: resolve(process.cwd(), envFile) });
+await loadEnvironmentVariables();
 
 // Configuration
 const HASS_TOKEN = process.env.HASS_TOKEN;
@@ -125,6 +117,20 @@ const app = new Elysia()
   .use(validateRequest)
   .use(sanitizeInput)
   .use(errorHandler);
+
+// Mount API routes
+app.get("/api/mcp", () => MCP_SCHEMA);
+app.post("/api/mcp/execute", async ({ body }: { body: { tool: string; parameters: Record<string, unknown> } }) => {
+  const { tool: toolName, parameters } = body;
+  const tool = tools.find((t) => t.name === toolName);
+  if (!tool) {
+    return {
+      success: false,
+      message: `Tool '${toolName}' not found`,
+    };
+  }
+  return await tool.execute(parameters);
+});
 
 // Health check endpoint
 app.get("/health", () => ({

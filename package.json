@@ -21,7 +21,7 @@
     "profile": "bun --inspect src/index.ts",
     "clean": "rm -rf dist .bun coverage",
     "typecheck": "bun x tsc --noEmit",
-    "example:speech": "bun run examples/speech-to-text-example.ts"
+    "example:speech": "bun run extra/speech-to-text-example.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.2.0",
@@ -31,13 +31,14 @@
     "@types/sanitize-html": "^2.9.5",
     "@types/ws": "^8.5.10",
     "@xmldom/xmldom": "^0.9.7",
-    "dotenv": "^16.4.5",
+    "chalk": "^5.4.1",
+    "dotenv": "^16.4.7",
     "elysia": "^1.2.11",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
     "node-record-lpcm16": "^1.0.1",
-    "openai": "^4.82.0",
+    "openai": "^4.83.0",
     "sanitize-html": "^2.11.0",
     "typescript": "^5.3.3",
     "winston": "^3.11.0",

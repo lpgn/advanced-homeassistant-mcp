@@ -4,8 +4,6 @@ import { DOMParser, Element, Document } from '@xmldom/xmldom';
 import dotenv from 'dotenv';
 import readline from 'readline';
 import chalk from 'chalk';
-import express from 'express';
-import bodyParser from 'body-parser';
 
 // Load environment variables
 dotenv.config();
@@ -118,9 +116,8 @@ interface ModelConfig {
 // Update model listing to filter based on API key availability
 const AVAILABLE_MODELS: ModelConfig[] = [
     // OpenAI models always available
-    { name: 'gpt-4o', maxTokens: 4096, contextWindow: 128000 },
-    { name: 'gpt-4-turbo', maxTokens: 4096, contextWindow: 128000 },
-    { name: 'gpt-4', maxTokens: 8192, contextWindow: 128000 },
+    { name: 'gpt-4', maxTokens: 8192, contextWindow: 8192 },
+    { name: 'gpt-4-turbo-preview', maxTokens: 4096, contextWindow: 128000 },
     { name: 'gpt-3.5-turbo', maxTokens: 4096, contextWindow: 16385 },
     { name: 'gpt-3.5-turbo-16k', maxTokens: 16385, contextWindow: 16385 },
 
@@ -151,18 +148,12 @@ const logger = {
 
 // Update default model selection in loadConfig
 function loadConfig(): AppConfig {
-    // Use environment variable or default to gpt-4o
-    const defaultModelName = process.env.OPENAI_MODEL || 'gpt-4o';
-    let defaultModel = AVAILABLE_MODELS.find(m => m.name === defaultModelName);
-
-    // If the configured model isn't found, use gpt-4o without warning
-    if (!defaultModel) {
-        defaultModel = AVAILABLE_MODELS.find(m => m.name === 'gpt-4o') || AVAILABLE_MODELS[0];
-    }
+    // Always use gpt-4 for now
+    const defaultModel = AVAILABLE_MODELS.find(m => m.name === 'gpt-4') || AVAILABLE_MODELS[0];
 
     return {
         mcpServer: process.env.MCP_SERVER || 'http://localhost:3000',
-        openaiModel: defaultModel.name,  // Use the resolved model name
+        openaiModel: defaultModel.name,
         maxRetries: parseInt(process.env.MAX_RETRIES || '3'),
         analysisTimeout: parseInt(process.env.ANALYSIS_TIMEOUT || '30000'),
         selectedModel: defaultModel
@@ -194,8 +185,8 @@ async function executeMcpTool(toolName: string, parameters: Record<string, any> 
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), config.analysisTimeout);
 
-            // Update endpoint URL to use the same base path as schema
-            const endpoint = `${config.mcpServer}/mcp/execute`;
+            // Update endpoint URL to use the correct API path
+            const endpoint = `${config.mcpServer}/api/mcp/execute`;
 
             const response = await fetch(endpoint, {
                 method: "POST",
@@ -258,43 +249,117 @@ function isMcpExecuteResponse(obj: any): obj is McpExecuteResponse {
         (obj.success === true || typeof obj.message === 'string');
 }
 
+// Add mock data for testing
+const MOCK_HA_INFO = {
+    devices: {
+        light: [
+            { entity_id: 'light.living_room', state: 'on', attributes: { friendly_name: 'Living Room Light', brightness: 255 } },
+            { entity_id: 'light.kitchen', state: 'off', attributes: { friendly_name: 'Kitchen Light', brightness: 0 } }
+        ],
+        switch: [
+            { entity_id: 'switch.tv', state: 'off', attributes: { friendly_name: 'TV Power' } }
+        ],
+        sensor: [
+            { entity_id: 'sensor.temperature', state: '21.5', attributes: { friendly_name: 'Living Room Temperature', unit_of_measurement: '°C' } },
+            { entity_id: 'sensor.humidity', state: '45', attributes: { friendly_name: 'Living Room Humidity', unit_of_measurement: '%' } }
+        ],
+        climate: [
+            { entity_id: 'climate.thermostat', state: 'heat', attributes: { friendly_name: 'Main Thermostat', current_temperature: 20, target_temp_high: 24 } }
+        ]
+    }
+};
+
+interface HassState {
+    entity_id: string;
+    state: string;
+    attributes: Record<string, any>;
+    last_changed: string;
+    last_updated: string;
+}
+
+interface ServiceInfo {
+    name: string;
+    description: string;
+    fields: Record<string, any>;
+}
+
+interface ServiceDomain {
+    domain: string;
+    services: Record<string, ServiceInfo>;
+}
+
 /**
  * Collects comprehensive information about the Home Assistant instance using MCP tools
  */
 async function collectHomeAssistantInfo(): Promise<any> {
     const info: Record<string, any> = {};
-    const config = loadConfig();
+    const hassHost = process.env.HASS_HOST;
 
-    // Update schema endpoint to be consistent
-    const schemaResponse = await fetch(`${config.mcpServer}/mcp`, {
-        headers: {
-            'Authorization': `Bearer ${hassToken}`,
-            'Accept': 'application/json'
-        }
-    });
-
-    if (!schemaResponse.ok) {
-        console.error(`Failed to fetch MCP schema: ${schemaResponse.status}`);
-        return info;
-    }
-
-    const schema = await schemaResponse.json() as McpSchema;
-    console.log("Available tools:", schema.tools.map(t => t.name));
-
-    // Execute list_devices to get basic device information
-    console.log("Fetching device information...");
     try {
-        const deviceInfo = await executeMcpTool('list_devices');
-        if (deviceInfo && deviceInfo.success && deviceInfo.devices) {
-            info.devices = deviceInfo.devices;
-        } else {
-            console.warn(`Failed to list devices: ${deviceInfo?.message || 'Unknown error'}`);
+        // Check if we're in test mode
+        if (process.env.HA_TEST_MODE === '1') {
+            logger.info("Running in test mode with mock data");
+            return MOCK_HA_INFO;
         }
-    } catch (error) {
-        console.warn("Error fetching devices:", error);
-    }
 
-    return info;
+        // Get states from Home Assistant directly
+        const statesResponse = await fetch(`${hassHost}/api/states`, {
+            headers: {
+                'Authorization': `Bearer ${hassToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!statesResponse.ok) {
+            throw new Error(`Failed to fetch states: ${statesResponse.status}`);
+        }
+
+        const states = await statesResponse.json() as HassState[];
+
+        // Group devices by domain
+        const devices: Record<string, HassState[]> = {};
+        for (const state of states) {
+            const [domain] = state.entity_id.split('.');
+            if (!devices[domain]) {
+                devices[domain] = [];
+            }
+            devices[domain].push(state);
+        }
+
+        info.devices = devices;
+        info.device_summary = {
+            total_devices: states.length,
+            device_types: Object.keys(devices),
+            by_domain: Object.fromEntries(
+                Object.entries(devices).map(([domain, items]) => [domain, items.length])
+            )
+        };
+
+        const deviceCount = states.length;
+        const domainCount = Object.keys(devices).length;
+
+        if (deviceCount > 0) {
+            logger.success(`Found ${deviceCount} devices across ${domainCount} domains`);
+        } else {
+            logger.warn('No devices found in Home Assistant');
+        }
+
+        return info;
+    } catch (error) {
+        logger.error(`Error fetching devices: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        if (process.env.HA_TEST_MODE !== '1') {
+            logger.warn(`Failed to connect to Home Assistant. Run with HA_TEST_MODE=1 to use test data.`);
+            return {
+                devices: {},
+                device_summary: {
+                    total_devices: 0,
+                    device_types: [],
+                    by_domain: {}
+                }
+            };
+        }
+        return MOCK_HA_INFO;
+    }
 }
 
 /**
@@ -401,31 +466,66 @@ function getRelevantDeviceTypes(prompt: string): string[] {
  * Generates analysis and recommendations using the OpenAI API based on the Home Assistant data
  */
 async function generateAnalysis(haInfo: any): Promise<SystemAnalysis> {
-    const openai = getOpenAIClient();
     const config = loadConfig();
 
-    // Compress and summarize the data
-    const deviceTypes = haInfo.devices ? Object.keys(haInfo.devices) : [];
-    const deviceSummary = haInfo.devices ? Object.entries(haInfo.devices).reduce((acc: Record<string, any>, [domain, devices]) => {
-        const deviceList = devices as any[];
-        acc[domain] = {
-            count: deviceList.length,
-            active: deviceList.filter(d => d.state === 'on' || d.state === 'home').length,
-            states: [...new Set(deviceList.map(d => d.state))],
-            sample: deviceList.slice(0, 2).map(d => ({
-                id: d.entity_id,
-                state: d.state,
-                name: d.attributes?.friendly_name
-            }))
+    // If in test mode, return mock analysis
+    if (process.env.HA_TEST_MODE === '1') {
+        logger.info("Generating mock analysis...");
+        return {
+            overview: {
+                state: ["System running normally", "4 device types detected"],
+                health: ["All systems operational", "No critical issues found"],
+                configurations: ["Basic configuration detected", "Default settings in use"],
+                integrations: ["Light", "Switch", "Sensor", "Climate"],
+                issues: ["No major issues detected"]
+            },
+            performance: {
+                resource_usage: ["Normal CPU usage", "Memory usage within limits"],
+                response_times: ["Average response time: 0.5s"],
+                optimization_areas: ["Consider grouping lights by room"]
+            },
+            security: {
+                current_measures: ["Basic security measures in place"],
+                vulnerabilities: ["No critical vulnerabilities detected"],
+                recommendations: ["Enable 2FA if not already enabled"]
+            },
+            optimization: {
+                performance_suggestions: ["Group frequently used devices"],
+                config_optimizations: ["Consider creating room-based views"],
+                integration_improvements: ["Add friendly names to all entities"],
+                automation_opportunities: ["Create morning/evening routines"]
+            },
+            maintenance: {
+                required_updates: ["No critical updates pending"],
+                cleanup_tasks: ["Remove unused entities"],
+                regular_tasks: ["Check sensor battery levels"]
+            },
+            entity_usage: {
+                most_active: ["light.living_room", "sensor.temperature"],
+                rarely_used: ["switch.tv"],
+                potential_duplicates: []
+            },
+            automation_analysis: {
+                inefficient_automations: [],
+                potential_improvements: ["Add time-based light controls"],
+                suggested_blueprints: ["Motion-activated lighting"],
+                condition_optimizations: []
+            },
+            energy_management: {
+                high_consumption: ["No high consumption devices detected"],
+                monitoring_suggestions: ["Add power monitoring to main appliances"],
+                tariff_optimizations: ["Consider time-of-use automation"]
+            }
         };
-        return acc;
-    }, {}) : {};
+    }
+
+    // Original analysis code for non-test mode
+    const openai = getOpenAIClient();
 
     const systemSummary = {
-        total_devices: deviceTypes.reduce((sum, type) => sum + deviceSummary[type].count, 0),
-        device_types: deviceTypes,
-        device_summary: deviceSummary,
-        active_devices: Object.values(deviceSummary).reduce((sum: number, info: any) => sum + info.active, 0)
+        total_devices: haInfo.device_summary?.total_devices || 0,
+        device_types: haInfo.device_summary?.device_types || [],
+        device_summary: haInfo.device_summary?.by_domain || {}
     };
 
     const prompt = `Analyze this Home Assistant system and provide insights in XML format:
@@ -578,100 +678,92 @@ Generate your response in this EXACT format:
     }
 }
 
-async function getUserInput(question: string): Promise<string> {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
-    return new Promise((resolve) => {
-        rl.question(question, (answer) => {
-            rl.close();
-            resolve(answer);
-        });
-    });
+interface AutomationConfig {
+    id?: string;
+    alias?: string;
+    description?: string;
+    trigger?: Array<{
+        platform: string;
+        [key: string]: any;
+    }>;
+    condition?: Array<{
+        condition: string;
+        [key: string]: any;
+    }>;
+    action?: Array<{
+        service?: string;
+        [key: string]: any;
+    }>;
+    mode?: string;
 }
 
-// Update chunk size calculation
-const MAX_CHARACTERS = 8000; // ~2000 tokens (4 chars/token)
-
-// Update model handling in retry
-async function handleCustomPrompt(haInfo: any): Promise<void> {
-    try {
-        // Add device metadata
-        const deviceTypes = haInfo.devices ? Object.keys(haInfo.devices) : [];
-        const deviceStates = haInfo.devices ? Object.entries(haInfo.devices).reduce((acc: Record<string, number>, [domain, devices]) => {
-            acc[domain] = (devices as any[]).length;
-            return acc;
-        }, {}) : {};
-        const totalDevices = deviceTypes.reduce((sum, type) => sum + deviceStates[type], 0);
-
-        const userPrompt = await getUserInput("Enter your custom prompt: ");
-        if (!userPrompt) {
-            console.log("No prompt provided. Exiting...");
-            return;
-        }
-
-        const openai = getOpenAIClient();
-        const config = loadConfig();
-
-        const completion = await openai.chat.completions.create({
-            model: config.selectedModel.name,
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a Home Assistant expert. Analyze the following Home Assistant information and respond to the user's prompt. 
-                             Current system has ${totalDevices} devices across ${deviceTypes.length} types: ${JSON.stringify(deviceStates)}`
-                },
-                { role: "user", content: userPrompt },
-            ],
-            max_tokens: config.selectedModel.maxTokens,
-            temperature: 0.3,
-        });
-
-        console.log("\nAnalysis Results:\n");
-        console.log(completion.choices[0].message?.content || "No response generated");
-
-    } catch (error) {
-        console.error("Error processing custom prompt:", error);
-
-        // Retry with simplified prompt if there's an error
-        try {
-            const retryPrompt = "Please provide a simpler analysis of the Home Assistant system.";
-            const openai = getOpenAIClient();
-            const config = loadConfig();
-
-            const retryCompletion = await openai.chat.completions.create({
-                model: config.selectedModel.name,
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are a Home Assistant expert. Provide a simple analysis of the system."
-                    },
-                    { role: "user", content: retryPrompt },
-                ],
-                max_tokens: config.selectedModel.maxTokens,
-                temperature: 0.3,
-            });
-
-            console.log("\nAnalysis Results:\n");
-            console.log(retryCompletion.choices[0].message?.content || "No response generated");
-        } catch (retryError) {
-            console.error("Error during retry:", retryError);
-        }
-    }
-}
-
-// Update automation handling
 async function handleAutomationOptimization(haInfo: any): Promise<void> {
     try {
-        const result = await executeMcpTool('automation', { action: 'list' });
-        if (!result?.success) {
-            logger.error(`Failed to retrieve automations: ${result?.message || 'Unknown error'}`);
-            return;
+        const hassHost = process.env.HASS_HOST;
+
+        // Get automations directly from Home Assistant
+        const automationsResponse = await fetch(`${hassHost}/api/states`, {
+            headers: {
+                'Authorization': `Bearer ${hassToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!automationsResponse.ok) {
+            throw new Error(`Failed to fetch automations: ${automationsResponse.status}`);
         }
 
-        const automations = result.automations || [];
+        const states = await automationsResponse.json() as HassState[];
+        const automations = states.filter(state => state.entity_id.startsWith('automation.'));
+
+        // Get services to understand what actions are available
+        const servicesResponse = await fetch(`${hassHost}/api/services`, {
+            headers: {
+                'Authorization': `Bearer ${hassToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        let availableServices: Record<string, any> = {};
+        if (servicesResponse.ok) {
+            const services = await servicesResponse.json() as ServiceDomain[];
+            availableServices = services.reduce((acc: Record<string, any>, service: ServiceDomain) => {
+                if (service.domain && service.services) {
+                    acc[service.domain] = service.services;
+                }
+                return acc;
+            }, {});
+            logger.debug(`Retrieved services from ${Object.keys(availableServices).length} domains`);
+        }
+
+        // Enrich automation data with service information
+        const enrichedAutomations = automations.map(automation => {
+            const actions = automation.attributes?.action || [];
+            const enrichedActions = actions.map((action: any) => {
+                if (action.service) {
+                    const [domain, service] = action.service.split('.');
+                    const serviceInfo = availableServices[domain]?.[service];
+                    return {
+                        ...action,
+                        service_info: serviceInfo
+                    };
+                }
+                return action;
+            });
+
+            return {
+                ...automation,
+                config: {
+                    id: automation.entity_id.split('.')[1],
+                    alias: automation.attributes?.friendly_name,
+                    trigger: automation.attributes?.trigger || [],
+                    condition: automation.attributes?.condition || [],
+                    action: enrichedActions,
+                    mode: automation.attributes?.mode || 'single'
+                }
+            };
+        });
+
         if (automations.length === 0) {
             console.log(chalk.bold.underline("\nAutomation Optimization Report"));
             console.log(chalk.yellow("No automations found in the system. Consider creating some automations to improve your Home Assistant experience."));
@@ -679,7 +771,7 @@ async function handleAutomationOptimization(haInfo: any): Promise<void> {
         }
 
         logger.info(`Analyzing ${automations.length} automations...`);
-        const optimizationXml = await analyzeAutomations(automations);
+        const optimizationXml = await analyzeAutomations(enrichedAutomations);
 
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(optimizationXml, "text/xml");
@@ -721,51 +813,85 @@ async function handleAutomationOptimization(haInfo: any): Promise<void> {
     }
 }
 
-// Add new automation optimization function
 async function analyzeAutomations(automations: any[]): Promise<string> {
     const openai = getOpenAIClient();
     const config = loadConfig();
 
-    // Compress automation data by only including essential fields
-    const compressedAutomations = automations.map(automation => ({
-        id: automation.entity_id,
-        name: automation.attributes?.friendly_name || automation.entity_id,
-        state: automation.state,
-        last_triggered: automation.attributes?.last_triggered,
-        mode: automation.attributes?.mode,
-        trigger_count: automation.attributes?.trigger?.length || 0,
-        action_count: automation.attributes?.action?.length || 0
-    }));
+    // Create a more detailed summary of automations
+    const automationSummary = {
+        total: automations.length,
+        active: automations.filter(a => a.state === 'on').length,
+        by_type: automations.reduce((acc: Record<string, number>, auto) => {
+            const type = auto.attributes?.mode || 'single';
+            acc[type] = (acc[type] || 0) + 1;
+            return acc;
+        }, {}),
+        recently_triggered: automations.filter(a => {
+            const lastTriggered = a.attributes?.last_triggered;
+            if (!lastTriggered) return false;
+            const lastTriggerDate = new Date(lastTriggered);
+            const oneDayAgo = new Date();
+            oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+            return lastTriggerDate > oneDayAgo;
+        }).length,
+        trigger_types: automations.reduce((acc: Record<string, number>, auto) => {
+            const triggers = auto.config?.trigger || [];
+            triggers.forEach((trigger: any) => {
+                const type = trigger.platform || 'unknown';
+                acc[type] = (acc[type] || 0) + 1;
+            });
+            return acc;
+        }, {}),
+        action_types: automations.reduce((acc: Record<string, number>, auto) => {
+            const actions = auto.config?.action || [];
+            actions.forEach((action: any) => {
+                const type = action.service?.split('.')[0] || 'unknown';
+                acc[type] = (acc[type] || 0) + 1;
+            });
+            return acc;
+        }, {}),
+        service_domains: Array.from(new Set(automations.flatMap(auto =>
+            (auto.config?.action || [])
+                .map((action: any) => action.service?.split('.')[0])
+                .filter(Boolean)
+        ))).sort(),
+        names: automations.map(a => a.attributes?.friendly_name || a.entity_id.split('.')[1]).slice(0, 10)
+    };
 
     const prompt = `Analyze these Home Assistant automations and provide optimization suggestions in XML format:
-${JSON.stringify(compressedAutomations, null, 2)}
+${JSON.stringify(automationSummary, null, 2)}
+
+Key metrics:
+- Total automations: ${automationSummary.total}
+- Active automations: ${automationSummary.active}
+- Recently triggered: ${automationSummary.recently_triggered}
+- Automation modes: ${JSON.stringify(automationSummary.by_type)}
+- Trigger types: ${JSON.stringify(automationSummary.trigger_types)}
+- Action types: ${JSON.stringify(automationSummary.action_types)}
+- Service domains used: ${automationSummary.service_domains.join(', ')}
 
 Generate your response in this EXACT format:
 <analysis>
     <findings>
         <item>Finding 1</item>
         <item>Finding 2</item>
-        <!-- Add more findings as needed -->
     </findings>
     <recommendations>
         <item>Recommendation 1</item>
         <item>Recommendation 2</item>
-        <!-- Add more recommendations as needed -->
     </recommendations>
     <blueprints>
         <item>Blueprint suggestion 1</item>
         <item>Blueprint suggestion 2</item>
-        <!-- Add more blueprint suggestions as needed -->
     </blueprints>
 </analysis>
 
-If no optimizations are needed, return empty item lists but maintain the XML structure.
-
 Focus on:
-1. Identifying patterns and potential improvements
-2. Suggesting energy-saving optimizations
+1. Identifying patterns and potential improvements based on trigger and action types
+2. Suggesting energy-saving optimizations based on the services being used
 3. Recommending error handling improvements
-4. Suggesting relevant blueprints`;
+4. Suggesting relevant blueprints for common automation patterns
+5. Analyzing the distribution of automation types and suggesting optimizations`;
 
     try {
         const completion = await openai.chat.completions.create({
@@ -773,12 +899,12 @@ Focus on:
             messages: [
                 {
                     role: "system",
-                    content: "You are a Home Assistant automation expert. Analyze the provided automations and respond with specific, actionable suggestions in the required XML format. If no optimizations are needed, return empty item lists but maintain the XML structure."
+                    content: "You are a Home Assistant automation expert. Analyze the provided automation summary and respond with specific, actionable suggestions in the required XML format."
                 },
                 { role: "user", content: prompt }
             ],
             temperature: 0.2,
-            max_tokens: Math.min(config.selectedModel.maxTokens, 4000)
+            max_tokens: Math.min(config.selectedModel.maxTokens, 2048)
         });
 
         const response = completion.choices[0].message?.content || "";
@@ -819,61 +945,163 @@ Focus on:
     }
 }
 
-// Update model selection prompt count dynamically
-async function selectModel(): Promise<ModelConfig> {
-    console.log(chalk.bold.underline("\nAvailable Models:"));
-    AVAILABLE_MODELS.forEach((model, index) => {
-        console.log(
-            `${index + 1}. ${chalk.blue(model.name.padEnd(20))} ` +
-            `Context: ${chalk.yellow(model.contextWindow.toLocaleString().padStart(6))} tokens | ` +
-            `Max output: ${chalk.green(model.maxTokens.toLocaleString().padStart(5))} tokens`
-        );
-    });
+// Add new handleCustomPrompt function
+async function handleCustomPrompt(haInfo: any, customPrompt: string): Promise<void> {
+    try {
+        // Add device metadata
+        const deviceTypes = haInfo.devices ? Object.keys(haInfo.devices) : [];
+        const deviceStates = haInfo.devices ? Object.entries(haInfo.devices).reduce((acc: Record<string, number>, [domain, devices]) => {
+            acc[domain] = (devices as any[]).length;
+            return acc;
+        }, {}) : {};
+        const totalDevices = deviceTypes.reduce((sum, type) => sum + deviceStates[type], 0);
 
-    const maxOption = AVAILABLE_MODELS.length;
-    const choice = await getUserInput(`\nSelect model (1-${maxOption}): `);
-    const selectedIndex = parseInt(choice) - 1;
+        // Get automation information
+        const automations = haInfo.devices?.automation || [];
+        const automationDetails = automations.map((auto: any) => ({
+            name: auto.attributes?.friendly_name || auto.entity_id.split('.')[1],
+            state: auto.state,
+            last_triggered: auto.attributes?.last_triggered,
+            mode: auto.attributes?.mode,
+            triggers: auto.attributes?.trigger?.map((t: any) => ({
+                platform: t.platform,
+                ...t
+            })) || [],
+            conditions: auto.attributes?.condition?.map((c: any) => ({
+                condition: c.condition,
+                ...c
+            })) || [],
+            actions: auto.attributes?.action?.map((a: any) => ({
+                service: a.service,
+                ...a
+            })) || []
+        }));
 
-    if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= AVAILABLE_MODELS.length) {
-        console.log(chalk.yellow("Invalid selection, using default model"));
-        return AVAILABLE_MODELS[0];
-    }
+        const automationSummary = {
+            total: automations.length,
+            active: automations.filter((a: any) => a.state === 'on').length,
+            trigger_types: automations.reduce((acc: Record<string, number>, auto: any) => {
+                const triggers = auto.attributes?.trigger || [];
+                triggers.forEach((trigger: any) => {
+                    const type = trigger.platform || 'unknown';
+                    acc[type] = (acc[type] || 0) + 1;
+                });
+                return acc;
+            }, {}),
+            action_types: automations.reduce((acc: Record<string, number>, auto: any) => {
+                const actions = auto.attributes?.action || [];
+                actions.forEach((action: any) => {
+                    const type = action.service?.split('.')[0] || 'unknown';
+                    acc[type] = (acc[type] || 0) + 1;
+                });
+                return acc;
+            }, {}),
+            service_domains: Array.from(new Set(automations.flatMap((auto: any) =>
+                (auto.attributes?.action || [])
+                    .map((action: any) => action.service?.split('.')[0])
+                    .filter(Boolean)
+            ))).sort()
+        };
 
-    const selectedModel = AVAILABLE_MODELS[selectedIndex];
+        // Create a summary of the devices
+        const deviceSummary = Object.entries(deviceStates)
+            .map(([domain, count]) => `${domain}: ${count}`)
+            .join(', ');
 
-    // Validate API keys for specific providers
-    if (selectedModel.name.startsWith('deepseek')) {
-        if (!process.env.DEEPSEEK_API_KEY) {
-            logger.error("DeepSeek models require DEEPSEEK_API_KEY in .env");
-            process.exit(1);
+        if (process.env.HA_TEST_MODE === '1') {
+            console.log("\nTest Mode Analysis Results:\n");
+            console.log("Based on your Home Assistant setup with:");
+            console.log(`- ${totalDevices} total devices`);
+            console.log(`- Device types: ${deviceTypes.join(', ')}`);
+            console.log("\nAnalysis for prompt: " + customPrompt);
+            console.log("1. Current State:");
+            console.log("   - All devices are functioning normally");
+            console.log("   - System is responsive and stable");
+            console.log("\n2. Recommendations:");
+            console.log("   - Consider grouping devices by room");
+            console.log("   - Add automation for frequently used devices");
+            console.log("   - Monitor power usage of main appliances");
+            console.log("\n3. Optimization Opportunities:");
+            console.log("   - Create scenes for different times of day");
+            console.log("   - Set up presence detection for automatic control");
+            return;
         }
 
-        // Verify DeepSeek connection
+        const openai = getOpenAIClient();
+        const config = loadConfig();
+
+        const completion = await openai.chat.completions.create({
+            model: config.selectedModel.name,
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a Home Assistant expert. Analyze the following Home Assistant information and respond to the user's prompt. 
+                             Current system has ${totalDevices} devices across ${deviceTypes.length} types.
+                             Device distribution: ${deviceSummary}
+                             
+                             Automation Summary:
+                             - Total automations: ${automationSummary.total}
+                             - Active automations: ${automationSummary.active}
+                             - Trigger types: ${JSON.stringify(automationSummary.trigger_types)}
+                             - Action types: ${JSON.stringify(automationSummary.action_types)}
+                             - Service domains used: ${automationSummary.service_domains.join(', ')}
+                             
+                             Detailed Automation List:
+                             ${JSON.stringify(automationDetails, null, 2)}`
+                },
+                { role: "user", content: customPrompt },
+            ],
+            max_tokens: Math.min(config.selectedModel.maxTokens, 2048), // Limit token usage
+            temperature: 0.3,
+        });
+
+        console.log("\nAnalysis Results:\n");
+        console.log(completion.choices[0].message?.content || "No response generated");
+
+    } catch (error) {
+        console.error("Error processing custom prompt:", error);
+
+        if (process.env.HA_TEST_MODE === '1') {
+            console.log("\nTest Mode Fallback Analysis:\n");
+            console.log("1. System Overview:");
+            console.log("   - Basic configuration detected");
+            console.log("   - All core services operational");
+            console.log("\n2. Suggestions:");
+            console.log("   - Review device naming conventions");
+            console.log("   - Consider adding automation blueprints");
+            return;
+        }
+
+        // Retry with simplified prompt if there's an error
         try {
-            await getOpenAIClient().models.list();
-        } catch (error) {
-            logger.error(`DeepSeek connection failed: ${error.message}`);
-            process.exit(1);
+            const retryPrompt = "Please provide a simpler analysis of the Home Assistant system.";
+            const openai = getOpenAIClient();
+            const config = loadConfig();
+
+            const retryCompletion = await openai.chat.completions.create({
+                model: config.selectedModel.name,
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a Home Assistant expert. Provide a simple analysis of the system."
+                    },
+                    { role: "user", content: retryPrompt },
+                ],
+                max_tokens: Math.min(config.selectedModel.maxTokens, 2048), // Limit token usage
+                temperature: 0.3,
+            });
+
+            console.log("\nAnalysis Results:\n");
+            console.log(retryCompletion.choices[0].message?.content || "No response generated");
+        } catch (retryError) {
+            console.error("Error during retry:", retryError);
         }
     }
-
-    if (selectedModel.name.startsWith('gpt-4-o') && !process.env.OPENAI_API_KEY) {
-        logger.error("OpenAI models require OPENAI_API_KEY in .env");
-        process.exit(1);
-    }
-
-    return selectedModel;
 }
 
 // Enhanced main function with progress indicators
 async function main() {
     let config = loadConfig();
-
-    // Model selection
-    config.selectedModel = await selectModel();
-    logger.info(`Selected model: ${chalk.blue(config.selectedModel.name)} ` +
-        `(Context: ${config.selectedModel.contextWindow.toLocaleString()} tokens, ` +
-        `Output: ${config.selectedModel.maxTokens.toLocaleString()} tokens)`);
 
     logger.info(`Starting analysis with ${config.selectedModel.name} model...`);
 
@@ -888,12 +1116,20 @@ async function main() {
 
         logger.success(`Collected data from ${Object.keys(haInfo.devices).length} device types`);
 
-        const mode = await getUserInput(
-            "\nSelect mode:\n1. Standard Analysis\n2. Custom Prompt\n3. Automation Optimization\nEnter choice (1-3): "
-        );
+        // Get mode from command line argument or default to 1
+        const mode = process.argv[2] || "1";
+
+        console.log("\nAvailable modes:");
+        console.log("1. Standard Analysis");
+        console.log("2. Custom Prompt");
+        console.log("3. Automation Optimization");
+        console.log(`Selected mode: ${mode}\n`);
 
         if (mode === "2") {
-            await handleCustomPrompt(haInfo);
+            // For custom prompt mode, get the prompt from remaining arguments
+            const customPrompt = process.argv.slice(3).join(" ") || "Analyze my Home Assistant setup";
+            console.log(`Custom prompt: ${customPrompt}\n`);
+            await handleCustomPrompt(haInfo, customPrompt);
         } else if (mode === "3") {
             await handleAutomationOptimization(haInfo);
         } else {
@@ -938,22 +1174,39 @@ function getItems(xmlDoc: Document, path: string): string[] {
         .map(item => (item as Element).textContent || "");
 }
 
-// Add environment check for processor type
+// Replace the Express server initialization at the bottom with Bun's server
 if (process.env.PROCESSOR_TYPE === 'openai') {
-    // Initialize Express server only for OpenAI
-    const app = express();
-    const port = process.env.PORT || 3000;
+    // Initialize Bun server for OpenAI
+    const server = Bun.serve({
+        port: process.env.PORT || 3000,
+        async fetch(req) {
+            const url = new URL(req.url);
 
-    app.use(bodyParser.json());
+            // Handle chat endpoint
+            if (url.pathname === '/chat' && req.method === 'POST') {
+                try {
+                    const body = await req.json();
+                    // Handle chat logic here
+                    return new Response(JSON.stringify({ success: true }), {
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                } catch (error) {
+                    return new Response(JSON.stringify({
+                        success: false,
+                        error: error.message
+                    }), {
+                        status: 400,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+            }
 
-    // Keep existing OpenAI routes
-    app.post('/chat', async (req, res) => {
-        // ... existing OpenAI handler code ...
+            // Handle 404 for unknown routes
+            return new Response('Not Found', { status: 404 });
+        },
     });
 
-    app.listen(port, () => {
-        console.log(`[OpenAI Server] Running on port ${port}`);
-    });
+    console.log(`[OpenAI Server] Running on port ${server.port}`);
 } else {
     console.log('[Claude Mode] Using stdio communication');
 }
