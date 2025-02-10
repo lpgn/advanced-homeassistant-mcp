@@ -6,8 +6,26 @@ import { HassState } from "../types/index.js";
 export const listDevicesTool: Tool = {
   name: "list_devices",
   description: "List all available Home Assistant devices",
-  parameters: z.object({}).describe("No parameters required"),
-  execute: async () => {
+  parameters: z.object({
+    domain: z.enum([
+      "light",
+      "climate",
+      "alarm_control_panel",
+      "cover",
+      "switch",
+      "contact",
+      "media_player",
+      "fan",
+      "lock",
+      "vacuum",
+      "scene",
+      "script",
+      "camera",
+    ]).optional(),
+    area: z.string().optional(),
+    floor: z.string().optional(),
+  }).describe("Filter devices by domain, area, or floor"),
+  execute: async (params: { domain?: string; area?: string; floor?: string }) => {
     try {
       const response = await fetch(`${APP_CONFIG.HASS_HOST}/api/states`, {
         headers: {
@@ -21,10 +39,23 @@ export const listDevicesTool: Tool = {
       }
 
       const states = (await response.json()) as HassState[];
+      let filteredStates = states;
+
+      // Apply filters
+      if (params.domain) {
+        filteredStates = filteredStates.filter(state => state.entity_id.startsWith(`${params.domain}.`));
+      }
+      if (params.area) {
+        filteredStates = filteredStates.filter(state => state.attributes?.area_id === params.area);
+      }
+      if (params.floor) {
+        filteredStates = filteredStates.filter(state => state.attributes?.floor === params.floor);
+      }
+
       const devices: Record<string, HassState[]> = {};
 
       // Group devices by domain
-      states.forEach(state => {
+      filteredStates.forEach(state => {
         const [domain] = state.entity_id.split('.');
         if (!devices[domain]) {
           devices[domain] = [];
@@ -47,12 +78,14 @@ export const listDevicesTool: Tool = {
           sample: entities.slice(0, 2).map(e => ({
             id: e.entity_id,
             state: e.state,
-            name: e.attributes?.friendly_name || e.entity_id
+            name: e.attributes?.friendly_name || e.entity_id,
+            area: e.attributes?.area_id,
+            floor: e.attributes?.floor,
           }))
         };
       });
 
-      const totalDevices = states.length;
+      const totalDevices = filteredStates.length;
       const deviceTypes = Object.keys(devices);
 
       const deviceSummary = {

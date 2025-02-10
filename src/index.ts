@@ -27,6 +27,18 @@ import { speechService } from "./speech/index.js";
 import { APP_CONFIG } from "./config/app.config.js";
 import { loadEnvironmentVariables } from "./config/loadEnv.js";
 import { MCP_SCHEMA } from "./mcp/schema.js";
+import {
+  listDevicesTool,
+  controlTool,
+  subscribeEventsTool,
+  getSSEStatsTool,
+  automationConfigTool,
+  addonTool,
+  packageTool,
+  sceneTool,
+  notifyTool,
+  historyTool,
+} from "./tools/index.js";
 
 // Load environment variables based on NODE_ENV
 await loadEnvironmentVariables();
@@ -46,67 +58,18 @@ export interface Tool {
 }
 
 // Array to store tools
-const tools: Tool[] = [];
-
-// Define the list devices tool
-const listDevicesTool: Tool = {
-  name: "list_devices",
-  description: "List all available Home Assistant devices",
-  parameters: z.object({}),
-  execute: async () => {
-    try {
-      const devices = await list_devices();
-      return {
-        success: true,
-        devices,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
-      };
-    }
-  },
-};
-
-// Add tools to the array
-tools.push(listDevicesTool);
-
-// Add the Home Assistant control tool
-const controlTool: Tool = {
-  name: "control",
-  description: "Control Home Assistant devices and services",
-  parameters: z.object({
-    command: z.enum([
-      ...commonCommands,
-      ...coverCommands,
-      ...climateCommands,
-    ] as [string, ...string[]]),
-    entity_id: z.string().describe("The ID of the entity to control"),
-  }),
-  execute: async (params: { command: Command; entity_id: string }) => {
-    try {
-      const [domain] = params.entity_id.split(".");
-      await call_service(domain, params.command, {
-        entity_id: params.entity_id,
-      });
-      return {
-        success: true,
-        message: `Command ${params.command} executed successfully on ${params.entity_id}`,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
-      };
-    }
-  },
-};
-
-// Add the control tool to the array
-tools.push(controlTool);
+const tools: Tool[] = [
+  listDevicesTool,
+  controlTool,
+  subscribeEventsTool,
+  getSSEStatsTool,
+  automationConfigTool,
+  addonTool,
+  packageTool,
+  sceneTool,
+  notifyTool,
+  historyTool,
+];
 
 // Initialize Elysia app with middleware
 const app = new Elysia()
@@ -119,24 +82,40 @@ const app = new Elysia()
   .use(errorHandler);
 
 // Mount API routes
-app.get("/api/mcp", () => MCP_SCHEMA);
-app.post("/api/mcp/execute", async ({ body }: { body: { tool: string; parameters: Record<string, unknown> } }) => {
-  const { tool: toolName, parameters } = body;
+app.get("/api/mcp/schema", () => MCP_SCHEMA);
+
+app.post("/api/mcp/execute", async ({ body }: { body: { name: string; parameters: Record<string, unknown> } }) => {
+  const { name: toolName, parameters } = body;
   const tool = tools.find((t) => t.name === toolName);
+
   if (!tool) {
     return {
       success: false,
       message: `Tool '${toolName}' not found`,
     };
   }
-  return await tool.execute(parameters);
+
+  try {
+    const result = await tool.execute(parameters);
+    return {
+      success: true,
+      result,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
 });
 
-// Health check endpoint
-app.get("/health", () => ({
+// Health check endpoint with MCP info
+app.get("/api/mcp/health", () => ({
   status: "ok",
   timestamp: new Date().toISOString(),
-  version: "0.1.0",
+  version: "1.0.0",
+  mcp_version: "1.0",
+  supported_tools: tools.map(t => t.name),
   speech_enabled: APP_CONFIG.SPEECH.ENABLED,
   wake_word_enabled: APP_CONFIG.SPEECH.WAKE_WORD_ENABLED,
   speech_to_text_enabled: APP_CONFIG.SPEECH.SPEECH_TO_TEXT_ENABLED,
