@@ -4,8 +4,8 @@ FROM node:20-slim as builder
 # Set working directory
 WORKDIR /app
 
-# Install bun
-RUN npm install -g bun@1.0.25
+# Install bun with the latest version
+RUN npm install -g bun@1.0.35
 
 # Install only the minimal dependencies needed and clean up in the same layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -38,17 +38,16 @@ RUN /opt/venv/bin/python -m pip install --no-cache-dir \
     faster-whisper \
     requests
 
-# Set build-time environment variables
+# Set build-time environment variables with increased memory
 ENV NODE_ENV=production \
-    NODE_OPTIONS="--max-old-space-size=2048" \
-    BUN_INSTALL_CACHE=0
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    BUN_INSTALL_CACHE=1
 
 # Copy only package files first
 COPY package.json ./
 
-# Install dependencies with a clean slate
-RUN rm -rf node_modules .bun bun.lockb && \
-    bun install --no-save
+# Install dependencies with more stable approach
+RUN bun install --frozen-lockfile || bun install
 
 # Copy source files and build
 COPY src ./src
@@ -58,8 +57,8 @@ RUN bun build ./src/index.ts --target=bun --minify --outdir=./dist
 # Create a smaller production image
 FROM node:20-slim as runner
 
-# Install bun in production image
-RUN npm install -g bun@1.0.25
+# Install bun in production image with the latest version
+RUN npm install -g bun@1.0.35
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
