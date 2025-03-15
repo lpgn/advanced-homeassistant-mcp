@@ -23,7 +23,7 @@ if (!hassToken) {
 }
 
 // MCP Server configuration
-const MCP_SERVER = process.env.MCP_SERVER || 'http://localhost:3000';
+const MCP_SERVER = 'http://localhost:3000';
 
 interface McpTool {
     name: string;

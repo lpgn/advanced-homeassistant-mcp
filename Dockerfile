@@ -7,20 +7,13 @@ WORKDIR /app
 # Install bun with the latest version
 RUN npm install -g bun@1.0.35
 
-# Install only the minimal dependencies needed and clean up in the same layer
+# Install Python and other dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    pulseaudio \
-    alsa-utils \
-    python3-full \
+    python3 \
     python3-pip \
-    python3-dev \
     python3-venv \
-    portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean \
-    && rm -rf /var/cache/apt/*
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create and activate virtual environment
 RUN python3 -m venv /opt/venv
@@ -31,22 +24,10 @@ ENV VIRTUAL_ENV="/opt/venv"
 RUN /opt/venv/bin/python -m pip install --upgrade pip
 
 # Install Python packages in virtual environment
-RUN /opt/venv/bin/python -m pip install --no-cache-dir \
-    numpy \
-    sounddevice \
-    openwakeword \
-    faster-whisper \
-    requests
+RUN /opt/venv/bin/python -m pip install --no-cache-dir numpy scipy
 
-# Set build-time environment variables with increased memory
-ENV NODE_ENV=production \
-    NODE_OPTIONS="--max-old-space-size=4096" \
-    BUN_INSTALL_CACHE=1
-
-# Copy only package files first
+# Copy package.json and install dependencies
 COPY package.json ./
-
-# Install dependencies with more stable approach
 RUN bun install --frozen-lockfile || bun install
 
 # Copy source files and build
@@ -60,20 +41,15 @@ FROM node:20-slim as runner
 # Install bun in production image with the latest version
 RUN npm install -g bun@1.0.35
 
-# Install runtime dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    pulseaudio \
-    alsa-utils \
-    libasound2 \
-    libasound2-plugins \
-    python3-full \
+    curl \
+    python3 \
     python3-pip \
-    python3-dev \
     python3-venv \
-    portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean \
-    && rm -rf /var/cache/apt/*
+    alsa-utils \
+    pulseaudio \
+    && rm -rf /var/lib/apt/lists/*
 
 # Configure ALSA
 COPY docker/speech/asound.conf /etc/asound.conf
@@ -87,19 +63,7 @@ ENV VIRTUAL_ENV="/opt/venv"
 RUN /opt/venv/bin/python -m pip install --upgrade pip
 
 # Install Python packages in virtual environment
-RUN /opt/venv/bin/python -m pip install --no-cache-dir \
-    numpy \
-    sounddevice \
-    openwakeword \
-    faster-whisper \
-    requests
-
-# Set Python path to use virtual environment
-ENV PYTHONPATH="/opt/venv/lib/python3.11/site-packages:$PYTHONPATH"
-
-# Set production environment variables
-ENV NODE_ENV=production \
-    NODE_OPTIONS="--max-old-space-size=1024"
+RUN /opt/venv/bin/python -m pip install --no-cache-dir numpy scipy
 
 # Create a non-root user and add to audio group
 RUN addgroup --system --gid 1001 nodejs && \
@@ -135,4 +99,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE ${PORT:-4000}
 
 # Start the application with audio setup
-CMD ["/bin/bash", "-c", "/app/docker/speech/setup-audio.sh & bun --smol run start"] 
+CMD ["/bin/bash", "-c", "/app/docker/speech/setup-audio.sh || echo 'Audio setup failed, continuing anyway' && bun --smol run fix-env.js"] 

@@ -85,10 +85,16 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+// Fix NODE_ENV if it's set to "1"
+if (process.env.NODE_ENV === "1") {
+  console.log('Fixing NODE_ENV from "1" to "development"');
+  process.env.NODE_ENV = "development";
+}
+
 // Load and validate configuration
 export const APP_CONFIG = AppConfigSchema.parse({
   PORT: process.env.PORT || 4000,
-  NODE_ENV: process.env.NODE_ENV || "development",
+  NODE_ENV: process.env.NODE_ENV,
   HASS_HOST: process.env.HASS_HOST || "http://192.168.178.63:8123",
   HASS_TOKEN: process.env.HASS_TOKEN,
   JWT_SECRET: process.env.JWT_SECRET || "your-secret-key",
