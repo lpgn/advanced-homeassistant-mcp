@@ -6,6 +6,13 @@
 
 MCP (Model Context Protocol) Server is my lightweight integration tool for Home Assistant, providing a flexible interface for device management and automation. It's designed to be fast, secure, and easy to use. Built with Bun for maximum performance.
 
+## Core Features ✨
+
+- 🔌 Basic device control via REST API
+- 📡 WebSocket/Server-Sent Events (SSE) for state updates
+- 🤖 Simple automation rule management
+- 🔐 JWT-based authentication
+
 ## Why Bun? 🚀
 
 I chose Bun as the runtime for several key benefits:
@@ -37,66 +44,6 @@ I chose Bun as the runtime for several key benefits:
   - Runs most npm packages
   - Compatible with Express/Fastify
   - Native Node.js APIs
-
-## Core Features ✨
-
-- 🔌 Basic device control via REST API
-- 📡 WebSocket/Server-Sent Events (SSE) for state updates
-- 🤖 Simple automation rule management
-- 🔐 JWT-based authentication
-- 🎤 Optional speech features:
-  - 🗣️ Wake word detection ("hey jarvis", "ok google", "alexa")
-  - 🎯 Speech-to-text using fast-whisper
-  - 🌍 Multiple language support
-  - 🚀 GPU acceleration support
-
-## System Architecture 📊
-
-```mermaid
-flowchart TB
-    subgraph Client["Client Applications"]
-        direction TB
-        Web["Web Interface"]
-        Mobile["Mobile Apps"]
-        Voice["Voice Control"]
-    end
-
-    subgraph MCP["MCP Server"]
-        direction TB
-        API["REST API"]
-        WS["WebSocket/SSE"]
-        Auth["Authentication"]
-        
-        subgraph Speech["Speech Processing (Optional)"]
-            direction TB
-            Wake["Wake Word Detection"]
-            STT["Speech-to-Text"]
-            
-            subgraph STT_Options["STT Options"]
-                direction LR
-                Whisper["Whisper"]
-                FastWhisper["Fast Whisper"]
-            end
-            
-            Wake --> STT
-            STT --> STT_Options
-        end
-    end
-
-    subgraph HA["Home Assistant"]
-        direction TB
-        HASS_API["HASS API"]
-        HASS_WS["HASS WebSocket"]
-        Devices["Smart Devices"]
-    end
-
-    Client --> MCP
-    MCP --> HA
-    HA --> Devices
-
-    style Speech fill:#f9f,stroke:#333,stroke-width:2px
-    style STT_Options fill:#bbf,stroke:#333,stroke-width:1px
-```
 
 ## Prerequisites 📋
 
@@ -135,21 +82,11 @@ NODE_ENV=production ./scripts/setup-env.sh
 
 4. Build and launch with Docker:
 ```bash
-# Build options:
 # Standard build
 ./docker-build.sh
 
-# Build with speech support
-./docker-build.sh --speech
-
-# Build with speech and GPU support
-./docker-build.sh --speech --gpu
-
 # Launch:
 docker compose up -d
-
-# With speech features:
-docker compose -f docker-compose.yml -f docker-compose.speech.yml up -d
 ```
 
 ## Docker Build Options 🐳
@@ -213,41 +150,6 @@ Files load in this order:
 
 Later files override earlier ones.
 
-## Speech Features Setup 🎤
-
-### Prerequisites
-1. 🐳 Docker installed and running
-2. 🎮 NVIDIA GPU with CUDA (optional)
-3. 💾 4GB+ RAM (8GB+ recommended)
-
-### Configuration
-1. Enable speech in `.env`:
-```bash
-ENABLE_SPEECH_FEATURES=true
-ENABLE_WAKE_WORD=true
-ENABLE_SPEECH_TO_TEXT=true
-WHISPER_MODEL_PATH=/models
-WHISPER_MODEL_TYPE=base
-```
-
-2. Choose your STT engine:
-```bash
-# For standard Whisper
-STT_ENGINE=whisper
-
-# For Fast Whisper (GPU recommended)
-STT_ENGINE=fast-whisper
-CUDA_VISIBLE_DEVICES=0  # Set GPU device
-```
-
-### Available Models 🤖
-Choose based on your needs:
-- `tiny.en`: Fastest, basic accuracy
-- `base.en`: Good balance (recommended)
-- `small.en`: Better accuracy, slower
-- `medium.en`: High accuracy, resource intensive
-- `large-v2`: Best accuracy, very resource intensive
-
 ## Development 💻
 
 ```bash
@@ -291,29 +193,6 @@ bun run start
 - [Custom Prompts Guide](docs/prompts.md) - Create and customize AI behavior
 - [Extras & Tools](docs/extras.md) - Additional utilities and advanced features
 
-### Extra Tools 🛠️
-
-I've included several powerful tools in the `extra/` directory to enhance your Home Assistant experience:
-
-1. **Home Assistant Analyzer CLI** (`ha-analyzer-cli.ts`)
-   - Deep automation analysis using AI models
-   - Security vulnerability scanning
-   - Performance optimization suggestions
-   - System health metrics
-
-2. **Speech-to-Text Example** (`speech-to-text-example.ts`)
-   - Wake word detection
-   - Speech-to-text transcription
-   - Multiple language support
-   - GPU acceleration support
-
-3. **Claude Desktop Setup** (`claude-desktop-macos-setup.sh`)
-   - Automated Claude Desktop installation for macOS
-   - Environment configuration
-   - MCP integration setup
-
-See [Extras Documentation](docs/extras.md) for detailed usage instructions and examples.
-
 ## Client Integration 🔗
 
 ### Cursor Integration 🖱️
@@ -353,6 +232,83 @@ Add to your Claude config:
 Windows users can use the provided script:
 1. Go to `scripts` directory
 2. Run `start_mcp.cmd`
+
+## Additional Features
+
+### Speech Features 🎤
+
+MCP Server optionally supports speech processing capabilities:
+- 🗣️ Wake word detection ("hey jarvis", "ok google", "alexa")
+- 🎯 Speech-to-text using fast-whisper
+- 🌍 Multiple language support
+- 🚀 GPU acceleration support
+
+#### Speech Features Setup
+
+##### Prerequisites
+1. 🐳 Docker installed and running
+2. 🎮 NVIDIA GPU with CUDA (optional)
+3. 💾 4GB+ RAM (8GB+ recommended)
+
+##### Configuration
+1. Enable speech in `.env`:
+```bash
+ENABLE_SPEECH_FEATURES=true
+ENABLE_WAKE_WORD=true
+ENABLE_SPEECH_TO_TEXT=true
+WHISPER_MODEL_PATH=/models
+WHISPER_MODEL_TYPE=base
+```
+
+2. Choose your STT engine:
+```bash
+# For standard Whisper
+STT_ENGINE=whisper
+
+# For Fast Whisper (GPU recommended)
+STT_ENGINE=fast-whisper
+CUDA_VISIBLE_DEVICES=0  # Set GPU device
+```
+
+##### Available Models 🤖
+Choose based on your needs:
+- `tiny.en`: Fastest, basic accuracy
+- `base.en`: Good balance (recommended)
+- `small.en`: Better accuracy, slower
+- `medium.en`: High accuracy, resource intensive
+- `large-v2`: Best accuracy, very resource intensive
+
+##### Launch with Speech Features
+```bash
+# Build with speech support
+./docker-build.sh --speech
+
+# Launch with speech features:
+docker compose -f docker-compose.yml -f docker-compose.speech.yml up -d
+```
+
+### Extra Tools 🛠️
+
+I've included several powerful tools in the `extra/` directory to enhance your Home Assistant experience:
+
+1. **Home Assistant Analyzer CLI** (`ha-analyzer-cli.ts`)
+   - Deep automation analysis using AI models
+   - Security vulnerability scanning
+   - Performance optimization suggestions
+   - System health metrics
+
+2. **Speech-to-Text Example** (`speech-to-text-example.ts`)
+   - Wake word detection
+   - Speech-to-text transcription
+   - Multiple language support
+   - GPU acceleration support
+
+3. **Claude Desktop Setup** (`claude-desktop-macos-setup.sh`)
+   - Automated Claude Desktop installation for macOS
+   - Environment configuration
+   - MCP integration setup
+
+See [Extras Documentation](docs/extras.md) for detailed usage instructions and examples.
 
 ## License 📄
 
