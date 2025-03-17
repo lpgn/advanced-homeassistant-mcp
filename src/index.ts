@@ -1,157 +1,153 @@
-import { file } from "bun";
-import { Elysia } from "elysia";
-import { cors } from "@elysiajs/cors";
-import { swagger } from "@elysiajs/swagger";
-import {
-  rateLimiter,
-  securityHeaders,
-  validateRequest,
-  sanitizeInput,
-  errorHandler,
-} from "./security/index.js";
-import {
-  get_hass,
-  call_service,
-  list_devices,
-  get_states,
-  get_state,
-} from "./hass/index.js";
-import { z } from "zod";
-import {
-  commonCommands,
-  coverCommands,
-  climateCommands,
-  type Command,
-} from "./commands.js";
-import { speechService } from "./speech/index.js";
-import { APP_CONFIG } from "./config/app.config.js";
-import { loadEnvironmentVariables } from "./config/loadEnv.js";
-import { MCP_SCHEMA } from "./mcp/schema.js";
-import {
-  listDevicesTool,
-  controlTool,
-  subscribeEventsTool,
-  getSSEStatsTool,
-  automationConfigTool,
-  addonTool,
-  packageTool,
-  sceneTool,
-  notifyTool,
-  historyTool,
-} from "./tools/index.js";
+/**
+ * Home Assistant Model Context Protocol (MCP) Server
+ * A standardized protocol for AI tools to interact with Home Assistant
+ */
 
-// Load environment variables based on NODE_ENV
-await loadEnvironmentVariables();
+import express from 'express';
+import cors from 'cors';
+import { MCPServer } from './mcp/MCPServer.js';
+import { loggingMiddleware, timeoutMiddleware } from './mcp/middleware/index.js';
+import { StdioTransport } from './mcp/transports/stdio.transport.js';
+import { HttpTransport } from './mcp/transports/http.transport.js';
+import { APP_CONFIG } from './config.js';
+import { logger } from "./utils/logger.js";
 
-// Configuration
-const HASS_TOKEN = process.env.HASS_TOKEN;
-const PORT = parseInt(process.env.PORT || "4000", 10);
+// Home Assistant tools
+import { LightsControlTool } from './tools/homeassistant/lights.tool.js';
+import { ClimateControlTool } from './tools/homeassistant/climate.tool.js';
 
-console.log("Initializing Home Assistant connection...");
+// Home Assistant optional tools - these can be added as needed
+// import { ControlTool } from './tools/control.tool.js';
+// import { SceneTool } from './tools/scene.tool.js';
+// import { AutomationTool } from './tools/automation.tool.js';
+// import { NotifyTool } from './tools/notify.tool.js';
+// import { ListDevicesTool } from './tools/list-devices.tool.js';
+// import { HistoryTool } from './tools/history.tool.js';
 
-// Define Tool interface and export it
-export interface Tool {
-  name: string;
-  description: string;
-  parameters: z.ZodType<any>;
-  execute: (params: any) => Promise<any>;
+/**
+ * Check if running in stdio mode via command line args
+ */
+function isStdioMode(): boolean {
+  return process.argv.includes('--stdio');
 }
 
-// Array to store tools
-const tools: Tool[] = [
-  listDevicesTool,
-  controlTool,
-  subscribeEventsTool,
-  getSSEStatsTool,
-  automationConfigTool,
-  addonTool,
-  packageTool,
-  sceneTool,
-  notifyTool,
-  historyTool,
-];
+/**
+ * Main function to start the MCP server
+ */
+async function main() {
+  logger.info('Starting Home Assistant MCP Server...');
 
-// Initialize Elysia app with middleware
-const app = new Elysia()
-  .use(cors())
-  .use(swagger())
-  .use(rateLimiter)
-  .use(securityHeaders)
-  .use(validateRequest)
-  .use(sanitizeInput)
-  .use(errorHandler);
+  // Check if we're in stdio mode from command line
+  const useStdio = isStdioMode() || APP_CONFIG.useStdioTransport;
 
-// Mount API routes
-app.get("/api/mcp/schema", () => MCP_SCHEMA);
+  // Configure server
+  const EXECUTION_TIMEOUT = APP_CONFIG.executionTimeout;
+  const STREAMING_ENABLED = APP_CONFIG.streamingEnabled;
 
-app.post("/api/mcp/execute", async ({ body }: { body: { name: string; parameters: Record<string, unknown> } }) => {
-  const { name: toolName, parameters } = body;
-  const tool = tools.find((t) => t.name === toolName);
+  // Get the server instance (singleton)
+  const server = MCPServer.getInstance();
 
-  if (!tool) {
-    return {
-      success: false,
-      message: `Tool '${toolName}' not found`,
-    };
-  }
+  // Register Home Assistant tools
+  server.registerTool(new LightsControlTool());
+  server.registerTool(new ClimateControlTool());
 
-  try {
-    const result = await tool.execute(parameters);
-    return {
-      success: true,
-      result,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : "Unknown error occurred",
-    };
-  }
-});
+  // Add optional tools here as needed
+  // server.registerTool(new ControlTool());
+  // server.registerTool(new SceneTool());
+  // server.registerTool(new NotifyTool());
+  // server.registerTool(new ListDevicesTool());
+  // server.registerTool(new HistoryTool());
 
-// Health check endpoint with MCP info
-app.get("/api/mcp/health", () => ({
-  status: "ok",
-  timestamp: new Date().toISOString(),
-  version: "1.0.0",
-  mcp_version: "1.0",
-  supported_tools: tools.map(t => t.name),
-  speech_enabled: APP_CONFIG.SPEECH.ENABLED,
-  wake_word_enabled: APP_CONFIG.SPEECH.WAKE_WORD_ENABLED,
-  speech_to_text_enabled: APP_CONFIG.SPEECH.SPEECH_TO_TEXT_ENABLED,
-}));
+  // Add middlewares
+  server.use(loggingMiddleware);
+  server.use(timeoutMiddleware(EXECUTION_TIMEOUT));
 
-// Initialize speech service if enabled
-if (APP_CONFIG.SPEECH.ENABLED) {
-  console.log("Initializing speech service...");
-  speechService.initialize().catch((error) => {
-    console.error("Failed to initialize speech service:", error);
-  });
-}
+  // Initialize transports
+  if (useStdio) {
+    logger.info('Using Standard I/O transport');
 
-// Create API endpoints for each tool
-tools.forEach((tool) => {
-  app.post(`/api/tools/${tool.name}`, async ({ body }: { body: Record<string, unknown> }) => {
-    const result = await tool.execute(body);
-    return result;
-  });
-});
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-// Handle server shutdown
-process.on("SIGTERM", async () => {
-  console.log("Received SIGTERM. Shutting down gracefully...");
-  if (APP_CONFIG.SPEECH.ENABLED) {
-    await speechService.shutdown().catch((error) => {
-      console.error("Error shutting down speech service:", error);
+    // Create and configure the stdio transport with debug enabled for stdio mode
+    const stdioTransport = new StdioTransport({
+      debug: true, // Always enable debug in stdio mode for better visibility
+      silent: false // Never be silent in stdio mode
     });
-  }
-  process.exit(0);
-});
 
-// Export tools for testing purposes
-export { tools };
+    // Explicitly set the server reference to ensure access to tools
+    stdioTransport.setServer(server);
+
+    // Register the transport
+    server.registerTransport(stdioTransport);
+
+    // Special handling for stdio mode - don't start other transports
+    if (isStdioMode()) {
+      logger.info('Running in pure stdio mode (from CLI)');
+      // Start the server
+      await server.start();
+      logger.info('MCP Server started successfully');
+
+      // Handle shutdown
+      const shutdown = async () => {
+        logger.info('Shutting down MCP Server...');
+        try {
+          await server.shutdown();
+          logger.info('MCP Server shutdown complete');
+          process.exit(0);
+        } catch (error) {
+          logger.error('Error during shutdown:', error);
+          process.exit(1);
+        }
+      };
+
+      // Register shutdown handlers
+      process.on('SIGINT', shutdown);
+      process.on('SIGTERM', shutdown);
+
+      // Exit the function early as we're in stdio-only mode
+      return;
+    }
+  }
+
+  // HTTP transport (only if not in pure stdio mode)
+  if (APP_CONFIG.useHttpTransport) {
+    logger.info('Using HTTP transport on port ' + APP_CONFIG.port);
+    const app = express();
+    app.use(cors({
+      origin: APP_CONFIG.corsOrigin
+    }));
+
+    const httpTransport = new HttpTransport({
+      port: APP_CONFIG.port,
+      corsOrigin: APP_CONFIG.corsOrigin,
+      apiPrefix: "/api/mcp",
+      debug: APP_CONFIG.debugHttp
+    });
+    server.registerTransport(httpTransport);
+  }
+
+  // Start the server
+  await server.start();
+  logger.info('MCP Server started successfully');
+
+  // Handle shutdown
+  const shutdown = async () => {
+    logger.info('Shutting down MCP Server...');
+    try {
+      await server.shutdown();
+      logger.info('MCP Server shutdown complete');
+      process.exit(0);
+    } catch (error) {
+      logger.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  };
+
+  // Register shutdown handlers
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}
+
+// Run the main function
+main().catch(error => {
+  logger.error('Error starting MCP Server:', error);
+  process.exit(1);
+});
