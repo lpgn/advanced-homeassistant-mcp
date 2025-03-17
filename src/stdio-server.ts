@@ -5,8 +5,10 @@
  * over standard input/output using JSON-RPC 2.0 protocol.
  */
 
-// Force silent logging
-process.env.LOG_LEVEL = 'silent';
+// Only force silent logging if not in Cursor compatibility mode
+if (!process.env.CURSOR_COMPATIBLE) {
+    process.env.LOG_LEVEL = 'silent';
+}
 
 import { createStdioServer, BaseTool } from "./mcp/index.js";
 import { z } from "zod";
@@ -17,18 +19,36 @@ import { MCPContext } from "./mcp/types.js";
 import { LightsControlTool } from './tools/homeassistant/lights.tool.js';
 import { ClimateControlTool } from './tools/homeassistant/climate.tool.js';
 
-// Check for silent startup mode - never silent in npx mode to ensure the JSON-RPC messages are sent
-const silentStartup = true;
+// Check for Cursor compatibility mode
+const isCursorMode = process.env.CURSOR_COMPATIBLE === 'true';
+// Use silent startup except in Cursor mode
+const silentStartup = !isCursorMode;
 const debugMode = process.env.DEBUG_STDIO === 'true';
 
-// Send a notification directly to stdout for Cursor compatibility
+// Configure raw I/O handling if necessary
+if (isCursorMode) {
+    // Ensure stdout doesn't buffer for Cursor
+    process.stdout.setDefaultEncoding('utf8');
+    // Only try to set raw mode if it's a TTY and the method exists
+    if (process.stdout.isTTY && typeof (process.stdout as any).setRawMode === 'function') {
+        (process.stdout as any).setRawMode(true);
+    }
+}
+
+// Send a notification directly to stdout for compatibility
 function sendNotification(method: string, params: any): void {
     const notification = {
         jsonrpc: '2.0',
         method,
         params
     };
-    process.stdout.write(JSON.stringify(notification) + '\n');
+    const message = JSON.stringify(notification) + '\n';
+    process.stdout.write(message);
+
+    // For Cursor mode, ensure messages are flushed if method exists
+    if (isCursorMode && typeof (process.stdout as any).flush === 'function') {
+        (process.stdout as any).flush();
+    }
 }
 
 // Create system tools
@@ -79,19 +99,7 @@ async function main() {
         // Combine all tools
         const allTools = [...systemTools, ...haTools];
 
-        // Create server with stdio transport
-        const { server, transport } = createStdioServer({
-            silent: silentStartup,
-            debug: debugMode,
-            tools: allTools
-        });
-
-        // Explicitly set the server reference to ensure access to tools
-        if ('setServer' in transport && typeof transport.setServer === 'function') {
-            transport.setServer(server);
-        }
-
-        // Send initial notifications directly to stdout for Cursor compatibility
+        // Send initial notifications BEFORE server initialization for Cursor compatibility
         // Send system info
         sendNotification('system.info', {
             name: 'Home Assistant Model Context Protocol Server',
@@ -118,8 +126,41 @@ async function main() {
             tools: toolDefinitions
         });
 
-        // Start the server
+        // Create server with stdio transport
+        const { server, transport } = createStdioServer({
+            silent: silentStartup,
+            debug: debugMode,
+            tools: allTools
+        });
+
+        // Explicitly set the server reference to ensure access to tools
+        if ('setServer' in transport && typeof transport.setServer === 'function') {
+            transport.setServer(server);
+        }
+
+        // Start the server after initial notifications
         await server.start();
+
+        // In Cursor mode, send notifications again after startup
+        if (isCursorMode) {
+            // Small delay to ensure all messages are processed
+            setTimeout(() => {
+                // Send system info again
+                sendNotification('system.info', {
+                    name: 'Home Assistant Model Context Protocol Server',
+                    version: '1.0.0',
+                    transport: 'stdio',
+                    protocol: 'json-rpc-2.0',
+                    features: ['streaming'],
+                    timestamp: new Date().toISOString()
+                });
+
+                // Send available tools again
+                sendNotification('tools.available', {
+                    tools: toolDefinitions
+                });
+            }, 100);
+        }
 
         // Handle process exit
         process.on('SIGINT', async () => {
