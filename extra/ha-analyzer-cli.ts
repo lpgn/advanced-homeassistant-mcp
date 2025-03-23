@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import OpenAI from "openai";
+import { Anthropic } from "@anthropic-ai/sdk";
 import { DOMParser, Element, Document } from '@xmldom/xmldom';
 import dotenv from 'dotenv';
 import readline from 'readline';
@@ -9,11 +9,11 @@ import chalk from 'chalk';
 dotenv.config();
 
 // Retrieve API keys from environment variables
-const openaiApiKey = process.env.OPENAI_API_KEY;
+const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const hassToken = process.env.HASS_TOKEN;
 
-if (!openaiApiKey) {
-    console.error("Please set the OPENAI_API_KEY environment variable.");
+if (!anthropicApiKey) {
+    console.error("Please set the ANTHROPIC_API_KEY environment variable.");
     process.exit(1);
 }
 
@@ -113,13 +113,11 @@ interface ModelConfig {
     contextWindow: number;
 }
 
-// Update model listing to filter based on API key availability
+// Update model listing to use Anthropic's Claude models
 const AVAILABLE_MODELS: ModelConfig[] = [
-    // OpenAI models always available
-    { name: 'gpt-4', maxTokens: 8192, contextWindow: 8192 },
-    { name: 'gpt-4-turbo-preview', maxTokens: 4096, contextWindow: 128000 },
-    { name: 'gpt-3.5-turbo', maxTokens: 4096, contextWindow: 16385 },
-    { name: 'gpt-3.5-turbo-16k', maxTokens: 16385, contextWindow: 16385 },
+    // Anthropic Claude models
+    { name: 'claude-3-7-sonnet-20250219', maxTokens: 4096, contextWindow: 200000 },
+    { name: 'claude-3-5-haiku-20241022', maxTokens: 4096, contextWindow: 200000 },
 
     // Conditionally include DeepSeek models
     ...(process.env.DEEPSEEK_API_KEY ? [
@@ -131,7 +129,7 @@ const AVAILABLE_MODELS: ModelConfig[] = [
 // Add configuration interface
 interface AppConfig {
     mcpServer: string;
-    openaiModel: string;
+    anthropicModel: string;
     maxRetries: number;
     analysisTimeout: number;
     selectedModel: ModelConfig;
@@ -146,30 +144,31 @@ const logger = {
     debug: (msg: string) => process.env.DEBUG && console.log(chalk.gray(`› ${msg}`))
 };
 
-// Update default model selection in loadConfig
+// Update loadConfig to use Claude models
 function loadConfig(): AppConfig {
-    // Always use gpt-4 for now
-    const defaultModel = AVAILABLE_MODELS.find(m => m.name === 'gpt-4') || AVAILABLE_MODELS[0];
+    // Use Claude 3.7 Sonnet as the default model
+    const defaultModel = AVAILABLE_MODELS.find(m => m.name === 'claude-3-7-sonnet-20250219') || AVAILABLE_MODELS[0];
 
     return {
         mcpServer: process.env.MCP_SERVER || 'http://localhost:3000',
-        openaiModel: defaultModel.name,
+        anthropicModel: defaultModel.name,
         maxRetries: parseInt(process.env.MAX_RETRIES || '3'),
         analysisTimeout: parseInt(process.env.ANALYSIS_TIMEOUT || '30000'),
         selectedModel: defaultModel
     };
 }
 
-function getOpenAIClient(): OpenAI {
+// Replace OpenAI client with Anthropic client
+function getAnthropicClient(): Anthropic {
     const config = loadConfig();
 
-    return new OpenAI({
-        apiKey: config.selectedModel.name.startsWith('deepseek')
-            ? process.env.DEEPSEEK_API_KEY
-            : openaiApiKey,
-        baseURL: config.selectedModel.name.startsWith('deepseek')
-            ? 'https://api.deepseek.com/v1'
-            : 'https://api.openai.com/v1'
+    if (config.selectedModel.name.startsWith('deepseek') && process.env.DEEPSEEK_API_KEY) {
+        // This is just a stub for DeepSeek - you'd need to implement this properly
+        throw new Error("DeepSeek models not implemented yet with Anthropic integration");
+    }
+
+    return new Anthropic({
+        apiKey: anthropicApiKey,
     });
 }
 
@@ -463,7 +462,7 @@ function getRelevantDeviceTypes(prompt: string): string[] {
 }
 
 /**
- * Generates analysis and recommendations using the OpenAI API based on the Home Assistant data
+ * Generates analysis and recommendations using the Anthropic API based on the Home Assistant data
  */
 async function generateAnalysis(haInfo: any): Promise<SystemAnalysis> {
     const config = loadConfig();
@@ -520,7 +519,7 @@ async function generateAnalysis(haInfo: any): Promise<SystemAnalysis> {
     }
 
     // Original analysis code for non-test mode
-    const openai = getOpenAIClient();
+    const anthropic = getAnthropicClient();
 
     const systemSummary = {
         total_devices: haInfo.device_summary?.total_devices || 0,
@@ -588,20 +587,21 @@ Generate your response in this EXACT format:
 </analysis>`;
 
     try {
-        const completion = await openai.chat.completions.create({
+        const completion = await anthropic.messages.create({
             model: config.selectedModel.name,
             messages: [
                 {
-                    role: "system",
-                    content: "You are a Home Assistant expert. Analyze the system data and provide detailed insights in the specified XML format. Be specific and actionable in your recommendations."
-                },
-                { role: "user", content: prompt }
+                    role: "user",
+                    content: `<system>You are a Home Assistant expert. Analyze the system data and provide detailed insights in the specified XML format. Be specific and actionable in your recommendations.</system>
+                    
+                    ${prompt}`
+                }
             ],
             temperature: 0.7,
             max_tokens: Math.min(config.selectedModel.maxTokens, 4000)
         });
 
-        const result = completion.choices[0].message?.content || "";
+        const result = completion.content[0]?.type === 'text' ? completion.content[0].text : "";
 
         // Clean the response and parse XML
         const cleanedResult = result.replace(/```xml/g, '').replace(/```/g, '').trim();
@@ -673,7 +673,7 @@ Generate your response in this EXACT format:
             throw new Error(`Failed to parse analysis response: ${parseError.message}`);
         }
     } catch (error) {
-        console.error("Error during OpenAI API call:", error);
+        console.error("Error during Anthropic API call:", error);
         throw new Error("Failed to generate analysis");
     }
 }
@@ -814,7 +814,7 @@ async function handleAutomationOptimization(haInfo: any): Promise<void> {
 }
 
 async function analyzeAutomations(automations: any[]): Promise<string> {
-    const openai = getOpenAIClient();
+    const anthropic = getAnthropicClient();
     const config = loadConfig();
 
     // Create a more detailed summary of automations
@@ -894,20 +894,21 @@ Focus on:
 5. Analyzing the distribution of automation types and suggesting optimizations`;
 
     try {
-        const completion = await openai.chat.completions.create({
+        const completion = await anthropic.messages.create({
             model: config.selectedModel.name,
             messages: [
                 {
-                    role: "system",
-                    content: "You are a Home Assistant automation expert. Analyze the provided automation summary and respond with specific, actionable suggestions in the required XML format."
-                },
-                { role: "user", content: prompt }
+                    role: "user",
+                    content: `<system>You are a Home Assistant automation expert. Analyze the provided automation summary and respond with specific, actionable suggestions in the required XML format.</system>
+                    
+                    ${prompt}`
+                }
             ],
             temperature: 0.2,
             max_tokens: Math.min(config.selectedModel.maxTokens, 2048)
         });
 
-        const response = completion.choices[0].message?.content || "";
+        const response = completion.content[0]?.type === 'text' ? completion.content[0].text : "";
 
         // Ensure the response is valid XML
         if (!response.trim().startsWith('<analysis>')) {
@@ -945,7 +946,7 @@ Focus on:
     }
 }
 
-// Add new handleCustomPrompt function
+// Update handleCustomPrompt function to use Anthropic
 async function handleCustomPrompt(haInfo: any, customPrompt: string): Promise<void> {
     try {
         // Add device metadata
@@ -1027,15 +1028,15 @@ async function handleCustomPrompt(haInfo: any, customPrompt: string): Promise<vo
             return;
         }
 
-        const openai = getOpenAIClient();
+        const anthropic = getAnthropicClient();
         const config = loadConfig();
 
-        const completion = await openai.chat.completions.create({
+        const completion = await anthropic.messages.create({
             model: config.selectedModel.name,
             messages: [
                 {
-                    role: "system",
-                    content: `You are a Home Assistant expert. Analyze the following Home Assistant information and respond to the user's prompt. 
+                    role: "user",
+                    content: `<system>You are a Home Assistant expert. Analyze the following Home Assistant information and respond to the user's prompt. 
                              Current system has ${totalDevices} devices across ${deviceTypes.length} types.
                              Device distribution: ${deviceSummary}
                              
@@ -1047,16 +1048,17 @@ async function handleCustomPrompt(haInfo: any, customPrompt: string): Promise<vo
                              - Service domains used: ${automationSummary.service_domains.join(', ')}
                              
                              Detailed Automation List:
-                             ${JSON.stringify(automationDetails, null, 2)}`
-                },
-                { role: "user", content: customPrompt },
+                             ${JSON.stringify(automationDetails, null, 2)}</system>
+                             
+                             ${customPrompt}`
+                }
             ],
-            max_tokens: Math.min(config.selectedModel.maxTokens, 2048), // Limit token usage
+            max_tokens: Math.min(config.selectedModel.maxTokens, 2048),
             temperature: 0.3,
         });
 
         console.log("\nAnalysis Results:\n");
-        console.log(completion.choices[0].message?.content || "No response generated");
+        console.log(completion.content[0]?.type === 'text' ? completion.content[0].text : "No response generated");
 
     } catch (error) {
         console.error("Error processing custom prompt:", error);
@@ -1075,24 +1077,25 @@ async function handleCustomPrompt(haInfo: any, customPrompt: string): Promise<vo
         // Retry with simplified prompt if there's an error
         try {
             const retryPrompt = "Please provide a simpler analysis of the Home Assistant system.";
-            const openai = getOpenAIClient();
+            const anthropic = getAnthropicClient();
             const config = loadConfig();
 
-            const retryCompletion = await openai.chat.completions.create({
+            const retryCompletion = await anthropic.messages.create({
                 model: config.selectedModel.name,
                 messages: [
                     {
-                        role: "system",
-                        content: "You are a Home Assistant expert. Provide a simple analysis of the system."
-                    },
-                    { role: "user", content: retryPrompt },
+                        role: "user",
+                        content: `<system>You are a Home Assistant expert. Provide a simple analysis of the system.</system>
+                        
+                        ${retryPrompt}`
+                    }
                 ],
-                max_tokens: Math.min(config.selectedModel.maxTokens, 2048), // Limit token usage
+                max_tokens: Math.min(config.selectedModel.maxTokens, 2048),
                 temperature: 0.3,
             });
 
             console.log("\nAnalysis Results:\n");
-            console.log(retryCompletion.choices[0].message?.content || "No response generated");
+            console.log(retryCompletion.content[0]?.type === 'text' ? retryCompletion.content[0].text : "No response generated");
         } catch (retryError) {
             console.error("Error during retry:", retryError);
         }
@@ -1174,9 +1177,9 @@ function getItems(xmlDoc: Document, path: string): string[] {
         .map(item => (item as Element).textContent || "");
 }
 
-// Replace the Express server initialization at the bottom with Bun's server
-if (process.env.PROCESSOR_TYPE === 'openai') {
-    // Initialize Bun server for OpenAI
+// Replace the Express/Bun server initialization
+if (process.env.PROCESSOR_TYPE === 'anthropic') {
+    // Initialize Bun server for Anthropic
     const server = Bun.serve({
         port: process.env.PORT || 3000,
         async fetch(req) {
@@ -1206,7 +1209,7 @@ if (process.env.PROCESSOR_TYPE === 'openai') {
         },
     });
 
-    console.log(`[OpenAI Server] Running on port ${server.port}`);
+    console.log(`[Anthropic Server] Running on port ${server.port}`);
 } else {
     console.log('[Claude Mode] Using stdio communication');
 }

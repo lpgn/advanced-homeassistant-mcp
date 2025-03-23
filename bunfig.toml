@@ -19,10 +19,34 @@ collectCoverageFrom = [
 ]
 
 [build]
-target = "node"
+target = "bun"
 outdir = "./dist"
-minify = true
+minify = {
+  whitespace = true,
+  syntax = true,
+  identifiers = true,
+  module = true
+}
 sourcemap = "external"
+entry = ["./src/index.ts", "./src/stdio-server.ts"]
+splitting = true
+naming = "[name].[hash].[ext]"
+publicPath = "/assets/"
+define = {
+  "process.env.NODE_ENV": "process.env.NODE_ENV"
+}
+
+[build.javascript]
+platform = "node"
+format = "esm"
+treeshaking = true
+packages = {
+  external = ["bun:*"]
+}
+
+[build.typescript]
+dts = true
+typecheck = true
 
 [install]
 production = false
@@ -48,6 +72,12 @@ reload = true
 [performance]
 gc = true
 optimize = true
+jit = true
+smol = true
+compact = true
 
 [test.env]
-NODE_ENV = "test" 
+NODE_ENV = "test"
+
+[watch]
+ignore = ["**/node_modules/**", "**/dist/**", "**/.git/**"] 

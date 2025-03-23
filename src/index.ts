@@ -5,12 +5,16 @@
 
 import express from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import { MCPServer } from './mcp/MCPServer.js';
 import { loggingMiddleware, timeoutMiddleware } from './mcp/middleware/index.js';
 import { StdioTransport } from './mcp/transports/stdio.transport.js';
 import { HttpTransport } from './mcp/transports/http.transport.js';
 import { APP_CONFIG } from './config.js';
 import { logger } from "./utils/logger.js";
+import { openApiConfig } from './openapi.js';
+import { apiLimiter, authLimiter } from './middleware/rate-limit.middleware.js';
+import { SecurityMiddleware } from './security/enhanced-middleware.js';
 
 // Home Assistant tools
 import { LightsControlTool } from './tools/homeassistant/lights.tool.js';
@@ -111,9 +115,36 @@ async function main() {
   if (APP_CONFIG.useHttpTransport) {
     logger.info('Using HTTP transport on port ' + APP_CONFIG.port);
     const app = express();
+
+    // Apply enhanced security middleware
+    app.use(SecurityMiddleware.applySecurityHeaders);
+
+    // CORS configuration
     app.use(cors({
-      origin: APP_CONFIG.corsOrigin
+      origin: APP_CONFIG.corsOrigin,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      maxAge: 86400 // 24 hours
     }));
+
+    // Apply rate limiting to all routes
+    app.use('/api', apiLimiter);
+    app.use('/auth', authLimiter);
+
+    // Swagger UI setup
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiConfig, {
+      explorer: true,
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'Home Assistant MCP API Documentation'
+    }));
+
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+      res.json({
+        status: 'ok',
+        version: process.env.npm_package_version || '1.0.0'
+      });
+    });
 
     const httpTransport = new HttpTransport({
       port: APP_CONFIG.port,
