@@ -6,8 +6,8 @@ import { SecurityMiddleware } from '../security/enhanced-middleware';
 describe('SecurityMiddleware', () => {
     const app = express();
 
-    // Apply security middleware
-    app.use(SecurityMiddleware.createRouter());
+    // Initialize security middleware
+    SecurityMiddleware.initialize(app);
 
     // Test routes
     app.get('/test', (_req: Request, res: Response) => {

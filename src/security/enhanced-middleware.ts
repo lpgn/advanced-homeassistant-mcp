@@ -27,23 +27,75 @@ const SECURITY_CONFIG = {
     },
     // Request validation config
     MAX_URL_LENGTH: 2048,
-    MAX_BODY_SIZE: '1mb',
+    MAX_BODY_SIZE: '50kb',
     // Rate limiting config
     RATE_LIMIT: {
-        WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-        MAX_REQUESTS: 50,
-        MESSAGE: 'Too many requests from this IP, please try again later.'
+        windowMs: 15 * 60 * 1000,
+        max: 50
     },
     AUTH_RATE_LIMIT: {
-        WINDOW_MS: 15 * 60 * 1000,
-        MAX_REQUESTS: 3,
-        MESSAGE: 'Too many authentication attempts from this IP, please try again later.'
+        windowMs: 15 * 60 * 1000,
+        max: 3
     }
 };
 
 export class SecurityMiddleware {
-    private static rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-    private static authLimitStore = new Map<string, { count: number; resetTime: number }>();
+    private static app: express.Express;
+    private static requestCounts: Map<string, { count: number, resetTime: number }> = new Map();
+    private static authRequestCounts: Map<string, { count: number, resetTime: number }> = new Map();
+
+    static initialize(app: express.Express): void {
+        this.app = app;
+
+        // Body parser middleware with size limit
+        app.use(express.json({
+            limit: SECURITY_CONFIG.MAX_BODY_SIZE
+        }));
+
+        // Error handling middleware for body-parser errors
+        app.use((error: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+            if (error) {
+                return res.status(413).json({
+                    error: true,
+                    message: 'Request body too large'
+                });
+            }
+            next();
+        });
+
+        // Main security middleware
+        app.use((req: Request, res: Response, next: NextFunction) => {
+            try {
+                // Apply security headers
+                SecurityMiddleware.applySecurityHeaders(res);
+
+                // Check rate limits
+                SecurityMiddleware.checkRateLimit(req);
+
+                // Validate request
+                SecurityMiddleware.validateRequest(req);
+
+                // Sanitize input
+                if (req.body) {
+                    req.body = SecurityMiddleware.sanitizeInput(req.body);
+                }
+
+                next();
+            } catch (error) {
+                if (error instanceof SecurityError) {
+                    res.status(error.statusCode).json({
+                        error: true,
+                        message: error.message
+                    });
+                } else {
+                    res.status(500).json({
+                        error: true,
+                        message: 'Internal server error'
+                    });
+                }
+            }
+        });
+    }
 
     private static validateRequest(req: Request): void {
         // Check URL length
@@ -102,15 +154,15 @@ export class SecurityMiddleware {
         const ip = req.ip || req.socket.remoteAddress || 'unknown';
         const now = Date.now();
         const isAuth = req.path.startsWith('/auth');
-        const store = isAuth ? SecurityMiddleware.authLimitStore : SecurityMiddleware.rateLimitStore;
+        const store = isAuth ? SecurityMiddleware.authRequestCounts : SecurityMiddleware.requestCounts;
         const config = isAuth ? SECURITY_CONFIG.AUTH_RATE_LIMIT : SECURITY_CONFIG.RATE_LIMIT;
 
         let record = store.get(ip);
         if (!record || now > record.resetTime) {
-            record = { count: 1, resetTime: now + config.WINDOW_MS };
+            record = { count: 1, resetTime: now + config.windowMs };
         } else {
             record.count++;
-            if (record.count > config.MAX_REQUESTS) {
+            if (record.count > config.max) {
                 throw new SecurityError(
                     isAuth ? 'Too many authentication requests' : 'Too many requests',
                     429
@@ -121,69 +173,9 @@ export class SecurityMiddleware {
         store.set(ip, record);
     }
 
-    /**
-     * Create Express router with all security middleware
-     */
-    public static createRouter(): Router {
-        const router = express.Router();
-
-        // Body parser middleware with size limit
-        router.use(express.json({
-            limit: SECURITY_CONFIG.MAX_BODY_SIZE,
-            type: 'application/json'
-        }));
-
-        // Error handler for body-parser errors
-        router.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
-            if (err instanceof SyntaxError && 'type' in err && err.type === 'entity.too.large') {
-                res.status(413).json({
-                    error: true,
-                    message: 'Request body too large'
-                });
-            } else {
-                next(err);
-            }
-        });
-
-        // Main security middleware
-        router.use((req: Request, res: Response, next: NextFunction) => {
-            try {
-                // Apply security headers
-                SecurityMiddleware.applySecurityHeaders(res);
-
-                // Check rate limits
-                SecurityMiddleware.checkRateLimit(req);
-
-                // Validate request
-                SecurityMiddleware.validateRequest(req);
-
-                // Sanitize input
-                if (req.body) {
-                    req.body = SecurityMiddleware.sanitizeInput(req.body);
-                }
-
-                next();
-            } catch (error) {
-                if (error instanceof SecurityError) {
-                    res.status(error.statusCode).json({
-                        error: true,
-                        message: error.message
-                    });
-                } else {
-                    res.status(500).json({
-                        error: true,
-                        message: 'Internal server error'
-                    });
-                }
-            }
-        });
-
-        return router;
-    }
-
     // For testing purposes
     public static clearRateLimits(): void {
-        SecurityMiddleware.rateLimitStore.clear();
-        SecurityMiddleware.authLimitStore.clear();
+        SecurityMiddleware.requestCounts.clear();
+        SecurityMiddleware.authRequestCounts.clear();
     }
 }
