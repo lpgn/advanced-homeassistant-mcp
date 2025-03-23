@@ -250,6 +250,22 @@ export class SSEManager extends EventEmitter {
 
     client.subscriptions.add(`domain:${domain}`);
     console.log(`Client ${clientId} subscribed to domain: ${domain}`);
+
+    // Send current states for all entities in domain
+    this.entityStates.forEach((state, entityId) => {
+      if (entityId.startsWith(`${domain}.`) && !this.isRateLimited(client)) {
+        this.sendToClient(client, {
+          type: "state_changed",
+          data: {
+            entity_id: state.entity_id,
+            state: state.state,
+            attributes: state.attributes,
+            last_changed: state.last_changed,
+            last_updated: state.last_updated,
+          },
+        });
+      }
+    });
   }
 
   subscribeToEvent(clientId: string, eventType: string): void {
@@ -320,67 +336,65 @@ export class SSEManager extends EventEmitter {
     });
   }
 
-  private sendToClient(client: SSEClient, data: unknown): void {
-    try {
-      if (!client.authenticated) {
-        console.warn(
-          `Attempted to send message to unauthenticated client ${client.id}`,
-        );
-        return;
-      }
-
-      if (this.isRateLimited(client)) {
-        console.warn(`Rate limit exceeded for client ${client.id}`);
-        return;
-      }
-
-      const message = typeof data === "string" ? data : JSON.stringify(data);
-      client.send(message);
-      this.updateRateLimit(client);
-    } catch (error) {
-      console.error(`Failed to send message to client ${client.id}:`, error);
-      this.removeClient(client.id);
+  updateEntityState(entityId: string, state: HassEntity): void {
+    if (!state || typeof state.state === 'undefined') {
+      console.warn(`Invalid state update for entity ${entityId}`);
+      return;
     }
+
+    // Update state in memory
+    this.entityStates.set(entityId, state);
+
+    // Notify subscribed clients
+    this.clients.forEach((client) => {
+      if (!client.authenticated || this.isRateLimited(client)) {
+        return;
+      }
+
+      const [domain] = entityId.split('.');
+      if (
+        client.subscriptions.has(`entity:${entityId}`) ||
+        client.subscriptions.has(`domain:${domain}`)
+      ) {
+        this.sendToClient(client, {
+          type: "state_changed",
+          data: {
+            entity_id: state.entity_id,
+            state: state.state,
+            attributes: state.attributes,
+            last_changed: state.last_changed,
+            last_updated: state.last_updated,
+          },
+        });
+      }
+    });
   }
 
-  getStatistics(): {
-    totalClients: number;
-    authenticatedClients: number;
-    clientStats: ClientStats[];
-    subscriptionStats: { [key: string]: number };
-  } {
-    const now = Date.now();
-    const clientStats: ClientStats[] = [];
-    const subscriptionStats: { [key: string]: number } = {};
-    let authenticatedClients = 0;
-
+  getStatistics(): { totalClients: number; authenticatedClients: number } {
+    let authenticatedCount = 0;
     this.clients.forEach((client) => {
       if (client.authenticated) {
-        authenticatedClients++;
+        authenticatedCount++;
       }
-
-      clientStats.push({
-        id: client.id,
-        ip: client.ip,
-        connectedAt: client.connectedAt,
-        lastPingAt: client.lastPingAt,
-        subscriptionCount: client.subscriptions.size,
-        connectionDuration: now - client.connectedAt.getTime(),
-        messagesSent: client.rateLimit.count,
-        lastActivity: new Date(client.rateLimit.lastReset),
-      });
-
-      client.subscriptions.forEach((sub) => {
-        subscriptionStats[sub] = (subscriptionStats[sub] || 0) + 1;
-      });
     });
 
     return {
       totalClients: this.clients.size,
-      authenticatedClients,
-      clientStats,
-      subscriptionStats,
+      authenticatedClients: authenticatedCount,
     };
+  }
+
+  private sendToClient(client: SSEClient, data: any): void {
+    try {
+      console.log(`Attempting to send data to client ${client.id}`);
+      client.send(JSON.stringify(data));
+      this.updateRateLimit(client);
+    } catch (error) {
+      console.error(`Failed to send data to client ${client.id}:`, error);
+      console.log(`Removing client ${client.id} due to send error`);
+      this.removeClient(client.id);
+      console.log(`Client count after removal: ${this.clients.size}`);
+    }
   }
 }
 
