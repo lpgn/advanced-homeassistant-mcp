@@ -83,22 +83,23 @@ describe('Server Initialization', () => {
         process.env.NODE_ENV = 'test';
         process.env.PORT = '4000';
 
-        // Setup module resolution mock
-        originalResolve = (globalThis as any).Bun?.resolveSync;
-        (globalThis as any).Bun = {
-            ...(globalThis as any).Bun,
-            resolveSync: (specifier: string) => mockResolver.resolve(specifier)
-        };
+        // Skip module resolution mocking for now - causes issues with readonly Bun global
+        // originalResolve = (globalThis as any).Bun?.resolveSync;
+        // (globalThis as any).Bun = {
+        //     ...(globalThis as any).Bun,
+        //     resolveSync: (specifier: string) => mockResolver.resolve(specifier)
+        // };
     });
 
     afterEach(() => {
         // Restore original environment
         process.env = originalEnv;
 
+        // Skip module resolution restoration for now
         // Restore module resolution
-        if (originalResolve) {
-            (globalThis as any).Bun.resolveSync = originalResolve;
-        }
+        // if (originalResolve) {
+        //     (globalThis as any).Bun.resolveSync = originalResolve;
+        // }
     });
 
     test('should initialize server with middleware', async () => {

@@ -1,9 +1,10 @@
-import { describe, expect, test } from "bun:test";
 import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
 import type { Mock } from "bun:test";
-import { z } from "zod";
-import type { WebSocket } from 'ws';
-import { tools } from "../src/index.js";
+import { tools } from "../src/tools/index.js";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 // Extend the global scope
 declare global {
@@ -24,7 +25,7 @@ Object.entries(TEST_CONFIG).forEach(([key, value]) => {
 });
 
 // Modify mock fetch methods to be consistent
-const createMockFetch = <T>(data: T) => {
+const createMockFetch = <T>(data: T): Mock<() => Promise<Response>> => {
     return mock(() => Promise.resolve({
         ok: true,
         json: async () => {
@@ -77,41 +78,37 @@ describe('Home Assistant MCP Server', () => {
             const listDevicesTool = tools.find(tool => tool.name === 'list_devices');
             expect(listDevicesTool).toBeDefined();
 
-            if (listDevicesTool) {
-                const mockDevices = [
-                    {
-                        entity_id: 'light.living_room',
-                        state: 'on',
-                        attributes: { brightness: 255 }
-                    }
-                ];
+            const mockDevices = [
+                {
+                    entity_id: 'light.living_room',
+                    state: 'on',
+                    attributes: { brightness: 255 }
+                }
+            ];
 
-                mockFetch = createMockFetch(mockDevices);
-                globalThis.fetch = mockFetch;
+            mockFetch = createMockFetch(mockDevices);
+            globalThis.fetch = mockFetch;
 
-                const result = await listDevicesTool.execute({});
-                expect(result.success).toBe(true);
-                expect(result.devices).toBeDefined();
-            }
+            const result = await listDevicesTool.execute({});
+            expect(result).toHaveProperty('success', true);
+            expect(result).toHaveProperty('devices');
         });
 
         test('should execute control tool', async () => {
             const controlTool = tools.find(tool => tool.name === 'control');
             expect(controlTool).toBeDefined();
 
-            if (controlTool) {
-                mockFetch = createMockFetch({ success: true });
-                globalThis.fetch = mockFetch;
+            mockFetch = createMockFetch({ success: true });
+            globalThis.fetch = mockFetch;
 
-                const result = await controlTool.execute({
-                    command: 'turn_on',
-                    entity_id: 'light.living_room',
-                    brightness: 255
-                });
+            const result = await controlTool.execute({
+                command: 'turn_on',
+                entity_id: 'light.living_room',
+                brightness: 255
+            });
 
-                expect(result.success).toBe(true);
-                expect(mockFetch.mock.calls.length).toBeGreaterThan(0);
-            }
+            expect(result).toHaveProperty('success', true);
+            expect(mockFetch.mock.calls.length).toBeGreaterThan(0);
         });
     });
 }); 

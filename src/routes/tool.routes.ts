@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { APP_CONFIG } from "../config/app.config.js";
+import { APP_CONFIG } from "../config/app.config.ts";
 import { Tool } from "../types/index.js";
 
 const router = Router();

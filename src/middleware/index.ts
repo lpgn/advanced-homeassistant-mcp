@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { TokenManager } from "../security/index.js";
 import sanitizeHtml from "sanitize-html";
 import helmet from "helmet";
-import { SECURITY_CONFIG } from "../config/security.config.js";
+import { SECURITY_CONFIG } from "../config/security.config.ts";
 
 // Rate limiter middleware with enhanced configuration
 export const rateLimiter = rateLimit({

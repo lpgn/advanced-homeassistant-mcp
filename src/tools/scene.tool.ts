@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Tool, SceneParams, HassState } from "../types/index.js";
-import { APP_CONFIG } from "../config/app.config.js";
+import { APP_CONFIG } from "../config/app.config.ts";
 
 export const sceneTool: Tool = {
   name: "scene",

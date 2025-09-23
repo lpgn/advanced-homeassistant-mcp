@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Tool } from "../types/index.js";
-import { APP_CONFIG } from "../config/app.config.js";
+import { APP_CONFIG } from "../config/app.config.ts";
 import { sseManager } from "../sse/index.js";
 
 export const getSSEStatsTool: Tool = {

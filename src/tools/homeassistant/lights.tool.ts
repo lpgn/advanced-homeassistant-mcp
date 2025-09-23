@@ -11,131 +11,68 @@ import type { FastMCPTool } from "fastmcp"; // Assuming FastMCPTool type exists
 // Re-import BaseTool and MCPContext for the class definition
 import { BaseTool } from "../base-tool.js";
 import { MCPContext } from "../../mcp/types.js";
+import { get_hass } from "../../hass/index.js";
 
-// Mock Home Assistant API service in absence of actual HA integration
-class MockHALightsService {
-    private lights: Map<string, {
-        state: "on" | "off";
-        brightness?: number;
-        color_temp?: number;
-        rgb_color?: [number, number, number];
-        friendly_name: string;
-    }>;
-
-    constructor() {
-        // Initialize with some mock lights
-        this.lights = new Map([
-            ["light.living_room", {
-                state: "off",
-                brightness: 255,
-                friendly_name: "Living Room Light"
-            }],
-            ["light.kitchen", {
-                state: "on",
-                brightness: 200,
-                friendly_name: "Kitchen Light"
-            }],
-            ["light.bedroom", {
-                state: "off",
-                brightness: 150,
-                color_temp: 400,
-                friendly_name: "Bedroom Light"
-            }],
-            ["light.office", {
-                state: "on",
-                brightness: 255,
-                rgb_color: [255, 255, 255],
-                friendly_name: "Office Light"
-            }]
-        ]);
-    }
-
-    // Get all lights
-    public getLights(): Record<string, unknown>[] {
-        const result = [];
-        for (const [entity_id, light] of this.lights.entries()) {
-            result.push({
-                entity_id,
-                state: light.state,
-                attributes: {
-                    ...light,
-                    friendly_name: light.friendly_name
-                }
-            });
+// Real Home Assistant API service
+class HomeAssistantLightsService {
+    async getLights(): Promise<Record<string, unknown>[]> {
+        try {
+            const hass = await get_hass();
+            const states = await hass.getStates();
+            return states
+                .filter(state => state.entity_id.startsWith('light.'))
+                .map(state => ({
+                    entity_id: state.entity_id,
+                    state: state.state,
+                    attributes: state.attributes
+                }));
+        } catch (error) {
+            logger.error('Failed to get lights from HA:', error);
+            return [];
         }
-        return result;
     }
 
-    // Get a specific light
-    public getLight(entity_id: string): Record<string, unknown> | null {
-        const light = this.lights.get(entity_id);
-        if (!light) {
+    async getLight(entity_id: string): Promise<Record<string, unknown> | null> {
+        try {
+            const hass = await get_hass();
+            const state = await hass.getState(entity_id);
+            return {
+                entity_id: state.entity_id,
+                state: state.state,
+                attributes: state.attributes
+            };
+        } catch (error) {
+            logger.error(`Failed to get light ${entity_id} from HA:`, error);
             return null;
         }
-
-        return {
-            entity_id,
-            state: light.state,
-            attributes: {
-                ...light,
-                friendly_name: light.friendly_name
-            }
-        };
     }
 
-    // Turn a light on
-    public turnOn(entity_id: string, attributes: Record<string, unknown> = {}): boolean {
-        const light = this.lights.get(entity_id);
-        if (!light) {
+    async turnOn(entity_id: string, attributes: Record<string, unknown> = {}): Promise<boolean> {
+        try {
+            const hass = await get_hass();
+            const serviceData = { entity_id, ...attributes };
+            await hass.callService('light', 'turn_on', serviceData);
+            return true;
+        } catch (error) {
+            logger.error(`Failed to turn on light ${entity_id}:`, error);
             return false;
         }
-
-        light.state = "on";
-
-        // Apply attributes
-        if (typeof attributes.brightness === "number") {
-            light.brightness = Math.max(0, Math.min(255, attributes.brightness));
-        }
-
-        if (typeof attributes.color_temp === "number") {
-            light.color_temp = Math.max(153, Math.min(500, attributes.color_temp));
-        }
-
-        if (Array.isArray(attributes.rgb_color) && attributes.rgb_color.length >= 3) {
-            // Individually extract and validate each RGB component
-            const r = Number(attributes.rgb_color[0]);
-            const g = Number(attributes.rgb_color[1]);
-            const b = Number(attributes.rgb_color[2]);
-
-            // Only set if we got valid numbers
-            if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
-                light.rgb_color = [
-                    Math.max(0, Math.min(255, r)),
-                    Math.max(0, Math.min(255, g)),
-                    Math.max(0, Math.min(255, b))
-                ];
-            }
-        }
-
-        this.lights.set(entity_id, light);
-        return true;
     }
 
-    // Turn a light off
-    public turnOff(entity_id: string): boolean {
-        const light = this.lights.get(entity_id);
-        if (!light) {
+    async turnOff(entity_id: string): Promise<boolean> {
+        try {
+            const hass = await get_hass();
+            await hass.callService('light', 'turn_off', { entity_id });
+            return true;
+        } catch (error) {
+            logger.error(`Failed to turn off light ${entity_id}:`, error);
             return false;
         }
-
-        light.state = "off";
-        this.lights.set(entity_id, light);
-        return true;
     }
 }
 
 // Singleton instance
-const haLightsService = new MockHALightsService();
+const haLightsService = new HomeAssistantLightsService();
 
 // Define the schema for our tool parameters using Zod
 const lightsControlSchema = z.object({
@@ -167,7 +104,7 @@ export const lightsControlTool: FastMCPTool<LightsControlParams, string | Record
      * @param context - Session context (includes session object in fastmcp)
      * @returns A string confirming success or an object with light details
      */
-    execute: async (params, context) => { // context might contain session info in fastmcp
+    execute: async (params, _context) => { // context might contain session info in fastmcp
         logger.debug(`Executing lights_control with params: ${JSON.stringify(params)}`);
         // logger.debug(`Session context: ${JSON.stringify(context)}`); // Log context if needed
 
@@ -177,15 +114,16 @@ export const lightsControlTool: FastMCPTool<LightsControlParams, string | Record
             let lightDetails: Record<string, unknown> | null;
 
             switch (params.action) {
-                case "list":
-                    const lights = haLightsService.getLights();
+                case "list": {
+                    const lights = await haLightsService.getLights();
                     return { lights }; // Return the list of lights
+                }
 
                 case "get":
                     if (!params.entity_id) {
                         throw new Error("entity_id is required for 'get' action");
                     }
-                    lightDetails = haLightsService.getLight(params.entity_id);
+                    lightDetails = await haLightsService.getLight(params.entity_id);
                     if (!lightDetails) {
                         throw new Error(`Light entity_id '${params.entity_id}' not found.`);
                     }
@@ -200,22 +138,22 @@ export const lightsControlTool: FastMCPTool<LightsControlParams, string | Record
                     if (params.color_temp !== undefined) attributes.color_temp = params.color_temp;
                     if (params.rgb_color !== undefined) attributes.rgb_color = params.rgb_color; // Already validated by Zod
 
-                    success = haLightsService.turnOn(params.entity_id, attributes);
+                    success = await haLightsService.turnOn(params.entity_id, attributes);
                     if (!success) {
                         throw new Error(`Failed to turn on light '${params.entity_id}'. Entity not found?`);
                     }
-                    lightDetails = haLightsService.getLight(params.entity_id); // Get updated state
+                    lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
                     return { status: "success", state: lightDetails }; // Confirm success and return new state
 
                 case "turn_off":
                     if (!params.entity_id) {
                         throw new Error("entity_id is required for 'turn_off' action");
                     }
-                    success = haLightsService.turnOff(params.entity_id);
+                    success = await haLightsService.turnOff(params.entity_id);
                     if (!success) {
                         throw new Error(`Failed to turn off light '${params.entity_id}'. Entity not found?`);
                     }
-                    lightDetails = haLightsService.getLight(params.entity_id); // Get updated state
+                    lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
                     return { status: "success", state: lightDetails }; // Confirm success and return new state
 
                 default:

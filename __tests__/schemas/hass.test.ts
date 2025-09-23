@@ -147,13 +147,29 @@ describe('Home Assistant Schemas', () => {
                 data: {
                     entity_id: 'light.living_room',
                     old_state: {
+                        entity_id: 'light.living_room',
                         state: 'off',
-                        attributes: {}
+                        attributes: {},
+                        last_changed: '2024-01-01T00:00:00Z',
+                        last_updated: '2024-01-01T00:00:00Z',
+                        context: {
+                            id: '123456',
+                            parent_id: null,
+                            user_id: null
+                        }
                     },
                     new_state: {
+                        entity_id: 'light.living_room',
                         state: 'on',
                         attributes: {
                             brightness: 255
+                        },
+                        last_changed: '2024-01-01T00:00:01Z',
+                        last_updated: '2024-01-01T00:00:01Z',
+                        context: {
+                            id: '123457',
+                            parent_id: null,
+                            user_id: null
                         }
                     }
                 },
@@ -176,8 +192,16 @@ describe('Home Assistant Schemas', () => {
                     entity_id: 'light.living_room',
                     old_state: null,
                     new_state: {
+                        entity_id: 'light.living_room',
                         state: 'on',
-                        attributes: {}
+                        attributes: {},
+                        last_changed: '2024-01-01T00:00:00Z',
+                        last_updated: '2024-01-01T00:00:00Z',
+                        context: {
+                            id: '123456',
+                            parent_id: null,
+                            user_id: null
+                        }
                     }
                 },
                 origin: 'LOCAL',

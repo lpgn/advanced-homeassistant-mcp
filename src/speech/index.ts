@@ -1,4 +1,4 @@
-import { APP_CONFIG } from "../config/app.config.js";
+import { APP_CONFIG } from "../config/app.config.ts";
 import { logger } from "../utils/logger.js";
 import type { IWakeWordDetector, ISpeechToText } from "./types.js";
 

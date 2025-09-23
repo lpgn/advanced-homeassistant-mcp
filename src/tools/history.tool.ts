@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Tool, HistoryParams } from "../types/index.js";
-import { APP_CONFIG } from "../config/app.config.js";
+import { APP_CONFIG } from "../config/app.config.ts";
 
 export const historyTool: Tool = {
   name: "get_history",

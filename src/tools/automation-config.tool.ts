@@ -5,7 +5,7 @@ import {
   AutomationConfig,
   AutomationResponse,
 } from "../types/index.js";
-import { APP_CONFIG } from "../config/app.config.js";
+import { APP_CONFIG } from "../config/app.config.ts";
 
 export const automationConfigTool: Tool = {
   name: "automation_config",
