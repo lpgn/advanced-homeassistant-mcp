@@ -14,8 +14,8 @@ import { FastMCP } from "fastmcp";
 import { z } from "zod"; // Keep Zod for tool parameter validation
 
 // Import refactored Home Assistant tools
-import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
-import { climateControlTool } from './tools/homeassistant/climate.tool.js';
+// import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
+// import { climateControlTool } from './tools/homeassistant/climate.tool.js';
 
 // --- Removed old imports and setup ---
 // import { createStdioServer, BaseTool } from "./mcp/index.js";
@@ -41,17 +41,25 @@ async function main() {
         // Create the FastMCP server instance
         const server = new FastMCP({
             name: "Home Assistant MCP Server (fastmcp)",
-            version: "1.0.0",
-            debug: true
+            version: "1.0.0"
         });
 
         logger.info("Initializing FastMCP server..."); // Goes to file log
 
-        // Add tools
-        logger.info(`Adding tool: ${lightsControlTool.name}`);
-        server.addTool(lightsControlTool);
-        logger.info(`Adding tool: ${climateControlTool.name}`);
-        server.addTool(climateControlTool);
+        // Add tools - temporarily disabled
+        // server.addTool({
+        //     name: "list_devices",
+        //     description: "List all devices connected to Home Assistant",
+        //     parameters: {
+        //         type: "object",
+        //         properties: {}
+        //     },
+        //     execute: async () => {
+        //         return { devices: [] };
+        //     }
+        // });
+
+        logger.info("Tools temporarily disabled for debugging");
 
         // --- Temporarily removed system_info tool --- 
         // server.addTool({

@@ -154,6 +154,65 @@ const response = await claude.messages.create({
 });
 ```
 
+### VS Code Integration
+
+To use the Home Assistant MCP server with VS Code, you need to:
+
+1. **Install the Claude Code extension** for VS Code (if not already installed)
+2. **Configure the MCP server** in your workspace settings
+
+The VS Code configuration is already set up in this project. The `.vscode/settings.json` file contains:
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "homeassistant-mcp": {
+                "command": "bun",
+                "args": ["run", "start:stdio"],
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "NODE_ENV": "development"
+                }
+            }
+        }
+    }
+}
+```
+
+This configuration:
+- Uses the `start:stdio` script to run the MCP server in stdio mode
+- Sets the working directory to the workspace root
+- Configures the environment for development
+
+#### Alternative Configuration (using Node.js)
+
+If you prefer to use Node.js instead of Bun:
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "homeassistant-mcp": {
+                "command": "npm",
+                "args": ["run", "stdio"],
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "NODE_ENV": "development"
+                }
+            }
+        }
+    }
+}
+```
+
+#### Troubleshooting VS Code Integration
+
+1. **Ensure the server is built**: Run `bun run build` before using the MCP server
+2. **Check VS Code extension**: Make sure the Claude Code extension is installed and enabled
+3. **Restart VS Code**: Sometimes VS Code needs to be restarted to pick up MCP configuration changes
+4. **Check the output**: The MCP server should start automatically when VS Code loads the workspace
+
 ### Cursor Integration
 
 To use the Home Assistant MCP server with Cursor, add the following to your `.cursor/config/config.json` file:
@@ -223,7 +282,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 # MCP Server for Home Assistant 🏠🤖
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.26-black)](https://bun.sh) [![TypeScript](https://img.shields.io/badge/typescript-%5E5.0.0-blue.svg)](https://www.typescriptlang.org) [![smithery badge](https://smithery.ai/badge/@jango-blockchained/advanced-homeassistant-mcp)](https://smithery.ai/server/@jango-blockchained/advanced-homeassistant-mcp)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.26-black)](https://bun.sh) [![TypeScript](https://img.shields.io/badge/typescript-%5E5.0.0-blue.svg)](https://www.typescriptlang.org) [![smithery badge](https://smithery.ai/badge/@jango-blockchained/homeassitant-mcp)](https://smithery.ai/server/@jango-blockchained/homeassitant-mcp)
 
 ## Overview 🌐
 
@@ -550,7 +609,7 @@ MCP Server supports a JSON-RPC 2.0 stdio transport mode for direct integration w
 ### MCP Stdio Features
 
 ✅ **JSON-RPC 2.0 Compatibility**: Full support for the MCP protocol standard  
-✅ **NPX Support**: Run directly without installation using `npx homeassistant-mcp`  
+✅ **NPX Support**: Run directly without installation using `npx @jango-blockchained/homeassistant-mcp@latest`  
 ✅ **Auto Configuration**: Creates necessary directories and default configuration  
 ✅ **Cross-Platform**: Works on macOS, Linux, and Windows  
 ✅ **Claude Desktop Integration**: Ready to use with Claude Desktop  
@@ -564,10 +623,10 @@ Run the MCP server directly without installation using npx:
 
 ```bash
 # Basic usage
-npx homeassistant-mcp
+npx @jango-blockchained/homeassistant-mcp@latest
 
 # Or with environment variables
-HASS_URL=http://your-ha-instance:8123 HASS_TOKEN=your_token npx homeassistant-mcp
+HASS_URL=http://your-ha-instance:8123 HASS_TOKEN=your_token npx @jango-blockchained/homeassistant-mcp@latest
 ```
 
 This will:
@@ -585,7 +644,7 @@ To use MCP with Claude Desktop:
 1. Open Claude Desktop settings
 2. Go to the "Advanced" tab
 3. Under "MCP Server", select "Custom"
-4. Enter the command: `npx homeassistant-mcp`
+4. Enter the command: `npx @jango-blockchained/homeassistant-mcp@latest`
 5. Click "Save"
 
 Claude will now use the MCP server for Home Assistant integration, allowing you to control your smart home directly through Claude.
@@ -723,7 +782,7 @@ The simplest way to use the Home Assistant MCP server is through NPX:
 
 ```bash
 # Start the server in stdio mode
-npx homeassistant-mcp
+npx @jango-blockchained/homeassistant-mcp@latest
 ```
 
 This will automatically:
@@ -735,7 +794,7 @@ This will automatically:
 You can redirect stderr to hide logs and only see the JSON-RPC output:
 
 ```bash
-npx homeassistant-mcp 2>/dev/null
+npx @jango-blockchained/homeassistant-mcp@latest 2>/dev/null
 ```
 
 ### Manual Installation
@@ -744,7 +803,7 @@ If you prefer to install the package globally or locally:
 
 ```bash
 # Install globally
-npm install -g homeassistant-mcp
+npm install -g @jango-blockchained/homeassistant-mcp
 
 # Then run
 homeassistant-mcp
