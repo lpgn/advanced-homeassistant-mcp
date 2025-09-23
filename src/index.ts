@@ -19,6 +19,10 @@ import { SecurityMiddleware } from './security/enhanced-middleware.js';
 // Home Assistant tools
 import { LightsControlTool } from './tools/homeassistant/lights.tool.js';
 import { ClimateControlTool } from './tools/homeassistant/climate.tool.js';
+import { ListDevicesTool } from './tools/homeassistant/list-devices.tool.js';
+import { AutomationTool } from './tools/homeassistant/automation.tool.js';
+import { SceneTool } from './tools/homeassistant/scene.tool.js';
+import { NotifyTool } from './tools/homeassistant/notify.tool.js';
 
 // Home Assistant optional tools - these can be added as needed
 // import { ControlTool } from './tools/control.tool.js';
@@ -54,6 +58,10 @@ async function main() {
   // Register Home Assistant tools
   server.registerTool(new LightsControlTool());
   server.registerTool(new ClimateControlTool());
+  server.registerTool(new ListDevicesTool());
+  server.registerTool(new AutomationTool());
+  server.registerTool(new SceneTool());
+  server.registerTool(new NotifyTool());
 
   // Add optional tools here as needed
   // server.registerTool(new ControlTool());
