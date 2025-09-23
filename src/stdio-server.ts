@@ -1,188 +1,94 @@
 /**
- * MCP Server with stdio transport
- * 
+ * MCP Server with stdio transport (using fastmcp)
+ *
  * This module provides a standalone MCP server that communicates
- * over standard input/output using JSON-RPC 2.0 protocol.
+ * over standard input/output using JSON-RPC 2.0 protocol,
+ * implemented using the fastmcp framework.
  */
 
-// Only force silent logging if not in Cursor compatibility mode
-if (!process.env.CURSOR_COMPATIBLE) {
-    process.env.LOG_LEVEL = 'silent';
-}
-
-import { createStdioServer, BaseTool } from "./mcp/index.js";
-import { z } from "zod";
+// Potentially keep for logging within tools, if needed
 import { logger } from "./utils/logger.js";
-import { MCPContext } from "./mcp/types.js";
 
-// Import Home Assistant tools
-import { LightsControlTool } from './tools/homeassistant/lights.tool.js';
-import { ClimateControlTool } from './tools/homeassistant/climate.tool.js';
+// Import fastmcp framework
+import { FastMCP } from "fastmcp";
+import { z } from "zod"; // Keep Zod for tool parameter validation
 
-// Check for Cursor compatibility mode
-const isCursorMode = process.env.CURSOR_COMPATIBLE === 'true';
-// Use silent startup except in Cursor mode
-const silentStartup = !isCursorMode;
-const debugMode = process.env.DEBUG_STDIO === 'true';
+// Import refactored Home Assistant tools
+import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
+import { climateControlTool } from './tools/homeassistant/climate.tool.js';
 
-// Configure raw I/O handling if necessary
-if (isCursorMode) {
-    // Ensure stdout doesn't buffer for Cursor
-    process.stdout.setDefaultEncoding('utf8');
-    // Only try to set raw mode if it's a TTY and the method exists
-    if (process.stdout.isTTY && typeof (process.stdout as any).setRawMode === 'function') {
-        (process.stdout as any).setRawMode(true);
-    }
-}
-
-// Send a notification directly to stdout for compatibility
-function sendNotification(method: string, params: any): void {
-    const notification = {
-        jsonrpc: '2.0',
-        method,
-        params
-    };
-    const message = JSON.stringify(notification) + '\n';
-    process.stdout.write(message);
-
-    // For Cursor mode, ensure messages are flushed if method exists
-    if (isCursorMode && typeof (process.stdout as any).flush === 'function') {
-        (process.stdout as any).flush();
-    }
-}
-
-// Create system tools
-class InfoTool extends BaseTool {
-    constructor() {
-        super({
-            name: "system_info",
-            description: "Get information about the Home Assistant MCP server",
-            parameters: z.object({}).optional(),
-            metadata: {
-                category: "system",
-                version: "1.0.0",
-                tags: ["system", "info"]
-            }
-        });
-    }
-
-    execute(_params: any, _context: MCPContext): any {
-        return {
-            version: "1.0.0",
-            name: "Home Assistant MCP Server",
-            mode: "stdio",
-            transport: "json-rpc-2.0",
-            features: ["streaming", "middleware", "validation"],
-            timestamp: new Date().toISOString(),
-            homeAssistant: {
-                available: true,
-                toolCount: 2,
-                toolNames: ["lights_control", "climate_control"]
-            }
-        };
-    }
-}
+// --- Removed old imports and setup ---
+// import { createStdioServer, BaseTool } from "./mcp/index.js";
+// import { MCPContext } from "./mcp/types.js";
+// const isCursorMode = process.env.CURSOR_COMPATIBLE === 'true';
+// const silentStartup = !isCursorMode;
+// const debugMode = process.env.DEBUG_STDIO === 'true';
+// function sendNotification(...) { ... }
+// class InfoTool extends BaseTool { ... }
 
 async function main() {
+    // --- Temporarily DISABLED Console Silencing --- 
+    // let originalConsoleInfo: (...data: any[]) => void | null = null;
+    // const isStdio = process.env.USE_STDIO_TRANSPORT === 'true';
+    // const isDebug = process.env.DEBUG_STDIO === 'true';
+    // if (isStdio && !isDebug) { 
+    //     logger.info('Silencing console.info for stdio mode initialization.');
+    //     originalConsoleInfo = console.info;
+    //     console.info = () => {};
+    // }
+
     try {
-        // Create system tools
-        const systemTools = [
-            new InfoTool()
-        ];
-
-        // Create Home Assistant tools
-        const haTools = [
-            new LightsControlTool(),
-            new ClimateControlTool()
-        ];
-
-        // Combine all tools
-        const allTools = [...systemTools, ...haTools];
-
-        // Send initial notifications BEFORE server initialization for Cursor compatibility
-        // Send system info
-        sendNotification('system.info', {
-            name: 'Home Assistant Model Context Protocol Server',
-            version: '1.0.0',
-            transport: 'stdio',
-            protocol: 'json-rpc-2.0',
-            features: ['streaming'],
-            timestamp: new Date().toISOString()
+        // Create the FastMCP server instance
+        const server = new FastMCP({
+            name: "Home Assistant MCP Server (fastmcp)",
+            version: "1.0.0",
+            debug: true
         });
 
-        // Send available tools
-        const toolDefinitions = allTools.map(tool => ({
-            name: tool.name,
-            description: tool.description,
-            parameters: {
-                type: "object",
-                properties: {},
-                required: []
-            },
-            metadata: tool.metadata
-        }));
+        logger.info("Initializing FastMCP server..."); // Goes to file log
 
-        sendNotification('tools.available', {
-            tools: toolDefinitions
+        // Add tools
+        logger.info(`Adding tool: ${lightsControlTool.name}`);
+        server.addTool(lightsControlTool);
+        logger.info(`Adding tool: ${climateControlTool.name}`);
+        server.addTool(climateControlTool);
+
+        // --- Temporarily removed system_info tool --- 
+        // server.addTool({
+        //     name: "system_info",
+        //     description: "Get basic information about this MCP server",
+        //     execute: async () => { /* ... */ },
+        // });
+        // logger.info("Adding tool: system_info");
+
+        // Start the server
+        logger.info("Starting FastMCP server with stdio transport...");
+        await server.start({
+            transportType: "stdio",
         });
 
-        // Create server with stdio transport
-        const { server, transport } = createStdioServer({
-            silent: silentStartup,
-            debug: debugMode,
-            tools: allTools
-        });
+        // --- Temporarily DISABLED Console Restore ---
+        // if (originalConsoleInfo) {
+        //     console.info = originalConsoleInfo;
+        //     logger.info('Restored console.info after stdio mode initialization.');
+        // }
 
-        // Explicitly set the server reference to ensure access to tools
-        if ('setServer' in transport && typeof transport.setServer === 'function') {
-            transport.setServer(server);
-        }
+        logger.info("FastMCP server started successfully and listening on stdio.");
 
-        // Start the server after initial notifications
-        await server.start();
-
-        // In Cursor mode, send notifications again after startup
-        if (isCursorMode) {
-            // Small delay to ensure all messages are processed
-            setTimeout(() => {
-                // Send system info again
-                sendNotification('system.info', {
-                    name: 'Home Assistant Model Context Protocol Server',
-                    version: '1.0.0',
-                    transport: 'stdio',
-                    protocol: 'json-rpc-2.0',
-                    features: ['streaming'],
-                    timestamp: new Date().toISOString()
-                });
-
-                // Send available tools again
-                sendNotification('tools.available', {
-                    tools: toolDefinitions
-                });
-            }, 100);
-        }
-
-        // Handle process exit
-        process.on('SIGINT', async () => {
-            await server.shutdown();
-            process.exit(0);
-        });
-
-        process.on('SIGTERM', async () => {
-            await server.shutdown();
-            process.exit(0);
-        });
-
-        // Keep process alive
+        // Keep process alive explicitly, in case fastmcp doesn't
         process.stdin.resume();
+        logger.info("Called process.stdin.resume() to ensure process stays alive.");
+
     } catch (error) {
-        logger.error("Error starting Home Assistant MCP stdio server:", error);
+        // --- Temporarily DISABLED Console Restore on error ---
+        // if (originalConsoleInfo) console.info = originalConsoleInfo;
+
+        logger.error("Error starting Home Assistant MCP stdio server (fastmcp):", error);
         process.exit(1);
     }
 }
 
-// Run the main function
 main().catch(error => {
-    logger.error("Uncaught error:", error);
+    logger.error("Uncaught error in main (fastmcp):", error);
     process.exit(1);
 }); 

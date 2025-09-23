@@ -41,24 +41,25 @@ const logger = winston.createLogger({
 
 // Handle console output based on environment
 if (process.env.NODE_ENV !== 'production' || process.env.CONSOLE_LOGGING === 'true') {
-  // In stdio mode with debug enabled, ensure logs only go to stderr to keep stdout clean for JSON-RPC
-  if (isStdioMode && isDebugStdio) {
-    // Use stderr stream transport in stdio debug mode
-    logger.add(new winston.transports.Stream({
-      stream: process.stderr,
-      format: winston.format.combine(
-        winston.format.simple()
-      )
-    }));
-  } else {
-    // Use console transport in normal mode
+  // Only add console/stderr logging if NOT in standard stdio mode
+  if (!isStdioMode) {
+    // Use console transport in normal (non-stdio) mode
     logger.add(new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
         winston.format.simple()
       )
     }));
+  } else if (isDebugStdio) {
+    // If in stdio mode AND debug is specifically enabled, log simple format to stderr
+    logger.add(new winston.transports.Stream({
+      stream: process.stderr,
+      format: winston.format.combine(
+        winston.format.simple() // Keep stderr logs simple
+      )
+    }));
   }
+  // Implicit else: If isStdioMode is true and isDebugStdio is false, add NO console/stderr transport.
 }
 
 // Custom logger interface
