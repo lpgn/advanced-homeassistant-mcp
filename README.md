@@ -86,7 +86,26 @@ That's it! Your AI assistant can now control your smart home. 🤖✨
 npx @jango-blockchained/homeassistant-mcp@latest
 ```
 
-### Option 2: Local Installation
+### Option 2: Bunx with GitHub (No NPM Login Required)
+
+If you can't login to npm, use Bunx to run directly from GitHub:
+
+```bash
+# Install Bun first if you don't have it
+curl -fsSL https://bun.sh/install | bash
+
+# Then run from GitHub
+bunx github:jango-blockchained/homeassistant-mcp
+```
+
+Alternatively, install directly from Git:
+
+```bash
+bun add git+https://github.com/jango-blockchained/homeassistant-mcp.git
+homeassistant-mcp
+```
+
+### Option 3: Local Installation
 
 ```bash
 # Install globally
@@ -99,7 +118,7 @@ bun add homeassistant-mcp
 homeassistant-mcp
 ```
 
-### Option 3: From Source
+### Option 4: From Source (Most Flexible)
 
 ```bash
 git clone https://github.com/jango-blockchained/homeassistant-mcp.git
@@ -130,6 +149,19 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
+Or if you can't login to npm, use bunx:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "bunx",
+      "args": ["github:jango-blockchained/homeassistant-mcp"]
+    }
+  }
+}
+```
+
 #### VS Code + Claude Extension
 
 The `.vscode/settings.json` is pre-configured for immediate use.
@@ -144,6 +176,19 @@ Add to `.cursor/config/config.json`:
     "homeassistant-mcp": {
       "command": "npx",
       "args": ["@jango-blockchained/homeassistant-mcp@latest"]
+    }
+  }
+}
+```
+
+Or with bunx:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "bunx",
+      "args": ["github:jango-blockchained/homeassistant-mcp"]
     }
   }
 }
@@ -187,7 +232,7 @@ RATE_LIMIT_MAX=50
 
 ## 🏗️ Architecture
 
-```
+```text
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   AI Assistant  │◄──►│   MCP Server    │◄──►│ Home Assistant  │
 │  (Claude/GPT)   │    │                 │    │                 │
