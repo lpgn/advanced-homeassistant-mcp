@@ -7,11 +7,11 @@
 
 import { z } from "zod";
 import { logger } from "../../utils/logger.js";
-import type { FastMCPTool } from "fastmcp"; // Assuming FastMCPTool type exists
 // Re-import BaseTool and MCPContext for the class definition
 import { BaseTool } from "../base-tool.js";
 import { MCPContext } from "../../mcp/types.js";
 import { get_hass } from "../../hass/index.js";
+import { Tool } from "../../types/index.js";
 
 // Real Home Assistant API service
 class HomeAssistantLightsService {
@@ -90,83 +90,12 @@ const lightsControlSchema = z.object({
 // Infer the type from the schema
 type LightsControlParams = z.infer<typeof lightsControlSchema>;
 
-// Define the tool using the FastMCP structure
-export const lightsControlTool: FastMCPTool<LightsControlParams, string | Record<string, unknown>> = {
+// Define the tool using the Tool interface
+export const lightsControlTool: Tool = {
     name: "lights_control",
     description: "Control lights in Home Assistant (list, get, turn_on, turn_off)",
     parameters: lightsControlSchema, // Use the Zod schema directly
-    // Add metadata if fastmcp supports it, otherwise omit or place in description
-    // metadata: { ... }
-
-    /**
-     * Execute the tool logic
-     * @param params - Validated parameters matching the schema
-     * @param context - Session context (includes session object in fastmcp)
-     * @returns A string confirming success or an object with light details
-     */
-    execute: async (params, _context) => { // context might contain session info in fastmcp
-        logger.debug(`Executing lights_control with params: ${JSON.stringify(params)}`);
-        // logger.debug(`Session context: ${JSON.stringify(context)}`); // Log context if needed
-
-        try {
-            let attributes: Record<string, unknown>;
-            let success: boolean;
-            let lightDetails: Record<string, unknown> | null;
-
-            switch (params.action) {
-                case "list": {
-                    const lights = await haLightsService.getLights();
-                    return { lights }; // Return the list of lights
-                }
-
-                case "get":
-                    if (!params.entity_id) {
-                        throw new Error("entity_id is required for 'get' action");
-                    }
-                    lightDetails = await haLightsService.getLight(params.entity_id);
-                    if (!lightDetails) {
-                        throw new Error(`Light entity_id '${params.entity_id}' not found.`);
-                    }
-                    return lightDetails; // Return details of the specific light
-
-                case "turn_on":
-                    if (!params.entity_id) {
-                        throw new Error("entity_id is required for 'turn_on' action");
-                    }
-                    attributes = {};
-                    if (params.brightness !== undefined) attributes.brightness = params.brightness;
-                    if (params.color_temp !== undefined) attributes.color_temp = params.color_temp;
-                    if (params.rgb_color !== undefined) attributes.rgb_color = params.rgb_color; // Already validated by Zod
-
-                    success = await haLightsService.turnOn(params.entity_id, attributes);
-                    if (!success) {
-                        throw new Error(`Failed to turn on light '${params.entity_id}'. Entity not found?`);
-                    }
-                    lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
-                    return { status: "success", state: lightDetails }; // Confirm success and return new state
-
-                case "turn_off":
-                    if (!params.entity_id) {
-                        throw new Error("entity_id is required for 'turn_off' action");
-                    }
-                    success = await haLightsService.turnOff(params.entity_id);
-                    if (!success) {
-                        throw new Error(`Failed to turn off light '${params.entity_id}'. Entity not found?`);
-                    }
-                    lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
-                    return { status: "success", state: lightDetails }; // Confirm success and return new state
-
-                default:
-                    // This case should technically be unreachable due to Zod enum validation
-                    throw new Error(`Unknown action: ${String(params.action)}`);
-            }
-        } catch (error) {
-            logger.error(`Error in lights_control tool: ${error instanceof Error ? error.message : String(error)}`);
-            // FastMCP might handle errors differently, potentially expecting errors to be thrown
-            // or returned in a specific format. Throwing is common.
-            throw error; // Re-throw the error to be handled by fastmcp
-        }
-    },
+    execute: executeLightsControlLogic
 };
 
 // No need for the class wrapper anymore
@@ -180,21 +109,23 @@ async function executeLightsControlLogic(params: LightsControlParams): Promise<R
     let lightDetails: Record<string, unknown> | null;
 
     switch (params.action) {
-        case "list":
-            const lights = haLightsService.getLights();
+        case "list": {
+            const lights = await haLightsService.getLights();
             return { lights };
+        }
 
-        case "get":
+        case "get": {
             if (!params.entity_id) {
                 throw new Error("entity_id is required for 'get' action");
             }
-            lightDetails = haLightsService.getLight(params.entity_id);
+            lightDetails = await haLightsService.getLight(params.entity_id);
             if (!lightDetails) {
                 throw new Error(`Light entity_id '${params.entity_id}' not found.`);
             }
             return lightDetails;
+        }
 
-        case "turn_on":
+        case "turn_on": {
             if (!params.entity_id) {
                 throw new Error("entity_id is required for 'turn_on' action");
             }
@@ -203,23 +134,25 @@ async function executeLightsControlLogic(params: LightsControlParams): Promise<R
             if (params.color_temp !== undefined) attributes.color_temp = params.color_temp;
             if (params.rgb_color !== undefined) attributes.rgb_color = params.rgb_color;
 
-            success = haLightsService.turnOn(params.entity_id, attributes);
+            success = await haLightsService.turnOn(params.entity_id, attributes);
             if (!success) {
                 throw new Error(`Failed to turn on light '${params.entity_id}'. Entity not found?`);
             }
-            lightDetails = haLightsService.getLight(params.entity_id); // Get updated state
+            lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
             return { status: "success", state: lightDetails };
+        }
 
-        case "turn_off":
+        case "turn_off": {
             if (!params.entity_id) {
                 throw new Error("entity_id is required for 'turn_off' action");
             }
-            success = haLightsService.turnOff(params.entity_id);
+            success = await haLightsService.turnOff(params.entity_id);
             if (!success) {
                 throw new Error(`Failed to turn off light '${params.entity_id}'. Entity not found?`);
             }
-            lightDetails = haLightsService.getLight(params.entity_id); // Get updated state
+            lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
             return { status: "success", state: lightDetails };
+        }
 
         default:
             // Should be unreachable due to Zod validation

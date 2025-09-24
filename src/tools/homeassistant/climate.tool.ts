@@ -8,10 +8,10 @@
 
 import { z } from "zod";
 import { logger } from "../../utils/logger.js";
-import type { FastMCPTool } from "fastmcp"; // Assuming FastMCPTool type exists
 import { BaseTool } from "../base-tool.js";
 import { MCPContext } from "../../mcp/types.js";
 import { get_hass } from "../../hass/index.js";
+import { Tool } from "../../types/index.js";
 
 // Real Home Assistant API service
 class HomeAssistantClimateService {
@@ -207,28 +207,13 @@ async function executeClimateControlLogic(params: ClimateControlParams): Promise
     }
 }
 
-// --- FastMCP Tool Definition ---
-export const climateControlTool: FastMCPTool<ClimateControlParams, string | Record<string, unknown>> = {
+// --- Tool Definition ---
+export const climateControlTool: Tool = {
     name: "climate_control",
     description: "Control climate devices (thermostats, AC) in Home Assistant",
     parameters: climateControlSchema,
 
-    /**
-     * Execute the tool logic
-     * @param params - Validated parameters matching the schema
-     * @param context - Session context (includes session object in fastmcp)
-     * @returns A string confirming success or an object with climate device details
-     */
-    execute: async (params, context) => {
-        logger.debug(`Executing climate_control (fastmcp) with params: ${JSON.stringify(params)}`);
-        try {
-            const result = await executeClimateControlLogic(params);
-            return result;
-        } catch (error) {
-            logger.error(`Error in climate_control tool (fastmcp): ${error instanceof Error ? error.message : String(error)}`);
-            throw error;
-        }
-    },
+    execute: executeClimateControlLogic,
 };
 
 // --- Original BaseTool Class Definition (for compatibility with src/index.ts) ---
