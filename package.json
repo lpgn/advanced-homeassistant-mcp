@@ -14,8 +14,8 @@
     "dev": "bun --hot --watch src/index.ts",
     "build": "bun build ./src/index.ts --outdir ./dist --target bun --minify",
     "build:all": "bun build ./src/index.ts ./src/stdio-server.ts --outdir ./dist --target bun --minify",
-    "build:node": "bun build ./src/index.ts --outdir ./dist --target node --minify",
-    "build:stdio": "bun build ./src/stdio-server.ts --outdir ./dist --target node --minify",
+    "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build:stdio": "bun build ./src/stdio-server.ts --outdir ./dist --target node",
     "prepare": "husky install && bun run build:all",
     "stdio": "node ./bin/mcp-stdio.js",
     "test": "bun test",
@@ -30,6 +30,8 @@
     "profile": "bun --inspect src/index.ts",
     "clean": "rm -rf dist .bun coverage",
     "typecheck": "bun x tsc --noEmit",
+    "mcp:stdio": "node bin/npx-entry.cjs",
+    "mcp:build": "bun run build:all",
     "example:speech": "bun run extra/speech-to-text-example.ts"
   },
   "dependencies": {

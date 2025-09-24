@@ -10,6 +10,7 @@ import { EventEmitter } from "events";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../utils/logger.js";
+import type { Tool } from "../types/index.js";
 
 // Error code enum to break circular dependency
 export enum MCPErrorCode {
@@ -125,14 +126,37 @@ export class MCPServer extends EventEmitter {
     /**
      * Register a new tool with the server
      */
-    public registerTool(tool: ToolDefinition): void {
+    public registerTool(tool: ToolDefinition | Tool): void {
         if (this.tools.has(tool.name)) {
             logger.warn(`Tool '${tool.name}' is already registered. Overwriting.`);
         }
 
-        this.tools.set(tool.name, tool);
+        // Convert plain Tool to ToolDefinition if needed
+        let toolDef: ToolDefinition;
+        if ('execute' in tool && typeof tool.execute === 'function') {
+            // Check if it's already a ToolDefinition (has context parameter)
+            const executeStr = tool.execute.toString();
+            if (executeStr.includes('context') || executeStr.includes('MCPContext')) {
+                toolDef = tool as ToolDefinition;
+            } else {
+                // It's a plain Tool, wrap it to provide context
+                const plainTool = tool as Tool;
+                toolDef = {
+                    name: plainTool.name,
+                    description: plainTool.description,
+                    parameters: plainTool.parameters,
+                    execute: async (params: any, context: MCPContext) => {
+                        return plainTool.execute(params);
+                    }
+                };
+            }
+        } else {
+            toolDef = tool as ToolDefinition;
+        }
+
+        this.tools.set(tool.name, toolDef);
         logger.debug(`Tool '${tool.name}' registered`);
-        this.emit(MCPServerEvents.TOOL_REGISTERED, tool);
+        this.emit(MCPServerEvents.TOOL_REGISTERED, toolDef);
     }
 
     /**

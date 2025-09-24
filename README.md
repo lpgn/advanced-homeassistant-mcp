@@ -40,7 +40,7 @@ The Model Context Protocol (MCP) server acts as a bridge between AI models (like
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/homeassistant-mcp.git
+git clone https://github.com/jango-blockchained/homeassistant-mcp.git
 
 # Install dependencies 
 cd homeassistant-mcp
@@ -119,6 +119,196 @@ import { ClimateControlTool } from "./tools/homeassistant/climate.tool.js";
 server.registerTool(new LightsControlTool());
 server.registerTool(new ClimateControlTool());
 ```
+
+## 📦 Resources
+
+The server implements a comprehensive resource management system for stateful data:
+
+### Resource Manager (MCPServer)
+
+- **Resource Types**: `device`, `area`, `user`, `automation`, `scene`, `script`, `group`
+- **Resource Lifecycle**: `acquireResource()`, `releaseResource()`, `listResources()`
+- **State Management**: Resources have `id`, `type`, `state`, `attributes`, `lastUpdated`
+- **Resource Storage**: In-memory Map-based storage with type categorization
+
+### Context Manager (`src/context/index.ts`)
+
+- **Resource Relationships**: Defines relationships between resources (`contains`, `controls`, `triggers`, `depends_on`, `groups`)
+- **State History**: Maintains history of resource state changes (configurable limit)
+- **Context Analysis**: Analyzes resource usage, dependencies, and relationships
+- **Event Subscriptions**: Subscribe to resource updates by ID or type
+
+## 🛠️ Tools
+
+The MCP server implements a robust tool system for controlling Home Assistant devices:
+
+### Core Tool Infrastructure
+
+- **BaseTool Class**: Abstract base class providing parameter validation, execution context, error handling, and streaming support
+- **Tool Registration**: Tools are registered with the `MCPServer` instance in `src/index.ts`
+- **Parameter Validation**: Uses Zod schemas for type-safe parameter validation
+- **Metadata System**: Tools include category, version, tags, and platform information
+
+### Home Assistant Tools (Primary)
+
+Located in `src/tools/homeassistant/`:
+
+1. **LightsControlTool** (`lights.tool.ts`)
+   - Actions: `list`, `get`, `turn_on`, `turn_off`
+   - Parameters: `brightness`, `color_temp`, `rgb_color`
+   - Integrates with HA light entities
+
+2. **ClimateControlTool** (`climate.tool.ts`)
+   - Controls thermostats and HVAC systems
+   - Actions: `list`, `get`, `set_hvac_mode`, `set_temperature`, etc.
+   - Parameters: `temperature`, `hvac_mode`, `fan_mode`
+
+3. **AutomationTool** (`automation.tool.ts`)
+   - Actions: `list`, `toggle`, `trigger`
+   - Manages HA automations
+
+4. **SceneTool** (`scene.tool.ts`)
+   - Actions: `list`, `activate`
+   - Controls HA scenes
+
+5. **NotifyTool** (`notify.tool.ts`)
+   - Sends notifications through HA
+   - Parameters: `message`, `title`, `target`, `data`
+
+6. **ListDevicesTool** (`list-devices.tool.ts`)
+   - Lists HA devices with filtering
+   - Filters: `domain`, `area`, `floor`
+
+### Additional Tools
+
+- **ControlTool** (`control.tool.ts`): Generic device control (appears to be an alternative implementation)
+- **AddonTool**, **HistoryTool**, **PackageTool**, etc.: Various utility tools
+
+## 🤖 Model Access
+
+The server provides several forms of AI/model integration:
+
+### Speech-to-Text (Whisper Models)
+
+Located in `src/speech/`:
+
+- **Faster-Whisper Integration**: Uses Docker container with pre-downloaded models
+- **Cached Models**: `models--Systran--faster-whisper-base/`, `models--Systran--faster-whisper-large-v3/`
+- **Transcription Options**: Multiple model sizes (`tiny.en`, `base.en`, `small.en`, `medium.en`, `large-v2`)
+- **Wake Word Detection**: Monitors audio files for wake words and auto-transcribes
+
+### Natural Language Processing (NLP)
+
+Located in `src/ai/nlp/`:
+
+- **NLPProcessor**: Main processor coordinating entity extraction, intent classification, and context analysis
+- **IntentClassifier**: Uses regex patterns to classify commands (turn_on, turn_off, set, query)
+- **EntityExtractor**: Extracts device names and parameters from text
+- **ContextAnalyzer**: Analyzes contextual relevance of commands
+
+### AI Endpoints (`src/ai/endpoints/ai-router.ts`)
+
+- **Model Support**: Rate limiting for `claude`, `gpt4`, `custom` models
+- **Interpret Endpoint**: Processes natural language commands into structured intents
+- **Rate Limiting**: Per-model limits (Claude: 100/min, GPT-4: 50/min)
+- **Dependencies**: `@anthropic-ai/sdk`, `openai` packages included
+
+### AI Types and Interfaces
+
+- **Confidence Scoring**: Overall, intent, entities, context confidence levels
+- **Error Handling**: Structured error responses with suggestions and recovery options
+- **Context Tracking**: User sessions, timestamps, location, previous actions
+
+### API
+```
+
+## 📦 Resources
+
+The server implements a comprehensive resource management system for stateful data:
+
+### Resource Manager (MCPServer)
+- **Resource Types**: `device`, `area`, `user`, `automation`, `scene`, `script`, `group`
+- **Resource Lifecycle**: `acquireResource()`, `releaseResource()`, `listResources()`
+- **State Management**: Resources have `id`, `type`, `state`, `attributes`, `lastUpdated`
+- **Resource Storage**: In-memory Map-based storage with type categorization
+
+### Context Manager (`src/context/index.ts`)
+- **Resource Relationships**: Defines relationships between resources (`contains`, `controls`, `triggers`, `depends_on`, `groups`)
+- **State History**: Maintains history of resource state changes (configurable limit)
+- **Context Analysis**: Analyzes resource usage, dependencies, and relationships
+- **Event Subscriptions**: Subscribe to resource updates by ID or type
+
+## 🛠️ Tools
+
+The MCP server implements a robust tool system for controlling Home Assistant devices:
+
+### Core Tool Infrastructure
+- **BaseTool Class**: Abstract base class providing parameter validation, execution context, error handling, and streaming support
+- **Tool Registration**: Tools are registered with the `MCPServer` instance in `src/index.ts`
+- **Parameter Validation**: Uses Zod schemas for type-safe parameter validation
+- **Metadata System**: Tools include category, version, tags, and platform information
+
+### Home Assistant Tools (Primary)
+Located in `src/tools/homeassistant/`:
+
+1. **LightsControlTool** (`lights.tool.ts`)
+   - Actions: `list`, `get`, `turn_on`, `turn_off`
+   - Parameters: `brightness`, `color_temp`, `rgb_color`
+   - Integrates with HA light entities
+
+2. **ClimateControlTool** (`climate.tool.ts`)
+   - Controls thermostats and HVAC systems
+   - Actions: `list`, `get`, `set_hvac_mode`, `set_temperature`, etc.
+   - Parameters: `temperature`, `hvac_mode`, `fan_mode`
+
+3. **AutomationTool** (`automation.tool.ts`)
+   - Actions: `list`, `toggle`, `trigger`
+   - Manages HA automations
+
+4. **SceneTool** (`scene.tool.ts`)
+   - Actions: `list`, `activate`
+   - Controls HA scenes
+
+5. **NotifyTool** (`notify.tool.ts`)
+   - Sends notifications through HA
+   - Parameters: `message`, `title`, `target`, `data`
+
+6. **ListDevicesTool** (`list-devices.tool.ts`)
+   - Lists HA devices with filtering
+   - Filters: `domain`, `area`, `floor`
+
+### Additional Tools
+- **ControlTool** (`control.tool.ts`): Generic device control (appears to be an alternative implementation)
+- **AddonTool**, **HistoryTool**, **PackageTool**, etc.: Various utility tools
+
+## 🤖 Model Access
+
+The server provides several forms of AI/model integration:
+
+### Speech-to-Text (Whisper Models)
+Located in `src/speech/`:
+- **Faster-Whisper Integration**: Uses Docker container with pre-downloaded models
+- **Cached Models**: `models--Systran--faster-whisper-base/`, `models--Systran--faster-whisper-large-v3/`
+- **Transcription Options**: Multiple model sizes (`tiny.en`, `base.en`, `small.en`, `medium.en`, `large-v2`)
+- **Wake Word Detection**: Monitors audio files for wake words and auto-transcribes
+
+### Natural Language Processing (NLP)
+Located in `src/ai/nlp/`:
+- **NLPProcessor**: Main processor coordinating entity extraction, intent classification, and context analysis
+- **IntentClassifier**: Uses regex patterns to classify commands (turn_on, turn_off, set, query)
+- **EntityExtractor**: Extracts device names and parameters from text
+- **ContextAnalyzer**: Analyzes contextual relevance of commands
+
+### AI Endpoints (`src/ai/endpoints/ai-router.ts`)
+- **Model Support**: Rate limiting for `claude`, `gpt4`, `custom` models
+- **Interpret Endpoint**: Processes natural language commands into structured intents
+- **Rate Limiting**: Per-model limits (Claude: 100/min, GPT-4: 50/min)
+- **Dependencies**: `@anthropic-ai/sdk`, `openai` packages included
+
+### AI Types and Interfaces
+- **Confidence Scoring**: Overall, intent, entities, context confidence levels
+- **Error Handling**: Structured error responses with suggestions and recovery options
+- **Context Tracking**: User sessions, timestamps, location, previous actions
 
 ### API
 

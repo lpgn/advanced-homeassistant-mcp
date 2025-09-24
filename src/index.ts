@@ -32,6 +32,9 @@ import { NotifyTool } from './tools/homeassistant/notify.tool.js';
 // import { ListDevicesTool } from './tools/list-devices.tool.js';
 // import { HistoryTool } from './tools/history.tool.js';
 
+// Import additional tools from tools/index.ts
+import { tools } from './tools/index.js';
+
 /**
  * Check if running in stdio mode via command line args
  */
@@ -62,6 +65,11 @@ async function main() {
   server.registerTool(new AutomationTool());
   server.registerTool(new SceneTool());
   server.registerTool(new NotifyTool());
+
+  // Register additional tools from tools/index.ts
+  tools.forEach(tool => {
+    server.registerTool(tool);
+  });
 
   // Add optional tools here as needed
   // server.registerTool(new ControlTool());
