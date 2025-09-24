@@ -13,7 +13,6 @@ import { HttpTransport } from './mcp/transports/http.transport.js';
 import { APP_CONFIG } from './config.js';
 import { logger } from "./utils/logger.js";
 import { openApiConfig } from './openapi.js';
-import { apiLimiter, authLimiter } from './middleware/rate-limit.middleware.js';
 import { SecurityMiddleware } from './security/enhanced-middleware.js';
 
 // Home Assistant tools
@@ -45,7 +44,7 @@ function isStdioMode(): boolean {
 /**
  * Main function to start the MCP server
  */
-async function main() {
+async function main(): Promise<void> {
   logger.info('Starting Home Assistant MCP Server...');
 
   // Check if we're in stdio mode from command line
@@ -53,7 +52,7 @@ async function main() {
 
   // Configure server
   const EXECUTION_TIMEOUT = APP_CONFIG.executionTimeout;
-  const STREAMING_ENABLED = APP_CONFIG.streamingEnabled;
+  const _STREAMING_ENABLED = APP_CONFIG.streamingEnabled;
 
   // Get the server instance (singleton)
   const server = MCPServer.getInstance();
@@ -106,7 +105,7 @@ async function main() {
       logger.info('MCP Server started successfully');
 
       // Handle shutdown
-      const shutdown = async () => {
+      const shutdown = async (): Promise<void> => {
         logger.info('Shutting down MCP Server...');
         try {
           await server.shutdown();
@@ -119,8 +118,8 @@ async function main() {
       };
 
       // Register shutdown handlers
-      process.on('SIGINT', shutdown);
-      process.on('SIGTERM', shutdown);
+      process.on('SIGINT', () => { shutdown().catch((err) => logger.error('Shutdown error:', err)); });
+      process.on('SIGTERM', () => { shutdown().catch((err) => logger.error('Shutdown error:', err)); });
 
       // Exit the function early as we're in stdio-only mode
       return;
@@ -133,7 +132,7 @@ async function main() {
     const app = express();
 
     // Apply enhanced security middleware
-    app.use(SecurityMiddleware.applySecurityHeaders);
+    SecurityMiddleware.initialize(app);
 
     // CORS configuration
     app.use(cors({
@@ -142,10 +141,6 @@ async function main() {
       allowedHeaders: ['Content-Type', 'Authorization'],
       maxAge: 86400 // 24 hours
     }));
-
-    // Apply rate limiting to all routes
-    app.use('/api', apiLimiter);
-    app.use('/auth', authLimiter);
 
     // Swagger UI setup
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiConfig, {
@@ -176,7 +171,7 @@ async function main() {
   logger.info('MCP Server started successfully');
 
   // Handle shutdown
-  const shutdown = async () => {
+  const shutdown = async (): Promise<void> => {
     logger.info('Shutting down MCP Server...');
     try {
       await server.shutdown();
@@ -189,8 +184,8 @@ async function main() {
   };
 
   // Register shutdown handlers
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', () => { shutdown().catch((err) => logger.error('Shutdown error:', err)); });
+  process.on('SIGTERM', () => { shutdown().catch((err) => logger.error('Shutdown error:', err)); });
 }
 
 // Run the main function

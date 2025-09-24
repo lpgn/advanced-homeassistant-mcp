@@ -10,6 +10,13 @@ echo "Current directory: $(pwd)"
 echo "ENABLE_WAKE_WORD: ${ENABLE_WAKE_WORD}"
 echo "PULSE_SERVER: ${PULSE_SERVER}"
 echo "WHISPER_MODEL_PATH: ${WHISPER_MODEL_PATH}"
+echo "ENABLE_SPEECH_FEATURES: ${ENABLE_SPEECH_FEATURES}"
+
+# Exit early if speech features are not enabled
+if [ "${ENABLE_SPEECH_FEATURES}" != "true" ]; then
+    echo "Speech features not enabled, skipping audio setup"
+    exit 0
+fi
 
 # Wait for PulseAudio socket to be available
 max_wait=30

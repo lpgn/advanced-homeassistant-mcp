@@ -3,6 +3,7 @@ import type { HassEntity } from "../interfaces/hass.js";
 class HomeAssistantAPI {
   private baseUrl: string;
   private token: string;
+  private cache = new Map<string, { data: unknown; timestamp: number }>();
 
   constructor() {
     this.baseUrl = process.env.HASS_HOST || "http://localhost:8123";
@@ -13,6 +14,18 @@ class HomeAssistantAPI {
     }
 
     console.log(`Initializing Home Assistant API with base URL: ${this.baseUrl}`);
+  }
+
+  private getCache<T>(key: string, ttlMs: number = 30000): T | null {
+    const entry = this.cache.get(key);
+    if (entry && Date.now() - entry.timestamp < ttlMs) {
+      return entry.data as T;
+    }
+    return null;
+  }
+
+  private setCache(key: string, data: unknown): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
   }
 
   private async fetchApi(endpoint: string, options: RequestInit = {}) {
@@ -58,18 +71,38 @@ class HomeAssistantAPI {
   }
 
   async getStates(): Promise<HassEntity[]> {
-    return this.fetchApi("states");
+    // Check cache first (30 second TTL for device states)
+    const cached = this.getCache<HassEntity[]>("states", 30000);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.fetchApi("states");
+    const states = data as HassEntity[];
+    this.setCache("states", states);
+    return states;
   }
 
   async getState(entityId: string): Promise<HassEntity> {
-    return this.fetchApi(`states/${entityId}`);
+    // Check cache first (10 second TTL for individual states)
+    const cached = this.getCache<HassEntity>(`state_${entityId}`, 10000);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.fetchApi(`states/${entityId}`);
+    const state = data as HassEntity;
+    this.setCache(`state_${entityId}`, state);
+    return state;
   }
 
-  async callService(domain: string, service: string, data: Record<string, any>): Promise<void> {
+  async callService(domain: string, service: string, data: Record<string, unknown>): Promise<void> {
     await this.fetchApi(`services/${domain}/${service}`, {
       method: "POST",
       body: JSON.stringify(data),
     });
+    // Clear states cache when services are called as they may change state
+    this.cache.delete("states");
   }
 }
 

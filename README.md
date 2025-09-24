@@ -14,20 +14,55 @@ The Model Context Protocol (MCP) server acts as a bridge between AI models (like
 
 ## Features
 
-- **Modular Architecture** - Clean separation between transport, middleware, and tools
-- **Typed Interface** - Fully TypeScript typed for better developer experience
-- **Multiple Transports**:
+- **Modular Architecture** ✅ - Clean separation between transport, middleware, and tools
+- **Typed Interface** ✅ - Fully TypeScript typed for better developer experience
+- **Multiple Transports** ✅:
   - **Standard I/O** (stdin/stdout) for CLI integration
   - **HTTP/REST API** with Server-Sent Events support for streaming
-- **Middleware System** - Validation, logging, timeout, and error handling
-- **Built-in Tools**:
-  - Light control (brightness, color, etc.)
-  - Climate control (thermostats, HVAC)
-  - More to come...
-- **Extensible Plugin System** - Easily add new tools and capabilities
-- **Streaming Responses** - Support for long-running operations
-- **Parameter Validation** - Using Zod schemas
-- **Claude & Cursor Integration** - Ready-made utilities for AI assistants
+- **Middleware System** ✅ - Validation, logging, timeout, and error handling
+- **Built-in Tools** ✅:
+  - Light control (brightness, color, etc.) - Real HA API integration
+  - Climate control (thermostats, HVAC) - Real HA API integration
+  - Device listing and management
+  - Automation and scene control
+  - Notification system
+  - Add-on management, history queries, package management
+- **Extensible Plugin System** ✅ - Easily add new tools and capabilities
+- **Streaming Responses** 🚧 - Basic support implemented
+- **Parameter Validation** ✅ - Using Zod schemas
+- **Claude & Cursor Integration** ✅ - Ready-made utilities for AI assistants
+- **Enhanced Security** ✅ - Comprehensive security middleware with rate limiting, input sanitization, and security headers
+
+## Security Features
+
+The Home Assistant MCP server includes comprehensive security measures to protect against common web vulnerabilities:
+
+### Rate Limiting
+
+- **API Endpoints**: 50 requests per 15-minute window per IP
+- **Authentication Endpoints**: 3 requests per hour per IP (stricter limits)
+- Automatic blocking of abusive clients
+
+### Input Validation & Sanitization
+
+- **HTML Sanitization**: All input is sanitized to prevent XSS attacks
+- **Content-Type Validation**: Strict validation of request content types
+- **URL Length Limits**: Maximum URL length enforcement (2048 characters)
+- **Request Body Size Limits**: 50KB maximum request body size
+
+### Security Headers
+
+- **Content Security Policy (CSP)**: Strict CSP preventing XSS and injection attacks
+- **HTTP Strict Transport Security (HSTS)**: Forces HTTPS connections
+- **X-Frame-Options**: Prevents clickjacking attacks
+- **X-Content-Type-Options**: Prevents MIME type sniffing
+- **Cross-Origin Policies**: Comprehensive cross-origin protection
+
+### Additional Protections
+
+- **No X-Powered-By Header**: Removes server fingerprinting information
+- **Referrer Policy**: Controls referrer information leakage
+- **Origin-Agent-Cluster**: Enhanced isolation between origins
 
 ## Getting Started
 
@@ -188,14 +223,17 @@ Located in `src/tools/homeassistant/`:
 
 The server provides several forms of AI/model integration:
 
-### Speech-to-Text (Whisper Models)
+### Speech-to-Text (Whisper Models) 🚧 **PARTIALLY IMPLEMENTED**
 
 Located in `src/speech/`:
 
-- **Faster-Whisper Integration**: Uses Docker container with pre-downloaded models
-- **Cached Models**: `models--Systran--faster-whisper-base/`, `models--Systran--faster-whisper-large-v3/`
-- **Transcription Options**: Multiple model sizes (`tiny.en`, `base.en`, `small.en`, `medium.en`, `large-v2`)
-- **Wake Word Detection**: Monitors audio files for wake words and auto-transcribes
+- **Framework Structure**: Basic classes and interfaces for speech-to-text integration
+- **Docker Configuration**: `docker-compose.speech.yml` configured for fast-whisper and wyoming-openwakeword containers
+- **Cached Models**: Pre-downloaded models available in `models/` directory
+- **Wake Word Detection**: Basic framework for wake word monitoring (not fully implemented)
+- **Transcription**: Core transcription logic contains placeholder code
+
+> **Note**: Speech features are currently in development. The framework is in place but core functionality returns placeholder responses. Full implementation requires Docker container integration and audio processing pipeline development.
 
 ### Natural Language Processing (NLP)
 
@@ -248,53 +286,63 @@ The MCP server implements a robust tool system for controlling Home Assistant de
 - **Parameter Validation**: Uses Zod schemas for type-safe parameter validation
 - **Metadata System**: Tools include category, version, tags, and platform information
 
-### Home Assistant Tools (Primary)
+### Home Assistant Tools (Primary) ✅ **FULLY IMPLEMENTED**
 Located in `src/tools/homeassistant/`:
 
-1. **LightsControlTool** (`lights.tool.ts`)
+1. **LightsControlTool** (`lights.tool.ts`) ✅
    - Actions: `list`, `get`, `turn_on`, `turn_off`
    - Parameters: `brightness`, `color_temp`, `rgb_color`
    - Integrates with HA light entities
 
-2. **ClimateControlTool** (`climate.tool.ts`)
+2. **ClimateControlTool** (`climate.tool.ts`) ✅
    - Controls thermostats and HVAC systems
    - Actions: `list`, `get`, `set_hvac_mode`, `set_temperature`, etc.
    - Parameters: `temperature`, `hvac_mode`, `fan_mode`
 
-3. **AutomationTool** (`automation.tool.ts`)
+3. **AutomationTool** (`automation.tool.ts`) ✅
    - Actions: `list`, `toggle`, `trigger`
    - Manages HA automations
 
-4. **SceneTool** (`scene.tool.ts`)
+4. **SceneTool** (`scene.tool.ts`) ✅
    - Actions: `list`, `activate`
    - Controls HA scenes
 
-5. **NotifyTool** (`notify.tool.ts`)
+5. **NotifyTool** (`notify.tool.ts`) ✅
    - Sends notifications through HA
    - Parameters: `message`, `title`, `target`, `data`
 
-6. **ListDevicesTool** (`list-devices.tool.ts`)
+6. **ListDevicesTool** (`list-devices.tool.ts`) ✅
    - Lists HA devices with filtering
    - Filters: `domain`, `area`, `floor`
 
-### Additional Tools
-- **ControlTool** (`control.tool.ts`): Generic device control (appears to be an alternative implementation)
-- **AddonTool**, **HistoryTool**, **PackageTool**, etc.: Various utility tools
+### Additional Tools ✅ **REGISTERED**
+- **AddonTool** (`addon.tool.ts`): Manage Home Assistant add-ons (install, uninstall, start, stop, restart)
+- **HistoryTool** (`history.tool.ts`): Query device state history and statistics
+- **PackageTool** (`package.tool.ts`): Manage HA packages and custom integrations
+- **AutomationConfigTool** (`automation-config.tool.ts`): Configure and manage automations
+- **SubscribeEventsTool** (`subscribe-events.tool.ts`): Subscribe to real-time HA events
+- **SSEStatsTool** (`sse-stats.tool.ts`): Server-sent events statistics and monitoring
 
 ## 🤖 Model Access
 
 The server provides several forms of AI/model integration:
 
-### Speech-to-Text (Whisper Models)
+### Speech-to-Text (Whisper Models) 🚧 **PARTIALLY IMPLEMENTED**
 Located in `src/speech/`:
-- **Faster-Whisper Integration**: Uses Docker container with pre-downloaded models
-- **Cached Models**: `models--Systran--faster-whisper-base/`, `models--Systran--faster-whisper-large-v3/`
-- **Transcription Options**: Multiple model sizes (`tiny.en`, `base.en`, `small.en`, `medium.en`, `large-v2`)
-- **Wake Word Detection**: Monitors audio files for wake words and auto-transcribes
+- **Framework Structure**: Basic classes and interfaces for speech-to-text integration
+- **Docker Configuration**: `docker-compose.speech.yml` configured for fast-whisper and wyoming-openwakeword containers
+- **Cached Models**: Pre-downloaded models available in `models/` directory
+- **Wake Word Detection**: Basic framework for wake word monitoring (not fully implemented)
+- **Transcription**: Core transcription logic contains placeholder code
 
-### Natural Language Processing (NLP)
+> **Note**: Speech features are currently in development. The framework is in place but core functionality returns placeholder responses. Full implementation requires Docker container integration and audio processing pipeline development.
+
+### Natural Language Processing (NLP) ✅ **IMPLEMENTED**
 Located in `src/ai/nlp/`:
 - **NLPProcessor**: Main processor coordinating entity extraction, intent classification, and context analysis
+- **Intent Classification**: Rule-based intent recognition for common smart home commands
+- **Entity Extraction**: Pattern-based entity recognition for devices, areas, and actions
+- **Context Analysis**: Basic conversation context tracking
 - **IntentClassifier**: Uses regex patterns to classify commands (turn_on, turn_off, set, query)
 - **EntityExtractor**: Extracts device names and parameters from text
 - **ContextAnalyzer**: Analyzes contextual relevance of commands
