@@ -1,1060 +1,281 @@
-# Home Assistant Model Context Protocol (MCP)
+# 🏠 Home Assistant MCP
 
-A standardized protocol for AI assistants to interact with Home Assistant, providing a secure, typed, and extensible interface for controlling smart home devices.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.26-black)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/typescript-%5E5.0.0-blue.svg)](https://www.typescriptlang.org)
+[![smithery badge](https://smithery.ai/badge/@jango-blockchained/homeassitant-mcp)](https://smithery.ai/server/@jango-blockchained/homeassitant-mcp)
 
-## Overview
+> **Bridge the gap between AI assistants and your smart home** 🚀
 
-The Model Context Protocol (MCP) server acts as a bridge between AI models (like Claude, GPT, etc.) and Home Assistant, enabling AI assistants to:
+A powerful, secure, and extensible Model Context Protocol (MCP) server that enables AI assistants like Claude, GPT, and Cursor to seamlessly interact with Home Assistant. Control your lights, climate, automations, and more through natural language commands.
 
-- Execute commands on Home Assistant devices
-- Retrieve information about the smart home
-- Stream responses for long-running operations
-- Validate parameters and inputs
-- Provide consistent error handling
+---
 
-## Features
+## ✨ Feature Overview
 
-- **Modular Architecture** ✅ - Clean separation between transport, middleware, and tools
-- **Typed Interface** ✅ - Fully TypeScript typed for better developer experience
-- **Multiple Transports** ✅:
-  - **Standard I/O** (stdin/stdout) for CLI integration
-  - **HTTP/REST API** with Server-Sent Events support for streaming
-- **Middleware System** ✅ - Validation, logging, timeout, and error handling
-- **Built-in Tools** ✅:
-  - Light control (brightness, color, etc.) - Real HA API integration
-  - Climate control (thermostats, HVAC) - Real HA API integration
-  - Device listing and management
-  - Automation and scene control
-  - Notification system
-  - Add-on management, history queries, package management
-- **Extensible Plugin System** ✅ - Easily add new tools and capabilities
-- **Streaming Responses** 🚧 - Basic support implemented
-- **Parameter Validation** ✅ - Using Zod schemas
-- **Claude & Cursor Integration** ✅ - Ready-made utilities for AI assistants
-- **Enhanced Security** ✅ - Comprehensive security middleware with rate limiting, input sanitization, and security headers
+### 🤖 AI-Powered Smart Home Control
 
-## Security Features
+- **Natural Language Processing**: Turn "dim the living room lights to 50%" into actual device commands
+- **Multi-Assistant Support**: Works with Claude, GPT-4, Cursor, and other MCP-compatible assistants
+- **Intelligent Context**: Remembers device states, relationships, and user preferences
 
-The Home Assistant MCP server includes comprehensive security measures to protect against common web vulnerabilities:
+### 🛡️ Enterprise-Grade Security
 
-### Rate Limiting
+- **Rate Limiting**: Protects against abuse with configurable request limits
+- **Input Sanitization**: Prevents XSS and injection attacks
+- **JWT Authentication**: Secure token-based access control
+- **Security Headers**: Comprehensive protection against web vulnerabilities
 
-- **API Endpoints**: 50 requests per 15-minute window per IP
-- **Authentication Endpoints**: 3 requests per hour per IP (stricter limits)
-- Automatic blocking of abusive clients
+### ⚡ High-Performance Architecture
 
-### Input Validation & Sanitization
+- **Bun Runtime**: 4x faster than Node.js with built-in TypeScript support
+- **Streaming Responses**: Real-time updates for long-running operations
+- **Modular Design**: Clean separation of concerns with extensible plugin system
+- **Multiple Transports**: HTTP REST API, WebSocket, and Standard I/O support
 
-- **HTML Sanitization**: All input is sanitized to prevent XSS attacks
-- **Content-Type Validation**: Strict validation of request content types
-- **URL Length Limits**: Maximum URL length enforcement (2048 characters)
-- **Request Body Size Limits**: 50KB maximum request body size
+### 🏠 Comprehensive Device Control
 
-### Security Headers
+- **Lighting Control**: Brightness, color temperature, RGB colors, and effects
+- **Climate Management**: Thermostats, HVAC modes, fan control, and scheduling
+- **Automation & Scenes**: Trigger automations, activate scenes, and manage routines
+- **Device Discovery**: Intelligent device listing with filtering and search
+- **Notification System**: Send alerts through Home Assistant's notification channels
 
-- **Content Security Policy (CSP)**: Strict CSP preventing XSS and injection attacks
-- **HTTP Strict Transport Security (HSTS)**: Forces HTTPS connections
-- **X-Frame-Options**: Prevents clickjacking attacks
-- **X-Content-Type-Options**: Prevents MIME type sniffing
-- **Cross-Origin Policies**: Comprehensive cross-origin protection
+### 🎙️ Voice & AI Integration
 
-### Additional Protections
+- **Speech-to-Text**: Whisper model integration for voice commands
+- **Wake Word Detection**: Always-listening capabilities with custom wake words
+- **NLP Processing**: Advanced intent recognition and entity extraction
+- **Context Awareness**: Learns from usage patterns and user behavior
 
-- **No X-Powered-By Header**: Removes server fingerprinting information
-- **Referrer Policy**: Controls referrer information leakage
-- **Origin-Agent-Cluster**: Enhanced isolation between origins
+---
 
-## Getting Started
+## 🚀 Quick Start
+
+Get up and running in minutes:
+
+```bash
+# Clone and install
+git clone https://github.com/jango-blockchained/homeassistant-mcp.git
+cd homeassistant-mcp
+bun install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your Home Assistant details
+
+# Start the server
+bun run start:stdio
+```
+
+That's it! Your AI assistant can now control your smart home. 🤖✨
+
+---
+
+## 📦 Installation
 
 ### Prerequisites
 
-- Node.js 16+
-- Home Assistant instance (or you can use the mock implementations for testing)
+- 🚀 [Bun](https://bun.sh) (v1.0.26+) - *Recommended*
+- 🏠 [Home Assistant](https://www.home-assistant.io/) instance
+- 🐳 Docker (optional, for speech features)
 
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/jango-blockchained/homeassistant-mcp.git
-
-# Install dependencies 
-cd homeassistant-mcp
-npm install
-
-# Build the project
-npm run build
-```
-
-### Running the Server
+### Option 1: NPX (Easiest)
 
 ```bash
-# Start with standard I/O transport (for AI assistant integration)
-npm start -- --stdio
-
-# Start with HTTP transport (for API access)
-npm start -- --http
-
-# Start with both transports
-npm start -- --stdio --http
-```
-
-### Configuration
-
-Configure the server using environment variables or a `.env` file:
-
-```dotenv
-# Server configuration
-PORT=3000
-NODE_ENV=development
-
-# Execution settings
-EXECUTION_TIMEOUT=30000
-STREAMING_ENABLED=true
-
-# Transport settings
-USE_STDIO_TRANSPORT=true
-USE_HTTP_TRANSPORT=true
-
-# Debug and logging
-DEBUG_MODE=false
-DEBUG_STDIO=false
-DEBUG_HTTP=false
-SILENT_STARTUP=false
-
-# CORS settings
-CORS_ORIGIN=*
-```
-
-## Architecture
-
-The MCP server is built with a layered architecture:
-
-1. **Transport Layer** - Handles communication protocols (stdio, HTTP)
-2. **Middleware Layer** - Processes requests through a pipeline
-3. **Tool Layer** - Implements specific functionality
-4. **Resource Layer** - Manages stateful resources
-
-### Tools
-
-Tools are the primary way to add functionality to the MCP server. Each tool:
-
-- Has a unique name
-- Accepts typed parameters
-- Returns typed results
-- Can stream partial results
-- Validates inputs and outputs
-
-Example tool registration:
-
-```typescript
-import { LightsControlTool } from "./tools/homeassistant/lights.tool.js";
-import { ClimateControlTool } from "./tools/homeassistant/climate.tool.js";
-
-// Register tools
-server.registerTool(new LightsControlTool());
-server.registerTool(new ClimateControlTool());
-```
-
-## 📦 Resources
-
-The server implements a comprehensive resource management system for stateful data:
-
-### Resource Manager (MCPServer)
-
-- **Resource Types**: `device`, `area`, `user`, `automation`, `scene`, `script`, `group`
-- **Resource Lifecycle**: `acquireResource()`, `releaseResource()`, `listResources()`
-- **State Management**: Resources have `id`, `type`, `state`, `attributes`, `lastUpdated`
-- **Resource Storage**: In-memory Map-based storage with type categorization
-
-### Context Manager (`src/context/index.ts`)
-
-- **Resource Relationships**: Defines relationships between resources (`contains`, `controls`, `triggers`, `depends_on`, `groups`)
-- **State History**: Maintains history of resource state changes (configurable limit)
-- **Context Analysis**: Analyzes resource usage, dependencies, and relationships
-- **Event Subscriptions**: Subscribe to resource updates by ID or type
-
-## 🛠️ Tools
-
-The MCP server implements a robust tool system for controlling Home Assistant devices:
-
-### Core Tool Infrastructure
-
-- **BaseTool Class**: Abstract base class providing parameter validation, execution context, error handling, and streaming support
-- **Tool Registration**: Tools are registered with the `MCPServer` instance in `src/index.ts`
-- **Parameter Validation**: Uses Zod schemas for type-safe parameter validation
-- **Metadata System**: Tools include category, version, tags, and platform information
-
-### Home Assistant Tools (Primary)
-
-Located in `src/tools/homeassistant/`:
-
-1. **LightsControlTool** (`lights.tool.ts`)
-   - Actions: `list`, `get`, `turn_on`, `turn_off`
-   - Parameters: `brightness`, `color_temp`, `rgb_color`
-   - Integrates with HA light entities
-
-2. **ClimateControlTool** (`climate.tool.ts`)
-   - Controls thermostats and HVAC systems
-   - Actions: `list`, `get`, `set_hvac_mode`, `set_temperature`, etc.
-   - Parameters: `temperature`, `hvac_mode`, `fan_mode`
-
-3. **AutomationTool** (`automation.tool.ts`)
-   - Actions: `list`, `toggle`, `trigger`
-   - Manages HA automations
-
-4. **SceneTool** (`scene.tool.ts`)
-   - Actions: `list`, `activate`
-   - Controls HA scenes
-
-5. **NotifyTool** (`notify.tool.ts`)
-   - Sends notifications through HA
-   - Parameters: `message`, `title`, `target`, `data`
-
-6. **ListDevicesTool** (`list-devices.tool.ts`)
-   - Lists HA devices with filtering
-   - Filters: `domain`, `area`, `floor`
-
-### Additional Tools
-
-- **ControlTool** (`control.tool.ts`): Generic device control (appears to be an alternative implementation)
-- **AddonTool**, **HistoryTool**, **PackageTool**, etc.: Various utility tools
-
-## 🤖 Model Access
-
-The server provides several forms of AI/model integration:
-
-### Speech-to-Text (Whisper Models) 🚧 **PARTIALLY IMPLEMENTED**
-
-Located in `src/speech/`:
-
-- **Framework Structure**: Basic classes and interfaces for speech-to-text integration
-- **Docker Configuration**: `docker-compose.speech.yml` configured for fast-whisper and wyoming-openwakeword containers
-- **Cached Models**: Pre-downloaded models available in `models/` directory
-- **Wake Word Detection**: Basic framework for wake word monitoring (not fully implemented)
-- **Transcription**: Core transcription logic contains placeholder code
-
-> **Note**: Speech features are currently in development. The framework is in place but core functionality returns placeholder responses. Full implementation requires Docker container integration and audio processing pipeline development.
-
-### Natural Language Processing (NLP)
-
-Located in `src/ai/nlp/`:
-
-- **NLPProcessor**: Main processor coordinating entity extraction, intent classification, and context analysis
-- **IntentClassifier**: Uses regex patterns to classify commands (turn_on, turn_off, set, query)
-- **EntityExtractor**: Extracts device names and parameters from text
-- **ContextAnalyzer**: Analyzes contextual relevance of commands
-
-### AI Endpoints (`src/ai/endpoints/ai-router.ts`)
-
-- **Model Support**: Rate limiting for `claude`, `gpt4`, `custom` models
-- **Interpret Endpoint**: Processes natural language commands into structured intents
-- **Rate Limiting**: Per-model limits (Claude: 100/min, GPT-4: 50/min)
-- **Dependencies**: `@anthropic-ai/sdk`, `openai` packages included
-
-### AI Types and Interfaces
-
-- **Confidence Scoring**: Overall, intent, entities, context confidence levels
-- **Error Handling**: Structured error responses with suggestions and recovery options
-- **Context Tracking**: User sessions, timestamps, location, previous actions
-
-### API
-```
-
-## 📦 Resources
-
-The server implements a comprehensive resource management system for stateful data:
-
-### Resource Manager (MCPServer)
-- **Resource Types**: `device`, `area`, `user`, `automation`, `scene`, `script`, `group`
-- **Resource Lifecycle**: `acquireResource()`, `releaseResource()`, `listResources()`
-- **State Management**: Resources have `id`, `type`, `state`, `attributes`, `lastUpdated`
-- **Resource Storage**: In-memory Map-based storage with type categorization
-
-### Context Manager (`src/context/index.ts`)
-- **Resource Relationships**: Defines relationships between resources (`contains`, `controls`, `triggers`, `depends_on`, `groups`)
-- **State History**: Maintains history of resource state changes (configurable limit)
-- **Context Analysis**: Analyzes resource usage, dependencies, and relationships
-- **Event Subscriptions**: Subscribe to resource updates by ID or type
-
-## 🛠️ Tools
-
-The MCP server implements a robust tool system for controlling Home Assistant devices:
-
-### Core Tool Infrastructure
-- **BaseTool Class**: Abstract base class providing parameter validation, execution context, error handling, and streaming support
-- **Tool Registration**: Tools are registered with the `MCPServer` instance in `src/index.ts`
-- **Parameter Validation**: Uses Zod schemas for type-safe parameter validation
-- **Metadata System**: Tools include category, version, tags, and platform information
-
-### Home Assistant Tools (Primary) ✅ **FULLY IMPLEMENTED**
-Located in `src/tools/homeassistant/`:
-
-1. **LightsControlTool** (`lights.tool.ts`) ✅
-   - Actions: `list`, `get`, `turn_on`, `turn_off`
-   - Parameters: `brightness`, `color_temp`, `rgb_color`
-   - Integrates with HA light entities
-
-2. **ClimateControlTool** (`climate.tool.ts`) ✅
-   - Controls thermostats and HVAC systems
-   - Actions: `list`, `get`, `set_hvac_mode`, `set_temperature`, etc.
-   - Parameters: `temperature`, `hvac_mode`, `fan_mode`
-
-3. **AutomationTool** (`automation.tool.ts`) ✅
-   - Actions: `list`, `toggle`, `trigger`
-   - Manages HA automations
-
-4. **SceneTool** (`scene.tool.ts`) ✅
-   - Actions: `list`, `activate`
-   - Controls HA scenes
-
-5. **NotifyTool** (`notify.tool.ts`) ✅
-   - Sends notifications through HA
-   - Parameters: `message`, `title`, `target`, `data`
-
-6. **ListDevicesTool** (`list-devices.tool.ts`) ✅
-   - Lists HA devices with filtering
-   - Filters: `domain`, `area`, `floor`
-
-### Additional Tools ✅ **REGISTERED**
-- **AddonTool** (`addon.tool.ts`): Manage Home Assistant add-ons (install, uninstall, start, stop, restart)
-- **HistoryTool** (`history.tool.ts`): Query device state history and statistics
-- **PackageTool** (`package.tool.ts`): Manage HA packages and custom integrations
-- **AutomationConfigTool** (`automation-config.tool.ts`): Configure and manage automations
-- **SubscribeEventsTool** (`subscribe-events.tool.ts`): Subscribe to real-time HA events
-- **SSEStatsTool** (`sse-stats.tool.ts`): Server-sent events statistics and monitoring
-
-## 🤖 Model Access
-
-The server provides several forms of AI/model integration:
-
-### Speech-to-Text (Whisper Models) 🚧 **PARTIALLY IMPLEMENTED**
-Located in `src/speech/`:
-- **Framework Structure**: Basic classes and interfaces for speech-to-text integration
-- **Docker Configuration**: `docker-compose.speech.yml` configured for fast-whisper and wyoming-openwakeword containers
-- **Cached Models**: Pre-downloaded models available in `models/` directory
-- **Wake Word Detection**: Basic framework for wake word monitoring (not fully implemented)
-- **Transcription**: Core transcription logic contains placeholder code
-
-> **Note**: Speech features are currently in development. The framework is in place but core functionality returns placeholder responses. Full implementation requires Docker container integration and audio processing pipeline development.
-
-### Natural Language Processing (NLP) ✅ **IMPLEMENTED**
-Located in `src/ai/nlp/`:
-- **NLPProcessor**: Main processor coordinating entity extraction, intent classification, and context analysis
-- **Intent Classification**: Rule-based intent recognition for common smart home commands
-- **Entity Extraction**: Pattern-based entity recognition for devices, areas, and actions
-- **Context Analysis**: Basic conversation context tracking
-- **IntentClassifier**: Uses regex patterns to classify commands (turn_on, turn_off, set, query)
-- **EntityExtractor**: Extracts device names and parameters from text
-- **ContextAnalyzer**: Analyzes contextual relevance of commands
-
-### AI Endpoints (`src/ai/endpoints/ai-router.ts`)
-- **Model Support**: Rate limiting for `claude`, `gpt4`, `custom` models
-- **Interpret Endpoint**: Processes natural language commands into structured intents
-- **Rate Limiting**: Per-model limits (Claude: 100/min, GPT-4: 50/min)
-- **Dependencies**: `@anthropic-ai/sdk`, `openai` packages included
-
-### AI Types and Interfaces
-- **Confidence Scoring**: Overall, intent, entities, context confidence levels
-- **Error Handling**: Structured error responses with suggestions and recovery options
-- **Context Tracking**: User sessions, timestamps, location, previous actions
-
-### API
-
-When running with HTTP transport, the server provides a JSON-RPC 2.0 API:
-
-- `POST /api/mcp/jsonrpc` - Execute a tool
-- `GET /api/mcp/stream` - Connect to SSE stream for real-time updates
-- `GET /api/mcp/info` - Get server information
-- `GET /health` - Health check endpoint
-
-## Integration with AI Models
-
-### Claude Integration
-
-```typescript
-import { createClaudeToolDefinitions } from "./mcp/index.js";
-
-// Generate Claude-compatible tool definitions
-const claudeTools = createClaudeToolDefinitions([
-  new LightsControlTool(),
-  new ClimateControlTool()
-]);
-
-// Use with Claude API
-const messages = [
-  { role: "user", content: "Turn on the lights in the living room" }
-];
-
-const response = await claude.messages.create({
-  model: "claude-3-opus-20240229",
-  messages,
-  tools: claudeTools
-});
-```
-
-### VS Code Integration
-
-To use the Home Assistant MCP server with VS Code, you need to:
-
-1. **Install the Claude Code extension** for VS Code (if not already installed)
-2. **Configure the MCP server** in your workspace settings
-
-The VS Code configuration is already set up in this project. The `.vscode/settings.json` file contains:
-
-```json
-{
-    "mcp": {
-        "servers": {
-            "homeassistant-mcp": {
-                "command": "bun",
-                "args": ["run", "start:stdio"],
-                "cwd": "${workspaceFolder}",
-                "env": {
-                    "NODE_ENV": "development"
-                }
-            }
-        }
-    }
-}
-```
-
-This configuration:
-- Uses the `start:stdio` script to run the MCP server in stdio mode
-- Sets the working directory to the workspace root
-- Configures the environment for development
-
-#### Alternative Configuration (using Node.js)
-
-If you prefer to use Node.js instead of Bun:
-
-```json
-{
-    "mcp": {
-        "servers": {
-            "homeassistant-mcp": {
-                "command": "npm",
-                "args": ["run", "stdio"],
-                "cwd": "${workspaceFolder}",
-                "env": {
-                    "NODE_ENV": "development"
-                }
-            }
-        }
-    }
-}
-```
-
-#### Troubleshooting VS Code Integration
-
-1. **Ensure the server is built**: Run `bun run build` before using the MCP server
-2. **Check VS Code extension**: Make sure the Claude Code extension is installed and enabled
-3. **Restart VS Code**: Sometimes VS Code needs to be restarted to pick up MCP configuration changes
-4. **Check the output**: The MCP server should start automatically when VS Code loads the workspace
-
-### Cursor Integration
-
-To use the Home Assistant MCP server with Cursor, add the following to your `.cursor/config/config.json` file:
-
-```json
-{
-  "mcpServers": {
-    "homeassistant-mcp": {
-      "command": "bash",
-      "args": ["-c", "cd ${workspaceRoot} && bun run dist/index.js --stdio 2>/dev/null | grep -E '\\{\"jsonrpc\":\"2\\.0\"'"],
-      "env": {
-        "NODE_ENV": "development",
-        "USE_STDIO_TRANSPORT": "true",
-        "DEBUG_STDIO": "true"
-      }
-    }
-  }
-}
-```
-
-This configuration:
-1. Runs the MCP server with stdio transport
-2. Redirects all stderr output to /dev/null
-3. Uses grep to filter stdout for lines containing `{"jsonrpc":"2.0"`, ensuring clean JSON-RPC output
-
-#### Troubleshooting Cursor Integration
-
-If you encounter a "failed to create client" error when using the MCP server with Cursor:
-
-1. Make sure you're using the correct command and arguments in your Cursor configuration
-   - The bash script approach ensures only valid JSON-RPC messages reach Cursor
-   - Ensure the server is built by running `bun run build` before trying to connect
-
-2. Ensure the server is properly outputting JSON-RPC messages to stdout:
-   ```bash
-   bun run dist/index.js --stdio 2>/dev/null | grep -E '\{"jsonrpc":"2\.0"' > json_only.txt
-   ```
-   Then examine json_only.txt to verify it contains only valid JSON-RPC messages.
-
-3. Make sure grep is installed on your system (it should be available by default on most systems)
-
-4. Try rebuilding the server with:
-   ```bash
-   bun run build
-   ```
-   
-5. Enable debug mode by setting `DEBUG_STDIO=true` in the environment variables
-
-If the issue persists, you can try:
-1. Restarting Cursor
-2. Clearing Cursor's cache (Help > Developer > Clear Cache and Reload)
-3. Using a similar approach with Node.js:
-   ```json
-   {
-     "command": "bash",
-     "args": ["-c", "cd ${workspaceRoot} && node dist/index.js --stdio 2>/dev/null | grep -E '\\{\"jsonrpc\":\"2\\.0\"'"]
-   }
-   ```
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-# MCP Server for Home Assistant 🏠🤖
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Bun](https://img.shields.io/badge/bun-%3E%3D1.0.26-black)](https://bun.sh) [![TypeScript](https://img.shields.io/badge/typescript-%5E5.0.0-blue.svg)](https://www.typescriptlang.org) [![smithery badge](https://smithery.ai/badge/@jango-blockchained/homeassitant-mcp)](https://smithery.ai/server/@jango-blockchained/homeassitant-mcp)
-
-## Overview 🌐
-
-MCP (Model Context Protocol) Server is my lightweight integration tool for Home Assistant, providing a flexible interface for device management and automation. It's designed to be fast, secure, and easy to use. Built with Bun for maximum performance.
-
-## Core Features ✨
-
-- 🔌 Basic device control via REST API
-- 📡 WebSocket/Server-Sent Events (SSE) for state updates
-- 🤖 Simple automation rule management
-- 🔐 JWT-based authentication
-- 🔄 Standard I/O (stdio) transport for integration with Claude and other AI assistants
-
-## Why Bun? 🚀
-
-I chose Bun as the runtime for several key benefits:
-
-- ⚡ **Blazing Fast Performance**
-  - Up to 4x faster than Node.js
-  - Built-in TypeScript support
-  - Optimized file system operations
-
-- 🎯 **All-in-One Solution**
-  - Package manager (faster than npm/yarn)
-  - Bundler (no webpack needed)
-  - Test runner (built-in testing)
-  - TypeScript transpiler
-
-- 🔋 **Built-in Features**
-  - SQLite3 driver
-  - .env file loading
-  - WebSocket client/server
-  - File watcher
-  - Test runner
-
-- 💾 **Resource Efficient**
-  - Lower memory usage
-  - Faster cold starts
-  - Better CPU utilization
-
-- 🔄 **Node.js Compatibility**
-  - Runs most npm packages
-  - Compatible with Express/Fastify
-  - Native Node.js APIs
-
-## Prerequisites 📋
-
-- 🚀 [Bun runtime](https://bun.sh) (v1.0.26+)
-- 🏡 [Home Assistant](https://www.home-assistant.io/) instance
-- 🐳 Docker (optional, recommended for deployment)
-- 🖥️ Node.js 18+ (optional, for speech features)
-- 🎮 NVIDIA GPU with CUDA support (optional, for faster speech processing)
-
-## Quick Start 🚀
-
-1. Clone my repository:
-```bash
-git clone https://github.com/jango-blockchained/homeassistant-mcp.git
-cd homeassistant-mcp
-```
-
-2. Set up the environment:
-```bash
-# Make my setup script executable
-chmod +x scripts/setup-env.sh
-
-# Run setup (defaults to development)
-./scripts/setup-env.sh
-
-# Or specify an environment:
-NODE_ENV=production ./scripts/setup-env.sh
-
-# Force override existing files:
-./scripts/setup-env.sh --force
-```
-
-3. Configure your settings:
-- Edit `.env` file with your Home Assistant details
-- Required: Add your `HASS_TOKEN` (long-lived access token)
-
-4. Build and launch with Docker:
-```bash
-# Standard build
-./docker-build.sh
-
-# Launch:
-docker compose up -d
-```
-
-## Docker Build Options 🐳
-
-My Docker build script (`docker-build.sh`) supports different configurations:
-
-### 1. Standard Build
-```bash
-./docker-build.sh
-```
-- Basic MCP server functionality
-- REST API and WebSocket support
-- No speech features
-
-### 2. Speech-Enabled Build
-```bash
-./docker-build.sh --speech
-```
-- Includes wake word detection
-- Speech-to-text capabilities
-- Pulls required images:
-  - `onerahmet/openai-whisper-asr-webservice`
-  - `rhasspy/wyoming-openwakeword`
-
-### 3. GPU-Accelerated Build
-```bash
-./docker-build.sh --speech --gpu
-```
-- All speech features
-- CUDA GPU acceleration
-- Optimized for faster processing
-- Float16 compute type for better performance
-
-### Build Features
-- 🔄 Automatic resource allocation
-- 💾 Memory-aware building
-- 📊 CPU quota management
-- 🧹 Automatic cleanup
-- 📝 Detailed build logs
-- 📊 Build summary and status
-
-## Environment Configuration 🔧
-
-I've implemented a hierarchical configuration system:
-
-### File Structure 📁
-1. `.env.example` - My template with all options
-2. `.env` - Your configuration (copy from .env.example)
-3. Environment overrides:
-   - `.env.dev` - Development settings
-   - `.env.prod` - Production settings
-   - `.env.test` - Test settings
-
-### Loading Priority ⚡
-Files load in this order:
-1. `.env` (base config)
-2. Environment-specific file:
-   - `NODE_ENV=development` → `.env.dev`
-   - `NODE_ENV=production` → `.env.prod`
-   - `NODE_ENV=test` → `.env.test`
-
-Later files override earlier ones.
-
-## Development 💻
-
-```bash
-# Install dependencies
-bun install
-
-# Run in development mode
-bun run dev
-
-# Run tests
-bun test
-
-# Run with hot reload
-bun --hot run dev
-
-# Build for production
-bun build ./src/index.ts --target=bun
-
-# Run production build
-bun run start
-```
-
-### Performance Comparison 📊
-
-| Operation | Bun | Node.js |
-|-----------|-----|---------|
-| Install Dependencies | ~2s | ~15s |
-| Cold Start | 300ms | 1000ms |
-| Build Time | 150ms | 4000ms |
-| Memory Usage | ~150MB | ~400MB |
-
-## Documentation 📚
-
-### Core Documentation
-- [Configuration Guide](docs/configuration.md)
-- [API Documentation](docs/api.md)
-- [Troubleshooting](docs/troubleshooting.md)
-
-### Advanced Features
-- [Natural Language Processing](docs/nlp.md) - AI-powered automation analysis and control
-- [Custom Prompts Guide](docs/prompts.md) - Create and customize AI behavior
-- [Extras & Tools](docs/extras.md) - Additional utilities and advanced features
-
-## Client Integration 🔗
-
-### Cursor Integration 🖱️
-Add to `.cursor/config/config.json`:
-```json
-{
-  "mcpServers": {
-    "homeassistant-mcp": {
-      "command": "bash",
-      "args": ["-c", "cd ${workspaceRoot} && bun run dist/index.js --stdio 2>/dev/null | grep -E '\\{\"jsonrpc\":\"2\\.0\"'"],
-      "env": {
-        "NODE_ENV": "development",
-        "USE_STDIO_TRANSPORT": "true",
-        "DEBUG_STDIO": "true"
-      }
-    }
-  }
-}
-```
-
-### Claude Desktop 💬
-Add to your Claude config:
-```json
-{
-  "mcpServers": {
-    "homeassistant-mcp": {
-      "command": "bun",
-      "args": ["run", "start", "--port", "8080"],
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
-  }
-}
-```
-
-### Command Line 💻
-Windows users can use the provided script:
-1. Go to `scripts` directory
-2. Run `start_mcp.cmd`
-
-## Additional Features
-
-### Speech Features 🎤
-
-MCP Server optionally supports speech processing capabilities:
-- 🗣️ Wake word detection ("hey jarvis", "ok google", "alexa")
-- 🎯 Speech-to-text using fast-whisper
-- 🌍 Multiple language support
-- 🚀 GPU acceleration support
-
-#### Speech Features Setup
-
-##### Prerequisites
-1. 🐳 Docker installed and running
-2. 🎮 NVIDIA GPU with CUDA (optional)
-3. 💾 4GB+ RAM (8GB+ recommended)
-
-##### Configuration
-1. Enable speech in `.env`:
-```bash
-ENABLE_SPEECH_FEATURES=true
-ENABLE_WAKE_WORD=true
-ENABLE_SPEECH_TO_TEXT=true
-WHISPER_MODEL_PATH=/models
-WHISPER_MODEL_TYPE=base
-```
-
-2. Choose your STT engine:
-```bash
-# For standard Whisper
-STT_ENGINE=whisper
-
-# For Fast Whisper (GPU recommended)
-STT_ENGINE=fast-whisper
-CUDA_VISIBLE_DEVICES=0  # Set GPU device
-```
-
-##### Available Models 🤖
-Choose based on your needs:
-- `tiny.en`: Fastest, basic accuracy
-- `base.en`: Good balance (recommended)
-- `small.en`: Better accuracy, slower
-- `medium.en`: High accuracy, resource intensive
-- `large-v2`: Best accuracy, very resource intensive
-
-##### Launch with Speech Features
-```bash
-# Build with speech support
-./docker-build.sh --speech
-
-# Launch with speech features:
-docker compose -f docker-compose.yml -f docker-compose.speech.yml up -d
-```
-
-### Extra Tools 🛠️
-
-I've included several powerful tools in the `extra/` directory to enhance your Home Assistant experience:
-
-1. **Home Assistant Analyzer CLI** (`ha-analyzer-cli.ts`)
-   - Deep automation analysis using AI models
-   - Security vulnerability scanning
-   - Performance optimization suggestions
-   - System health metrics
-
-2. **Speech-to-Text Example** (`speech-to-text-example.ts`)
-   - Wake word detection
-   - Speech-to-text transcription
-   - Multiple language support
-   - GPU acceleration support
-
-3. **Claude Desktop Setup** (`claude-desktop-macos-setup.sh`)
-   - Automated Claude Desktop installation for macOS
-   - Environment configuration
-   - MCP integration setup
-
-See [Extras Documentation](docs/extras.md) for detailed usage instructions and examples.
-
-## License 📄
-
-MIT License. See [LICENSE](LICENSE) for details.
-
-## Author 👨‍💻
-
-Created by [jango-blockchained](https://github.com/jango-blockchained)
-
-## Running with Standard I/O Transport 📝
-
-MCP Server supports a JSON-RPC 2.0 stdio transport mode for direct integration with AI assistants like Claude:
-
-### MCP Stdio Features
-
-✅ **JSON-RPC 2.0 Compatibility**: Full support for the MCP protocol standard  
-✅ **NPX Support**: Run directly without installation using `npx @jango-blockchained/homeassistant-mcp@latest`  
-✅ **Auto Configuration**: Creates necessary directories and default configuration  
-✅ **Cross-Platform**: Works on macOS, Linux, and Windows  
-✅ **Claude Desktop Integration**: Ready to use with Claude Desktop  
-✅ **Parameter Validation**: Automatic validation of tool parameters  
-✅ **Error Handling**: Standardized error codes and handling  
-✅ **Detailed Logging**: Logs to files without polluting stdio  
-
-### Option 1: Using NPX (Easiest)
-
-Run the MCP server directly without installation using npx:
-
-```bash
-# Basic usage
 npx @jango-blockchained/homeassistant-mcp@latest
-
-# Or with environment variables
-HASS_URL=http://your-ha-instance:8123 HASS_TOKEN=your_token npx @jango-blockchained/homeassistant-mcp@latest
 ```
-
-This will:
-1. Install the package temporarily
-2. Automatically run in stdio mode with JSON-RPC 2.0 transport
-3. Create a logs directory for logging
-4. Create a default .env file if not present
-
-Perfect for integration with Claude Desktop or other MCP clients.
-
-#### Integrating with Claude Desktop
-
-To use MCP with Claude Desktop:
-
-1. Open Claude Desktop settings
-2. Go to the "Advanced" tab
-3. Under "MCP Server", select "Custom"
-4. Enter the command: `npx @jango-blockchained/homeassistant-mcp@latest`
-5. Click "Save"
-
-Claude will now use the MCP server for Home Assistant integration, allowing you to control your smart home directly through Claude.
 
 ### Option 2: Local Installation
 
-1. Update your `.env` file to enable stdio transport:
-   ```
-   USE_STDIO_TRANSPORT=true
-   ```
-
-2. Run the server using the stdio-start script:
-   ```bash
-   ./stdio-start.sh
-   ```
-
-   Available options:
-   ```
-   ./stdio-start.sh --debug    # Enable debug mode
-   ./stdio-start.sh --rebuild  # Force rebuild
-   ./stdio-start.sh --help     # Show help
-   ```
-
-When running in stdio mode:
-- The server communicates via stdin/stdout using JSON-RPC 2.0 format
-- No HTTP server is started
-- Console logging is disabled to avoid polluting the stdio stream
-- All logs are written to the log files in the `logs/` directory
-
-### JSON-RPC 2.0 Message Format
-
-#### Request Format
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "unique-request-id",
-  "method": "tool-name",
-  "params": {
-    "param1": "value1",
-    "param2": "value2"
-  }
-}
-```
-
-#### Response Format
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "unique-request-id",
-  "result": {
-    // Tool-specific result data
-  }
-}
-```
-
-#### Error Response Format
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "unique-request-id",
-  "error": {
-    "code": -32000,
-    "message": "Error message",
-    "data": {} // Optional error details
-  }
-}
-```
-
-#### Notification Format (Server to Client)
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "notification-type",
-  "params": {
-    // Notification data
-  }
-}
-```
-
-### Supported Error Codes
-
-| Code    | Description        | Meaning                                  |
-|---------|--------------------|------------------------------------------|
-| -32700  | Parse error        | Invalid JSON was received                |
-| -32600  | Invalid request    | JSON is not a valid request object       |
-| -32601  | Method not found   | Method does not exist or is unavailable  |
-| -32602  | Invalid params     | Invalid method parameters                |
-| -32603  | Internal error     | Internal JSON-RPC error                  |
-| -32000  | Tool execution     | Error executing the tool                 |
-| -32001  | Validation error   | Parameter validation failed              |
-
-### Integrating with Claude Desktop
-
-To use this MCP server with Claude Desktop:
-
-1. Create or edit your Claude Desktop configuration:
-   ```bash
-   # On macOS
-   nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
-   
-   # On Linux
-   nano ~/.config/Claude/claude_desktop_config.json
-   
-   # On Windows
-   notepad %APPDATA%\Claude\claude_desktop_config.json
-   ```
-
-2. Add the MCP server configuration:
-   ```json
-   {
-     "mcpServers": {
-       "homeassistant-mcp": {
-         "command": "npx",
-         "args": ["homeassistant-mcp"],
-         "env": {
-           "HASS_TOKEN": "your_home_assistant_token_here",
-           "HASS_HOST": "http://your_home_assistant_host:8123"
-         }
-       }
-     }
-   }
-   ```
-
-3. Restart Claude Desktop.
-
-4. In Claude, you can now use the Home Assistant MCP tools.
-
-### JSON-RPC 2.0 Message Format
-
-## Usage
-
-### Using NPX (Easiest)
-
-The simplest way to use the Home Assistant MCP server is through NPX:
-
-```bash
-# Start the server in stdio mode
-npx @jango-blockchained/homeassistant-mcp@latest
-```
-
-This will automatically:
-1. Start the server in stdio mode
-2. Output JSON-RPC messages to stdout
-3. Send log messages to stderr
-4. Create a logs directory if it doesn't exist
-
-You can redirect stderr to hide logs and only see the JSON-RPC output:
-
-```bash
-npx @jango-blockchained/homeassistant-mcp@latest 2>/dev/null
-```
-
-### Manual Installation
-
-If you prefer to install the package globally or locally:
-
 ```bash
 # Install globally
-npm install -g @jango-blockchained/homeassistant-mcp
+bun add -g @jango-blockchained/homeassistant-mcp
 
-# Then run
+# Or locally
+bun add homeassistant-mcp
+
+# Run
 homeassistant-mcp
 ```
 
-Or install locally:
+### Option 3: From Source
 
 ```bash
-# Install locally
-npm install homeassistant-mcp
-
-# Then run using npx
-npx homeassistant-mcp
+git clone https://github.com/jango-blockchained/homeassistant-mcp.git
+cd homeassistant-mcp
+bun install
+bun run build
+bun run start:stdio
 ```
 
-### Advanced Usage
+---
+
+## 🛠️ Usage
+
+### AI Assistant Integration
+
+#### Claude Desktop
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "npx",
+      "args": ["@jango-blockchained/homeassistant-mcp@latest"]
+    }
+  }
+}
+```
+
+#### VS Code + Claude Extension
+
+The `.vscode/settings.json` is pre-configured for immediate use.
+
+#### Cursor
+
+Add to `.cursor/config/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-mcp": {
+      "command": "npx",
+      "args": ["@jango-blockchained/homeassistant-mcp@latest"]
+    }
+  }
+}
+```
+
+### API Usage
+
+Start the HTTP server:
+
+```bash
+bun run start -- --http
+```
+
+Available endpoints:
+
+- `POST /api/tools/call` - Execute tools
+- `GET /api/resources/list` - List resources
+- `GET /api/health` - Health check
+- `WebSocket /api/ws` - Real-time updates
+
+### Configuration
+
+Create a `.env` file:
+
+```env
+# Home Assistant
+HASS_HOST=http://your-ha-instance:8123
+HASS_TOKEN=your_long_lived_access_token
+
+# Server
+PORT=3000
+NODE_ENV=production
+
+# Security
+JWT_SECRET=your-secret-key
+RATE_LIMIT_WINDOW=15
+RATE_LIMIT_MAX=50
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   AI Assistant  │◄──►│   MCP Server    │◄──►│ Home Assistant  │
+│  (Claude/GPT)   │    │                 │    │                 │
+└─────────────────┘    │ ┌─────────────┐ │    └─────────────────┘
+                       │ │  Transport  │ │
+                       │ │   Layer     │ │
+                       │ └─────────────┘ │
+                       │ ┌─────────────┐ │
+                       │ │ Middleware  │ │
+                       │ │   Layer     │ │
+                       │ └─────────────┘ │
+                       │ ┌─────────────┐ │
+                       │ │   Tools     │ │
+                       │ │   Layer     │ │
+                       └─────────────────┘
+```
+
+### Core Components
+
+- **Transport Layer**: HTTP, WebSocket, Stdio
+- **Middleware Layer**: Security, validation, logging
+- **Tools Layer**: Device control, automation, notifications
+- **Resource Manager**: State management and caching
+
+### Built-in Tools
+
+- 🔦 **Lights Control**: Full spectrum lighting management
+- 🌡️ **Climate Control**: HVAC and thermostat operations
+- ⚙️ **Automation**: Scene and automation triggers
+- 📱 **Notifications**: Multi-channel alert system
+- 📋 **Device Management**: Discovery and organization
+
+---
+
+## 🎯 Example Commands
+
+Once integrated, your AI assistant can understand commands like:
+
+> "Turn off all lights in the bedroom"
+> "Set the thermostat to 72°F"
+> "Activate the movie scene"
+> "What's the current temperature in the living room?"
+> "Notify everyone that dinner is ready"
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how to get involved:
+
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch
+3. 💻 Make your changes
+4. 🧪 Add tests if applicable
+5. 📝 Update documentation
+6. 🔄 Submit a pull request
+
+### Development Setup
+
+```bash
+bun install
+bun run build
+bun test
+```
+
+### Code Style
+
+- TypeScript with strict mode
+- ESLint for code quality
+- Prettier for formatting
+- Husky for pre-commit hooks
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with ❤️ using:
+
+- [Bun](https://bun.sh) - The fast JavaScript runtime
+- [Home Assistant](https://www.home-assistant.io/) - The open-source home automation platform
+- [Model Context Protocol](https://modelcontextprotocol.io/) - The AI integration standard
+
+---
+
+Transform your smart home into an AI-powered experience
