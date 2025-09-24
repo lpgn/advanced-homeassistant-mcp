@@ -1,4 +1,3 @@
-import { describe, expect, test } from "bun:test";
 import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
 import {
     type MockLiteMCPInstance,
@@ -10,7 +9,8 @@ import {
 } from '../utils/test-utils';
 import { resolve } from "path";
 import { config } from "dotenv";
-import { Tool as IndexTool, tools as indexTools } from "../../src/index.js";
+import { Tool as IndexTool } from "../../src/types/index.js";
+import { tools as indexTools } from "../../src/tools/index.js";
 
 // Load test environment variables
 config({ path: resolve(process.cwd(), '.env.test') });
@@ -29,7 +29,7 @@ describe('Home Assistant MCP Server', () => {
         await import('../../src/index.js');
 
         // Get the mock instance and tool calls
-        addToolCalls = liteMcpInstance.addTool.mock.calls.map(call => call.args[0]);
+        addToolCalls = liteMcpInstance.addTool.mock.calls.map(call => call[0]);
     });
 
     afterEach(() => {

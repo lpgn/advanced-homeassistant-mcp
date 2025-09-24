@@ -1,6 +1,5 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, mock, it, beforeEach, afterEach } from "bun:test";
 import { TokenManager, validateRequest, sanitizeInput, errorHandler, rateLimiter, securityHeaders } from '../../src/security/index.js';
-import { mock, describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import jwt from 'jsonwebtoken';
 
 const TEST_SECRET = 'test-secret-that-is-long-enough-for-testing-purposes';

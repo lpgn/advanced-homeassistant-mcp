@@ -38,7 +38,7 @@ describe('AI Router', () => {
     });
 
     afterEach(() => {
-        mock.clearAllMocks();
+        mock.restore();
     });
 
     describe('POST /ai/interpret', () => {
@@ -63,19 +63,15 @@ describe('AI Router', () => {
             expect(response.status).toBe(200);
             const body = response.body as AIResponse;
             expect(typeof body.natural_language).toBe('string');
-            expect(body.structured_data).toEqual(expect.objectContaining({
-                success: true,
-                action_taken: 'turn_on',
-                entities_affected: ['light.living_room'],
-                state_changes: expect.any(Object)
-            }));
+            expect(body.structured_data.success).toBe(true);
+            expect(body.structured_data.action_taken).toBe('turn_on');
+            expect(body.structured_data.entities_affected).toEqual(['light.living_room']);
+            expect(typeof body.structured_data.state_changes).toBe('object');
             expect(Array.isArray(body.next_suggestions)).toBe(true);
-            expect(body.confidence).toEqual(expect.objectContaining({
-                overall: expect.any(Number),
-                intent: expect.any(Number),
-                entities: expect.any(Number),
-                context: expect.any(Number)
-            }));
+            expect(typeof body.confidence.overall).toBe('number');
+            expect(typeof body.confidence.intent).toBe('number');
+            expect(typeof body.confidence.entities).toBe('number');
+            expect(typeof body.confidence.context).toBe('number');
             expect(body.context).toBeDefined();
         });
 
@@ -88,11 +84,11 @@ describe('AI Router', () => {
                 });
 
             expect(response.status).toBe(500);
-            const error = response.body.error as AIError;
-            expect(error.code).toBe('PROCESSING_ERROR');
-            expect(typeof error.message).toBe('string');
-            expect(typeof error.suggestion).toBe('string');
-            expect(Array.isArray(error.recovery_options)).toBe(true);
+            const body = response.body as { error: AIError };
+            expect(body.error.code).toBe('PROCESSING_ERROR');
+            expect(typeof body.error.message).toBe('string');
+            expect(typeof body.error.suggestion).toBe('string');
+            expect(Array.isArray(body.error.recovery_options)).toBe(true);
         });
 
         test('should handle missing required fields', async () => {
@@ -104,9 +100,9 @@ describe('AI Router', () => {
                 });
 
             expect(response.status).toBe(500);
-            const error = response.body.error as AIError;
-            expect(error.code).toBe('PROCESSING_ERROR');
-            expect(typeof error.message).toBe('string');
+            const body = response.body as { error: AIError };
+            expect(body.error.code).toBe('PROCESSING_ERROR');
+            expect(typeof body.error.message).toBe('string');
         });
 
         test('should handle rate limiting', async () => {
@@ -151,19 +147,15 @@ describe('AI Router', () => {
             expect(response.status).toBe(200);
             const body = response.body as AIResponse;
             expect(typeof body.natural_language).toBe('string');
-            expect(body.structured_data).toEqual(expect.objectContaining({
-                success: true,
-                action_taken: 'turn_on',
-                entities_affected: ['light.living_room'],
-                state_changes: expect.any(Object)
-            }));
+            expect(body.structured_data.success).toBe(true);
+            expect(body.structured_data.action_taken).toBe('turn_on');
+            expect(body.structured_data.entities_affected).toEqual(['light.living_room']);
+            expect(typeof body.structured_data.state_changes).toBe('object');
             expect(Array.isArray(body.next_suggestions)).toBe(true);
-            expect(body.confidence).toEqual(expect.objectContaining({
-                overall: expect.any(Number),
-                intent: expect.any(Number),
-                entities: expect.any(Number),
-                context: expect.any(Number)
-            }));
+            expect(typeof body.confidence.overall).toBe('number');
+            expect(typeof body.confidence.intent).toBe('number');
+            expect(typeof body.confidence.entities).toBe('number');
+            expect(typeof body.confidence.context).toBe('number');
             expect(body.context).toBeDefined();
         });
 
@@ -178,9 +170,9 @@ describe('AI Router', () => {
                 });
 
             expect(response.status).toBe(500);
-            const error = response.body.error as AIError;
-            expect(error.code).toBe('PROCESSING_ERROR');
-            expect(typeof error.message).toBe('string');
+            const body = response.body as { error: AIError };
+            expect(body.error.code).toBe('PROCESSING_ERROR');
+            expect(typeof body.error.message).toBe('string');
         });
     });
 
@@ -203,8 +195,9 @@ describe('AI Router', () => {
                 .send(validRequest);
 
             expect(response.status).toBe(200);
-            expect(Array.isArray(response.body.suggestions)).toBe(true);
-            expect(response.body.suggestions.length).toBeGreaterThan(0);
+            const body = response.body as { suggestions: string[] };
+            expect(Array.isArray(body.suggestions)).toBe(true);
+            expect(body.suggestions.length).toBeGreaterThan(0);
         });
 
         test('should handle missing context', async () => {
@@ -213,9 +206,9 @@ describe('AI Router', () => {
                 .send({});
 
             expect(response.status).toBe(500);
-            const error = response.body.error as AIError;
-            expect(error.code).toBe('PROCESSING_ERROR');
-            expect(typeof error.message).toBe('string');
+            const body = response.body as { error: AIError };
+            expect(body.error.code).toBe('PROCESSING_ERROR');
+            expect(typeof body.error.message).toBe('string');
         });
     });
 }); 

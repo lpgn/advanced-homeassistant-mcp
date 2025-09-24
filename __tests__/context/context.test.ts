@@ -1,5 +1,5 @@
-import { describe, expect, test } from "bun:test";
-import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { describe, expect, test, beforeEach, it } from "bun:test";
+import { jest } from '@jest/globals';
 import { z } from 'zod';
 import { DomainSchema } from '../../src/schemas.js';
 

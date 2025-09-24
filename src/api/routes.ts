@@ -22,10 +22,11 @@ router.post("/mcp/execute", middleware.authenticate, async (req, res) => {
     // Find the requested tool
     const tool = tools.find((t: Tool) => t.name === toolName);
     if (!tool) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: `Tool '${toolName}' not found`,
       });
+      return;
     }
 
     // Execute the tool with the provided parameters
@@ -54,10 +55,11 @@ router.get("/list_devices", middleware.authenticate, async (req, res) => {
   try {
     const tool = tools.find((t: Tool) => t.name === "list_devices");
     if (!tool) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "Tool not found",
       });
+      return;
     }
 
     const result = await tool.execute({
@@ -78,10 +80,11 @@ router.post("/control", middleware.authenticate, async (req, res) => {
   try {
     const tool = tools.find((t: Tool) => t.name === "control");
     if (!tool) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "Tool not found",
       });
+      return;
     }
 
     const result = await tool.execute({
@@ -105,10 +108,11 @@ router.get("/subscribe_events", middleware.wsRateLimiter, (req, res) => {
     const token = req.query.token?.toString();
 
     if (!token || !TokenManager.validateToken(token)) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: "Unauthorized - Invalid token",
       });
+      return;
     }
 
     // Set SSE headers
@@ -148,7 +152,8 @@ router.get("/subscribe_events", middleware.wsRateLimiter, (req, res) => {
           timestamp: new Date().toISOString(),
         })}\n\n`,
       );
-      return res.end();
+      res.end();
+      return;
     }
 
     // Subscribe to events if specified

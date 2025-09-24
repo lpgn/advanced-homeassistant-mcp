@@ -118,7 +118,7 @@ export const getMockCallArgs = <T extends unknown[]>(
     callIndex = 0
 ): T | undefined => {
     const call = mock.mock.calls[callIndex];
-    return call?.args as T | undefined;
+    return call as T | undefined;
 };
 
 export const setupTestEnvironment = () => {

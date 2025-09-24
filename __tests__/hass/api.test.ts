@@ -1,4 +1,4 @@
-import { describe, expect, test, mock, beforeEach, afterEach } from "bun:test";
+import { describe, expect, test, mock, Mock, beforeEach, afterEach } from "bun:test";
 import { get_hass } from '../../src/hass/index.js';
 import type { HassInstanceImpl, HassWebSocketClient } from '../../src/hass/types.js';
 import type { WebSocket } from 'ws';
@@ -40,14 +40,14 @@ interface WebSocketLike {
 }
 
 interface MockWebSocketInstance extends WebSocketLike {
-    send: mock.Mock;
-    close: mock.Mock;
-    addEventListener: mock.Mock;
-    removeEventListener: mock.Mock;
-    dispatchEvent: mock.Mock;
+    send: Mock<(data: any) => void>;
+    close: Mock<(code?: number, reason?: string) => void>;
+    addEventListener: Mock<(type: string, listener: (event: any) => void) => void>;
+    removeEventListener: Mock<(type: string, listener: (event: any) => void) => void>;
+    dispatchEvent: Mock<(event: any) => void>;
 }
 
-interface MockWebSocketConstructor extends mock.Mock<MockWebSocketInstance> {
+interface MockWebSocketConstructor extends Mock<() => MockWebSocketInstance> {
     CONNECTING: 0;
     OPEN: 1;
     CLOSING: 2;
