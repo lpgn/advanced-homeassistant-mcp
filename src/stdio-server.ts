@@ -14,8 +14,11 @@ import { FastMCP } from "fastmcp";
 import { z } from "zod"; // Keep Zod for tool parameter validation
 
 // Import refactored Home Assistant tools
-// import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
-// import { climateControlTool } from './tools/homeassistant/climate.tool.js';
+import { tools } from "./tools/index.js";
+
+// Import Home Assistant specific tools (FastMCP versions)
+import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
+import { climateControlTool } from './tools/homeassistant/climate.tool.js';
 
 // --- Removed old imports and setup ---
 // import { createStdioServer, BaseTool } from "./mcp/index.js";
@@ -46,28 +49,31 @@ async function main() {
 
         logger.info("Initializing FastMCP server..."); // Goes to file log
 
-        // Add tools - temporarily disabled
-        // server.addTool({
-        //     name: "list_devices",
-        //     description: "List all devices connected to Home Assistant",
-        //     parameters: {
-        //         type: "object",
-        //         properties: {}
-        //     },
-        //     execute: async () => {
-        //         return { devices: [] };
-        //     }
-        // });
+        // Add tools from the tools registry
+        for (const tool of tools) {
+            server.addTool({
+                name: tool.name,
+                description: tool.description,
+                parameters: tool.parameters,
+                execute: tool.execute
+            });
+            logger.info(`Added tool: ${tool.name}`);
+        }
 
-        logger.info("Tools temporarily disabled for debugging");
+        // Add Home Assistant specific tools
+        server.addTool(lightsControlTool);
+        logger.info(`Added tool: ${lightsControlTool.name}`);
+
+        server.addTool(climateControlTool);
+        logger.info(`Added tool: ${climateControlTool.name}`);
 
         // --- Temporarily removed system_info tool --- 
-        // server.addTool({
-        //     name: "system_info",
-        //     description: "Get basic information about this MCP server",
-        //     execute: async () => { /* ... */ },
-        // });
-        // logger.info("Adding tool: system_info");
+        server.addTool({
+            name: "system_info",
+            description: "Get basic information about this MCP server",
+            execute: async () => { /* ... */ },
+        });
+        logger.info("Adding tool: system_info");
 
         // Start the server
         logger.info("Starting FastMCP server with stdio transport...");

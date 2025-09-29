@@ -29,9 +29,9 @@ export const automationConfigTool: Tool = {
           .enum(["single", "parallel", "queued", "restart"])
           .optional()
           .describe("How multiple triggerings are handled"),
-        trigger: z.array(z.any()).describe("List of triggers"),
-        condition: z.array(z.any()).optional().describe("List of conditions"),
-        action: z.array(z.any()).describe("List of actions"),
+        trigger: z.array(z.object({}).passthrough()).describe("List of triggers"),
+        condition: z.array(z.object({}).passthrough()).optional().describe("List of conditions"),
+        action: z.array(z.object({}).passthrough()).describe("List of actions"),
       })
       .optional()
       .describe("Automation configuration (required for create and update)"),

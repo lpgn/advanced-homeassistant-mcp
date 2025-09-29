@@ -23,7 +23,9 @@ export interface CommandParams {
   /** Command to execute (e.g., turn_on, turn_off) */
   command: string;
   /** Entity ID to control */
-  entity_id: string;
+  entity_id?: string;
+  /** Area ID to control all devices of the domain type */
+  area_id?: string;
   /** Common parameters */
   state?: string;
   /** Light parameters */

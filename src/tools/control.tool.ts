@@ -3,22 +3,11 @@ import { Tool, CommandParams } from "../types/index.js";
 import { APP_CONFIG } from "../config/app.config.ts";
 import { DomainSchema } from "../schemas.js";
 
-// Define command constants
-const commonCommands = ["turn_on", "turn_off", "toggle"] as const;
-const coverCommands = [
-  ...commonCommands,
-  "open",
-  "close",
-  "stop",
-  "set_position",
-  "set_tilt_position",
-] as const;
-const climateCommands = [
-  ...commonCommands,
-  "set_temperature",
-  "set_hvac_mode",
-  "set_fan_mode",
-  "set_humidity",
+// Create a unique array of all commands
+const allCommands = [
+  "turn_on", "turn_off", "toggle", "open", "close", "stop", 
+  "set_position", "set_tilt_position", "set_temperature", 
+  "set_hvac_mode", "set_fan_mode", "set_humidity"
 ] as const;
 
 export const controlTool: Tool = {
@@ -26,9 +15,10 @@ export const controlTool: Tool = {
   description: "Control Home Assistant devices and services",
   parameters: z.object({
     command: z
-      .enum([...commonCommands, ...coverCommands, ...climateCommands])
+      .enum(allCommands)
       .describe("The command to execute"),
-    entity_id: z.string().describe("The entity ID to control"),
+    entity_id: z.string().optional().describe("The entity ID to control"),
+    area_id: z.string().optional().describe("The area ID to control all devices of the domain type"),
     // Common parameters
     state: z.string().optional().describe("The desired state for the entity"),
     // Light parameters
@@ -86,7 +76,30 @@ export const controlTool: Tool = {
   }),
   execute: async (params: CommandParams) => {
     try {
-      const domain = params.entity_id.split(".")[0];
+      // Validate that either entity_id or area_id is provided
+      if (!params.entity_id && !params.area_id) {
+        return {
+          success: false,
+          message: "Either entity_id or area_id must be provided"
+        };
+      }
+
+      // Determine domain from entity_id if provided, otherwise assume light for area control
+      let domain: string;
+      if (params.entity_id) {
+        domain = params.entity_id.split(".")[0];
+      } else {
+        // For area control, domain is implied by the command type
+        // For lights, we support turn_on/turn_off
+        if (['turn_on', 'turn_off', 'toggle'].includes(params.command)) {
+          domain = 'light';
+        } else {
+          return {
+            success: false,
+            message: `Command ${params.command} not supported for area control`
+          };
+        }
+      }
 
       // Explicitly handle unsupported domains
       if (!['light', 'climate', 'switch', 'cover', 'contact'].includes(domain)) {
@@ -97,9 +110,14 @@ export const controlTool: Tool = {
       }
 
       const service = params.command;
-      const serviceData: Record<string, any> = {
-        entity_id: params.entity_id,
-      };
+      const serviceData: Record<string, any> = {};
+
+      // Add entity_id or area_id to service data
+      if (params.entity_id) {
+        serviceData.entity_id = params.entity_id;
+      } else if (params.area_id) {
+        serviceData.area_id = params.area_id;
+      }
 
       // Handle domain-specific parameters
       switch (domain) {
@@ -175,17 +193,18 @@ export const controlTool: Tool = {
       if (!response.ok) {
         return {
           success: false,
-          message: `Failed to execute ${service} for ${params.entity_id}`
+          message: `Failed to execute ${service} for ${params.entity_id || params.area_id}`
         };
       }
 
       // Specific message formats for different domains and services
+      const target = params.entity_id || `area ${params.area_id}`;
       const successMessage =
         domain === 'light' && service === 'turn_on'
-          ? `Successfully executed turn_on for ${params.entity_id}` :
+          ? `Successfully executed turn_on for ${target}` :
           domain === 'climate' && service === 'set_temperature'
-            ? `Successfully executed set_temperature for ${params.entity_id}` :
-            `Command ${service} executed successfully on ${params.entity_id}`;
+            ? `Successfully executed set_temperature for ${target}` :
+            `Command ${service} executed successfully on ${target}`;
 
       return {
         success: true,

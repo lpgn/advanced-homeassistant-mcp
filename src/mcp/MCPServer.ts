@@ -8,6 +8,7 @@
 
 import { EventEmitter } from "events";
 import { z } from "zod";
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../utils/logger.js";
 import type { Tool } from "../types/index.js";
@@ -248,6 +249,64 @@ export class MCPServer extends EventEmitter {
      */
     private async executeRequest(request: MCPRequest, context: MCPContext): Promise<MCPResponse> {
         const { method, params = {} } = request;
+
+        // Handle MCP initialize request
+        if (method === "initialize") {
+            return {
+                id: request.id,
+                result: {
+                    protocolVersion: "2024-11-05",
+                    capabilities: {
+                        tools: {
+                            listChanged: true
+                        },
+                        resources: {
+                            listChanged: true
+                        }
+                    },
+                    serverInfo: {
+                        name: "homeassistant-mcp",
+                        version: "1.0.0"
+                    }
+                }
+            };
+        }
+
+        // Handle MCP tools/list request
+        if (method === "tools/list") {
+            return {
+                id: request.id,
+                result: {
+                    tools: Array.from(this.tools.values()).map(tool => {
+                        let inputSchema: any = {
+                            type: "object",
+                            properties: {}
+                        };
+
+                        if (tool.parameters) {
+                            try {
+                                // Convert Zod schema to JSON Schema
+                                const jsonSchema = zodToJsonSchema(tool.parameters);
+                                inputSchema = jsonSchema;
+                            } catch (error) {
+                                logger.warn(`Failed to convert schema for tool ${tool.name}:`, error);
+                                // Fallback to basic schema
+                                inputSchema = {
+                                    type: "object",
+                                    properties: {}
+                                };
+                            }
+                        }
+
+                        return {
+                            name: tool.name,
+                            description: tool.description,
+                            inputSchema
+                        };
+                    })
+                }
+            };
+        }
 
         // Special case for internal context retrieval (used by transports for initialization)
         if (method === "_internal_getContext") {

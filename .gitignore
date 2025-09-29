@@ -100,3 +100,6 @@ models/
 *.svg
 *.png
 bun.lock
+
+
+taskplan.md

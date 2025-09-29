@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test";
-import { tools } from '../../src/index.js';
+import { tools } from '../../src/tools/index.js';
 import {
     TEST_CONFIG,
     createMockResponse,
