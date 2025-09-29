@@ -48,8 +48,8 @@ export const rateLimiter = new Elysia().derive(({ request }: RequestContext) => 
 });
 
 // Extracted security headers logic
-export function applySecurityHeaders(request: Request, helmetConfig?: HelmetOptions) {
-  const config: HelmetOptions = helmetConfig || {
+export function applySecurityHeaders() {
+  const config: HelmetOptions = {
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
@@ -71,21 +71,17 @@ export function applySecurityHeaders(request: Request, helmetConfig?: HelmetOpti
     },
   };
 
-  const headers = helmet(config);
-
-  // Apply helmet headers to the request
-  Object.entries(headers).forEach(([key, value]) => {
-    if (typeof value === 'string') {
-      request.headers.set(key, value);
-    }
-  });
-
-  return headers;
+  return helmet(config);
 }
 
 // Security headers middleware for Elysia
-export const securityHeaders = new Elysia().derive(({ request }: RequestContext) => {
-  applySecurityHeaders(request);
+export const securityHeaders = new Elysia().derive(({ set }: Context) => {
+  const headers = applySecurityHeaders();
+  Object.entries(headers).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      set.headers[key] = value;
+    }
+  });
 });
 
 // Extracted request validation logic

@@ -79,7 +79,7 @@ coverage/
 .bun/
 .cursorconfig
 bun.lockb
-
+bun.lock
 # MkDocs
 site/
 .site/
@@ -99,3 +99,4 @@ models/
 *.eot
 *.svg
 *.png
+bun.lock

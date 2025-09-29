@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test, beforeAll, afterAll } from "bun:test";
 import { TokenManager } from '../../src/security/index.js';
 import jwt from 'jsonwebtoken';
 
@@ -110,8 +110,8 @@ describe('TokenManager', () => {
         test('should use unique IVs for each encryption', () => {
             const encrypted1 = TokenManager.encryptToken(validToken, encryptionKey);
             const encrypted2 = TokenManager.encryptToken(validToken, encryptionKey);
-            const iv1 = encrypted1.spltest(':')[1];
-            const iv2 = encrypted2.spltest(':')[1];
+            const iv1 = encrypted1.split(':')[1];
+            const iv2 = encrypted2.split(':')[1];
             expect(iv1).not.toBe(iv2);
         });
 
