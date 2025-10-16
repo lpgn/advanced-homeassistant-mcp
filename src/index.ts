@@ -3,7 +3,7 @@
  * A standardized protocol for AI tools to interact with Home Assistant
  */
 
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { MCPServer } from './mcp/MCPServer.js';
@@ -22,14 +22,6 @@ import { ListDevicesTool } from './tools/homeassistant/list-devices.tool.js';
 import { AutomationTool } from './tools/homeassistant/automation.tool.js';
 import { SceneTool } from './tools/homeassistant/scene.tool.js';
 import { NotifyTool } from './tools/homeassistant/notify.tool.js';
-
-// Home Assistant optional tools - these can be added as needed
-// import { ControlTool } from './tools/control.tool.js';
-// import { SceneTool } from './tools/scene.tool.js';
-// import { AutomationTool } from './tools/automation.tool.js';
-// import { NotifyTool } from './tools/notify.tool.js';
-// import { ListDevicesTool } from './tools/list-devices.tool.js';
-// import { HistoryTool } from './tools/history.tool.js';
 
 // Import additional tools from tools/index.ts
 import { tools } from './tools/index.js';
@@ -69,13 +61,6 @@ async function main(): Promise<void> {
   tools.forEach(tool => {
     server.registerTool(tool);
   });
-
-  // Add optional tools here as needed
-  // server.registerTool(new ControlTool());
-  // server.registerTool(new SceneTool());
-  // server.registerTool(new NotifyTool());
-  // server.registerTool(new ListDevicesTool());
-  // server.registerTool(new HistoryTool());
 
   // Add middlewares
   server.use(loggingMiddleware);
@@ -150,7 +135,7 @@ async function main(): Promise<void> {
     }));
 
     // Health check endpoint
-    app.get('/health', (req, res) => {
+    app.get('/health', (req: Request, res: Response) => {
       res.json({
         status: 'ok',
         version: process.env.npm_package_version || '1.0.0'

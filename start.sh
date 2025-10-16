@@ -1,3 +1,4 @@
 #!/bin/bash
-export NODE_ENV=development
-exec bun --smol run start
+export NODE_ENV=production
+export NODE_OPTIONS="--disable-warning=ExperimentalWarning"
+exec bun --smol --cold-start-caching run dist/index.js
