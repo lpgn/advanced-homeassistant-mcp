@@ -323,6 +323,49 @@ export class MCPServer extends EventEmitter {
             };
         }
 
+        // Handle tools/call method (MCP protocol)
+        if (method === "tools/call") {
+            const toolName = params.name as string;
+            const toolParams = params.arguments || {};
+            
+            const tool = this.tools.get(toolName);
+            if (!tool) {
+                return {
+                    id: request.id,
+                    error: {
+                        code: MCPErrorCode.METHOD_NOT_FOUND,
+                        message: `Tool not found: ${toolName}`
+                    }
+                };
+            }
+
+            try {
+                const result = await tool.execute(toolParams, context);
+                // Wrap result in MCP content format
+                return {
+                    id: request.id,
+                    result: {
+                        content: [
+                            {
+                                type: "text",
+                                text: typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+                            }
+                        ]
+                    }
+                };
+            } catch (error) {
+                logger.error(`Error executing tool ${toolName}:`, error);
+                return {
+                    id: request.id,
+                    error: {
+                        code: MCPErrorCode.TOOL_EXECUTION_ERROR,
+                        message: error instanceof Error ? error.message : String(error)
+                    }
+                };
+            }
+        }
+
+        // Handle direct tool calls (legacy/internal) - also wrap in content format
         const tool = this.tools.get(method);
         if (!tool) {
             return {
@@ -336,9 +379,17 @@ export class MCPServer extends EventEmitter {
 
         try {
             const result = await tool.execute(params, context);
+            // Wrap result in MCP content format for consistency
             return {
                 id: request.id,
-                result
+                result: {
+                    content: [
+                        {
+                            type: "text",
+                            text: typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+                        }
+                    ]
+                }
             };
         } catch (error) {
             logger.error(`Error executing tool ${method}:`, error);

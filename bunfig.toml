@@ -17,6 +17,9 @@ collectCoverageFrom = [
   "!src/types/**/*",
   "!src/mocks/**/*"
 ]
+# Parallel test execution for faster results
+smol = true
+root = "."
 
 [build]
 target = "bun"
@@ -29,11 +32,11 @@ minify = {
 }
 sourcemap = "external"
 entry = ["./src/index.ts", "./src/stdio-server.ts"]
-splitting = true
-naming = "[name].[hash].[ext]"
-publicPath = "/assets/"
+splitting = false
+naming = "[dir]/[name].[ext]"
 define = {
-  "process.env.NODE_ENV": "process.env.NODE_ENV"
+  "process.env.NODE_ENV": "process.env.NODE_ENV",
+  "process.env.DEBUG_MODE": "false"
 }
 
 [build.javascript]
@@ -41,12 +44,15 @@ platform = "node"
 format = "esm"
 treeshaking = true
 packages = {
-  external = ["bun:*"]
+  external = ["bun:*", "express", "cors", "ws", "dotenv"]
+}
+loader = {
+  ".json" = "copy"
 }
 
 [build.typescript]
-dts = true
-typecheck = true
+dts = false
+typecheck = false
 
 [install]
 production = false
