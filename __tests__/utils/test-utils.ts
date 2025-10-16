@@ -1,6 +1,7 @@
 import { mock } from "bun:test";
 import type { Mock } from "bun:test";
 import type { WebSocket } from 'ws';
+import { MCPServer } from "../../src/mcp/MCPServer.js";
 
 // Common Types
 export interface Tool {
@@ -103,10 +104,45 @@ export const createMockServices = (): MockServices => ({
     }
 });
 
-export const createMockLiteMCPInstance = (): MockLiteMCPInstance => ({
-    addTool: mock((tool: Tool) => undefined),
-    start: mock(() => Promise.resolve())
-});
+let restoreServerMocks: (() => void) | undefined;
+
+export const createMockLiteMCPInstance = (): MockLiteMCPInstance => {
+    if (restoreServerMocks) {
+        restoreServerMocks();
+        restoreServerMocks = undefined;
+    }
+
+    const instance: MockLiteMCPInstance = {
+        addTool: mock(() => undefined),
+        start: mock(() => Promise.resolve())
+    };
+
+    const server = MCPServer.getInstance();
+    const originalRegisterTool = server.registerTool;
+    const originalStart = server.start;
+    const originalUse = server.use;
+    const originalRegisterTransport = server.registerTransport;
+
+    server.registerTool = ((tool) => {
+        instance.addTool(tool as unknown as Tool);
+    }) as typeof server.registerTool;
+
+    server.start = (async () => {
+        await instance.start();
+    }) as typeof server.start;
+
+    server.use = (() => undefined) as typeof server.use;
+    server.registerTransport = (() => undefined) as typeof server.registerTransport;
+
+    restoreServerMocks = () => {
+        server.registerTool = originalRegisterTool;
+        server.start = originalStart;
+        server.use = originalUse;
+        server.registerTransport = originalRegisterTransport;
+    };
+
+    return instance;
+};
 
 // Helper Functions
 export const createMockResponse = <T>(data: T, status = 200): Response => {
@@ -142,7 +178,10 @@ export const cleanupMocks = (mocks: {
     mockFetch: Mock<() => Promise<Response>>;
 }) => {
     // Reset mock calls by creating a new mock
-    mocks.liteMcpInstance.addTool = mock((tool: Tool) => undefined);
+    restoreServerMocks?.();
+    restoreServerMocks = undefined;
+
+    mocks.liteMcpInstance.addTool = mock(() => undefined);
     mocks.liteMcpInstance.start = mock(() => Promise.resolve());
     mocks.mockFetch = mock(() => Promise.resolve(new Response()));
     globalThis.fetch = mocks.mockFetch;

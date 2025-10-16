@@ -1,12 +1,11 @@
 {
   "name": "@jango-blockchained/homeassistant-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Home Assistant Model Context Protocol",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "@jango-blockchained/homeassistant-mcp": "./bin/npx-entry.cjs",
-    "mcp-stdio": "./bin/npx-entry.cjs"
+    "homeassistant-mcp": "bin/npx-entry.cjs"
   },
   "scripts": {
     "start": "bun run dist/index.js",

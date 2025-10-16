@@ -11,7 +11,6 @@ import { logger } from "./utils/logger.js";
 
 // Import fastmcp framework
 import { FastMCP } from "fastmcp";
-import { z } from "zod"; // Keep Zod for tool parameter validation
 
 // Import refactored Home Assistant tools
 import { tools } from "./tools/index.js";
@@ -29,7 +28,7 @@ import { climateControlTool } from './tools/homeassistant/climate.tool.js';
 // function sendNotification(...) { ... }
 // class InfoTool extends BaseTool { ... }
 
-async function main() {
+async function main(): Promise<void> {
     // --- Temporarily DISABLED Console Silencing --- 
     // let originalConsoleInfo: (...data: any[]) => void | null = null;
     // const isStdio = process.env.USE_STDIO_TRANSPORT === 'true';
@@ -51,10 +50,11 @@ async function main() {
 
         // Add tools from the tools registry
         for (const tool of tools) {
+            // Pass the Zod schema directly - FastMCP supports StandardSchemaV1
             server.addTool({
                 name: tool.name,
                 description: tool.description,
-                parameters: tool.parameters,
+                parameters: tool.parameters as never,
                 execute: tool.execute
             });
             logger.info(`Added tool: ${tool.name}`);
@@ -71,7 +71,9 @@ async function main() {
         server.addTool({
             name: "system_info",
             description: "Get basic information about this MCP server",
-            execute: async () => { /* ... */ },
+            execute: (): Promise<string> => {
+                return Promise.resolve("Home Assistant MCP Server (fastmcp)");
+            },
         });
         logger.info("Adding tool: system_info");
 

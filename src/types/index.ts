@@ -179,6 +179,143 @@ export interface HacsResponse {
 }
 
 /**
+ * Home Assistant automation trigger definition
+ * @interface AutomationTrigger
+ */
+export interface AutomationTrigger {
+  /** Optional trigger identifier */
+  id?: string;
+  /** Trigger platform (state, time, event, etc.) */
+  platform: string;
+  /** Related entity IDs */
+  entity_id?: string | string[];
+  /** Source state for state triggers */
+  from?: string;
+  /** Target state for state triggers */
+  to?: string;
+  /** Attribute for state triggers */
+  attribute?: string;
+  /** Duration the trigger state must hold */
+  for?: string | number | Record<string, unknown>;
+  /** Trigger time for time-based triggers */
+  at?: string;
+  /** Event payload for event triggers */
+  event?: Record<string, unknown>;
+  /** Device trigger identifier */
+  device_id?: string;
+  /** Domain for device triggers */
+  domain?: string;
+  /** Trigger type for device triggers */
+  type?: string;
+  /** Zone information for zone triggers */
+  zone?: Record<string, unknown>;
+  /** Additional trigger properties */
+  [key: string]: unknown;
+}
+
+/**
+ * Home Assistant automation condition definition
+ * @interface AutomationCondition
+ */
+export interface AutomationCondition {
+  /** Optional alias */
+  alias?: string;
+  /** Condition type (state, numeric_state, and/or, etc.) */
+  condition: string;
+  /** Whether the condition is enabled */
+  enabled?: boolean;
+  /** Related entity IDs */
+  entity_id?: string | string[];
+  /** Expected entity state */
+  state?: string;
+  /** Attribute to evaluate */
+  attribute?: string;
+  /** Duration the condition must hold */
+  for?: string | number | Record<string, unknown>;
+  /** Numeric threshold upper bound */
+  above?: number | string;
+  /** Numeric threshold lower bound */
+  below?: number | string;
+  /** Nested conditions */
+  conditions?: AutomationCondition[];
+  /** Embedded action sequence for choose/then */
+  sequence?: AutomationAction[];
+  /** Additional condition properties */
+  [key: string]: unknown;
+}
+
+/**
+ * Home Assistant automation action definition
+ * @interface AutomationAction
+ */
+export interface AutomationAction {
+  /** Optional alias */
+  alias?: string;
+  /** Service to call */
+  service?: string;
+  /** Target selector */
+  target?: Record<string, unknown>;
+  /** Service data */
+  data?: Record<string, unknown>;
+  /** Additional metadata */
+  metadata?: Record<string, unknown>;
+  /** Related entity IDs */
+  entity_id?: string | string[];
+  /** Related device */
+  device_id?: string;
+  /** Domain for service/device actions */
+  domain?: string;
+  /** Device trigger type */
+  type?: string;
+  /** Conditional branches */
+  choose?: Array<{
+    /** Optional alias */
+    alias?: string;
+    /** Conditions for the branch */
+    conditions?: AutomationCondition[];
+    /** Sequence executed when conditions pass */
+    sequence: AutomationAction[];
+    /** Default sequence when conditions fail */
+    default?: AutomationAction[];
+    /** Additional branch properties */
+    [key: string]: unknown;
+  }>;
+  /** Nested action sequence */
+  sequence?: AutomationAction[];
+  /** If-condition list */
+  if?: AutomationCondition[];
+  /** Then branch for if actions */
+  then?: AutomationAction[];
+  /** Else branch for if actions */
+  else?: AutomationAction[];
+  /** Repeat configuration */
+  repeat?: {
+    /** Repeat count */
+    count?: number | string | Record<string, unknown>;
+    /** While conditions */
+    while?: AutomationCondition[];
+    /** Until conditions */
+    until?: AutomationCondition[];
+    /** Sequence to repeat */
+    sequence?: AutomationAction[];
+    /** Items to iterate */
+    for_each?: unknown[];
+    /** Additional repeat properties */
+    [key: string]: unknown;
+  };
+  /** Delay configuration */
+  delay?: number | string | Record<string, unknown>;
+  /** Wait template */
+  wait_template?: string;
+  /** Wait-for-trigger configuration */
+  wait_for_trigger?: AutomationTrigger[];
+  /** Parallel action sequences */
+  parallel?: AutomationAction[];
+  /** Additional action properties */
+  [key: string]: unknown;
+}
+
+/**
  * Automation configuration interface
  * @interface AutomationConfig
  */
@@ -190,11 +327,17 @@ export interface AutomationConfig {
   /** How multiple triggers are handled */
   mode?: "single" | "parallel" | "queued" | "restart";
   /** List of triggers */
-  trigger: any[];
+  trigger: AutomationTrigger[];
   /** List of conditions */
-  condition?: any[];
+  condition?: AutomationCondition[];
   /** List of actions */
-  action: any[];
+  action: AutomationAction[];
+  /** Automation scoped variables */
+  variables?: Record<string, unknown>;
+  /** Trace configuration */
+  trace?: Record<string, unknown>;
+  /** Additional automation configuration properties */
+  [key: string]: unknown;
 }
 
 /**
@@ -335,18 +478,5 @@ export interface AutomationConfigParams {
   /** Automation ID */
   automation_id?: string;
   /** Automation configuration */
-  config?: {
-    /** Automation name */
-    alias: string;
-    /** Automation description */
-    description?: string;
-    /** How multiple triggers are handled */
-    mode?: "single" | "parallel" | "queued" | "restart";
-    /** List of triggers */
-    trigger: any[];
-    /** List of conditions */
-    condition?: any[];
-    /** List of actions */
-    action: any[];
-  };
+  config?: AutomationConfig;
 }
