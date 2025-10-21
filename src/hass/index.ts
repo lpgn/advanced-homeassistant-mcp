@@ -96,13 +96,50 @@ class HomeAssistantAPI {
     return state;
   }
 
-  async callService(domain: string, service: string, data: Record<string, unknown>): Promise<void> {
-    await this.fetchApi(`services/${domain}/${service}`, {
+  async callService(domain: string, service: string, data: Record<string, unknown>): Promise<any> {
+    const result = await this.fetchApi(`services/${domain}/${service}`, {
       method: "POST",
       body: JSON.stringify(data),
     });
     // Clear states cache when services are called as they may change state
     this.cache.delete("states");
+    return result;
+  }
+
+  async getHistory(entityId: string, startTime: Date, endTime: Date): Promise<any[]> {
+    const startISO = startTime.toISOString();
+    const endISO = endTime.toISOString();
+    const data = await this.fetchApi(`history/period/${startISO}?filter_entity_id=${entityId}&end_time=${endISO}`);
+    
+    // History API returns an array of arrays, get the first one
+    if (Array.isArray(data) && data.length > 0) {
+      return data[0];
+    }
+    return [];
+  }
+
+  async getConfig(): Promise<any> {
+    // Check cache first (5 minute TTL for config)
+    const cached = this.getCache<any>("config", 300000);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.fetchApi("config");
+    this.setCache("config", data);
+    return data;
+  }
+
+  async getServices(): Promise<any> {
+    // Check cache first (1 minute TTL for services)
+    const cached = this.getCache<any>("services", 60000);
+    if (cached) {
+      return cached;
+    }
+
+    const data = await this.fetchApi("services");
+    this.setCache("services", data);
+    return data;
   }
 }
 

@@ -38,6 +38,9 @@ import { tools } from './tools/index.js';
 import { prompts } from './prompts/index.js';
 import { handlePrompt } from './prompts/handlers.js';
 
+// Import resource endpoints
+import { listResources, readResource } from './resources/index.js';
+
 /**
  * Check if running in stdio mode via command line args
  */
@@ -168,6 +171,28 @@ async function main(): Promise<void> {
         status: 'ok',
         version: process.env.npm_package_version || '1.0.0'
       });
+    });
+
+    // Resource endpoints for hass:// URI scheme
+    app.get('/api/resources', async (req, res) => {
+      try {
+        const resources = await listResources();
+        res.json({ resources });
+      } catch (error) {
+        logger.error('Error listing resources:', error);
+        res.status(500).json({ error: 'Failed to list resources' });
+      }
+    });
+
+    app.get('/api/resources/:uri(*)', async (req, res) => {
+      try {
+        const uri = 'hass://' + req.params.uri;
+        const resource = await readResource(uri);
+        res.type(resource.mimeType).send(resource.text || resource.blob);
+      } catch (error) {
+        logger.error('Error reading resource:', error);
+        res.status(404).json({ error: 'Resource not found' });
+      }
     });
 
     const httpTransport = new HttpTransport({
