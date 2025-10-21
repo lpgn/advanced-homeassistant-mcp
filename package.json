@@ -60,7 +60,7 @@
     "sanitize-html": "^2.15.0",
     "sury": "^11.0.0-alpha.3",
     "swagger-ui-express": "^5.0.1",
-    "typescript": "^5.3.3",
+    "typescript": "^5.9.3",
     "valibot": "^1.0.0",
     "winston": "^3.11.0",
     "winston-daily-rotate-file": "^5.0.0",

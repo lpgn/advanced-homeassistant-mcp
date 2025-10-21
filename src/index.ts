@@ -65,8 +65,11 @@ async function main(): Promise<void> {
   server.registerTool(new SceneTool());
   server.registerTool(new NotifyTool());
 
-  // Register additional tools from tools/index.ts
-  tools.forEach(tool => {
+  // Register additional tools from tools/index.ts (excluding homeassistant tools to avoid duplicates)
+  const filteredTools = tools.filter(tool => 
+    !['lights_control', 'climate_control', 'automation', 'list_devices', 'notify', 'scene_control'].includes(tool.name)
+  );
+  filteredTools.forEach(tool => {
     server.registerTool(tool);
   });
 
