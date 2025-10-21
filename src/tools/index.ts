@@ -8,6 +8,9 @@ import { subscribeEventsTool } from "./subscribe-events.tool.js";
 import { getSSEStatsTool } from "./sse-stats.tool.js";
 import { errorLogTool } from "./error-log.tool.js";
 import { callServiceTool } from "./call-service.tool.js";
+import { fileOperationsTool } from "./file-operations.tool.js";
+import { shellCommandTool } from "./shell-command.tool.js";
+import { systemManagementTool } from "./system-management.tool.js";
 
 // Import Tool objects (not classes) from homeassistant directory
 import { lightsControlTool } from "./homeassistant/lights.tool.js";
@@ -52,6 +55,9 @@ export const tools: Tool[] = [
   getSSEStatsTool,
   errorLogTool,
   callServiceTool,
+  fileOperationsTool,
+  shellCommandTool,
+  systemManagementTool,
   // Home Assistant tools
   lightsControlTool,
   climateControlTool,
@@ -82,6 +88,9 @@ export {
   getSSEStatsTool,
   errorLogTool,
   callServiceTool,
+  fileOperationsTool,
+  shellCommandTool,
+  systemManagementTool,
   // Home Assistant tools
   lightsControlTool,
   climateControlTool,
