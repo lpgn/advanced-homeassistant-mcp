@@ -19,6 +19,10 @@ import { tools } from "./tools/index.js";
 import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
 import { climateControlTool } from './tools/homeassistant/climate.tool.js';
 
+// Import prompts
+import { prompts } from './prompts/index.js';
+import { handlePrompt } from './prompts/handlers.js';
+
 // --- Removed old imports and setup ---
 // import { createStdioServer, BaseTool } from "./mcp/index.js";
 // import { MCPContext } from "./mcp/types.js";
@@ -66,6 +70,20 @@ async function main(): Promise<void> {
 
         server.addTool(climateControlTool);
         logger.info(`Added tool: ${climateControlTool.name}`);
+
+        // Add prompts
+        for (const prompt of prompts) {
+            server.addPrompt({
+                name: prompt.name,
+                description: prompt.description,
+                arguments: prompt.arguments,
+                handler: async (args: Record<string, string>) => {
+                    const response = await handlePrompt(prompt.name, args);
+                    return `# ${response.title}\n\n${response.content}${response.suggestions ? '\n\n## Suggestions:\n' + response.suggestions.map(s => `- ${s}`).join('\n') : ''}`;
+                }
+            });
+            logger.info(`Added prompt: ${prompt.name}`);
+        }
 
         // --- Temporarily removed system_info tool --- 
         server.addTool({

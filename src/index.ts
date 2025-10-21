@@ -34,6 +34,10 @@ import { NotifyTool } from './tools/homeassistant/notify.tool.js';
 // Import additional tools from tools/index.ts
 import { tools } from './tools/index.js';
 
+// Import prompts
+import { prompts } from './prompts/index.js';
+import { handlePrompt } from './prompts/handlers.js';
+
 /**
  * Check if running in stdio mode via command line args
  */
@@ -72,6 +76,12 @@ async function main(): Promise<void> {
   filteredTools.forEach(tool => {
     server.registerTool(tool);
   });
+
+  // Register prompts
+  prompts.forEach(prompt => {
+    server.registerPrompt(prompt, handlePrompt);
+  });
+  logger.info(`Registered ${prompts.length} guided prompts`);
 
   // Add optional tools here as needed
   // server.registerTool(new ControlTool());

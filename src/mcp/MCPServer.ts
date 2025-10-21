@@ -67,6 +67,7 @@ import type {
 export class MCPServer extends EventEmitter {
     private static instance: MCPServer;
     private tools: Map<string, ToolDefinition> = new Map();
+    private prompts: Map<string, { definition: any, handler: (args?: Record<string, string>) => Promise<any> }> = new Map();
     private middlewares: MCPMiddleware[] = [];
     private transports: TransportLayer[] = [];
     private resourceManager: ResourceManager;
@@ -179,6 +180,45 @@ export class MCPServer extends EventEmitter {
      */
     public getAllTools(): ToolDefinition[] {
         return Array.from(this.tools.values());
+    }
+
+    /**
+     * Register a prompt for guided conversations
+     */
+    public registerPrompt(prompt: any, handler: (promptName: string, args?: Record<string, string>) => Promise<any>): void {
+        if (this.prompts.has(prompt.name)) {
+            logger.warn(`Prompt '${prompt.name}' is already registered. Overwriting.`);
+        }
+        this.prompts.set(prompt.name, {
+            definition: prompt,
+            handler: (args?: Record<string, string>) => handler(prompt.name, args)
+        });
+        logger.debug(`Prompt '${prompt.name}' registered`);
+    }
+
+    /**
+     * Get a prompt by name
+     */
+    public getPrompt(name: string): any {
+        return this.prompts.get(name);
+    }
+
+    /**
+     * Get all registered prompts
+     */
+    public getAllPrompts(): any[] {
+        return Array.from(this.prompts.values()).map(p => p.definition);
+    }
+
+    /**
+     * Execute a prompt
+     */
+    public async executePrompt(name: string, args?: Record<string, string>): Promise<any> {
+        const prompt = this.prompts.get(name);
+        if (!prompt) {
+            throw new Error(`Prompt '${name}' not found`);
+        }
+        return prompt.handler(args);
     }
 
     /**
