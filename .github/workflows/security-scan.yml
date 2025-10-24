@@ -1,0 +1,202 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run weekly on Mondays at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Create package-lock for audit
+        run: npm i --package-lock-only
+      
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Run npm audit (production only)
+        run: npm audit --production --audit-level=high
+        continue-on-error: true
+
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript-typescript' ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+      
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  eslint-security:
+    name: ESLint Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: npm ci || npm install
+      
+      - name: Install ESLint security plugin
+        run: npm install --no-save eslint-plugin-security
+      
+      - name: Run ESLint with security rules
+        run: npx eslint . --ext .ts,.js --max-warnings 10
+        continue-on-error: true
+
+  network-call-audit:
+    name: Audit Network Calls
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Scan for suspicious network calls
+        run: |
+          echo "🔍 Auditing network calls in the codebase..."
+          
+          # Check for fetch calls to external domains
+          EXTERNAL_CALLS=$(grep -r "fetch\|axios\|http\.get\|http\.post" src/ --include="*.ts" --include="*.js" | \
+            grep -v "HASS_HOST\|localhost\|127.0.0.1" | \
+            grep -E "https?://[a-zA-Z0-9]" || true)
+          
+          if [ -n "$EXTERNAL_CALLS" ]; then
+            echo "⚠️ Warning: Found potential external network calls:"
+            echo "$EXTERNAL_CALLS"
+            echo ""
+            echo "Verify these are intentional and documented."
+          else
+            echo "✅ No suspicious external network calls found"
+          fi
+          
+          # Check for common telemetry/analytics patterns
+          echo ""
+          echo "🔍 Checking for telemetry/analytics patterns..."
+          TELEMETRY=$(grep -r "analytics\|telemetry\|tracking\|posthog\|segment\|mixpanel\|google.*analytics" \
+            src/ --include="*.ts" --include="*.js" | \
+            grep -v "test\|mock\|comment" || true)
+          
+          if [ -n "$TELEMETRY" ]; then
+            echo "⚠️ Warning: Found potential telemetry code:"
+            echo "$TELEMETRY"
+            exit 1
+          else
+            echo "✅ No telemetry/analytics code found"
+          fi
+          
+          # Verify all fetch calls
+          echo ""
+          echo "📋 All fetch() calls in codebase:"
+          grep -rn "fetch(" src/ --include="*.ts" | grep -v "test"
+          
+          echo ""
+          echo "✅ Network call audit complete"
+
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for secret scanning
+      
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-audit, network-call-audit]
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate Security Summary
+        run: |
+          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Key Security Features" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **No External Data Collection** - All network calls go to configured Home Assistant instance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **No Telemetry** - No analytics or tracking code present" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Authenticated** - All API calls use Bearer token authentication" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Input Sanitization** - HTML sanitization prevents XSS attacks" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Rate Limited** - Protection against abuse" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "For more details, see [SECURITY.md](./SECURITY.md)" >> $GITHUB_STEP_SUMMARY

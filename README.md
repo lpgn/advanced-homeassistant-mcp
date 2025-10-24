@@ -21,10 +21,14 @@ A powerful, secure, and extensible Model Context Protocol (MCP) server that enab
 
 ### 🛡️ Enterprise-Grade Security
 
+- **No Phone Home**: Zero telemetry, analytics, or external data collection
+- **Privacy First**: All network calls limited to your Home Assistant instance
 - **Rate Limiting**: Protects against abuse with configurable request limits
 - **Input Sanitization**: Prevents XSS and injection attacks
 - **JWT Authentication**: Secure token-based access control
 - **Security Headers**: Comprehensive protection against web vulnerabilities
+- **Automated Scanning**: CodeQL and dependency vulnerability checks
+- **Full Audit**: Complete security audit available in [SECURITY_AUDIT.md](./SECURITY_AUDIT.md)
 
 ### ⚡ High-Performance Architecture
 
@@ -276,6 +280,41 @@ Once integrated, your AI assistant can understand commands like:
 > "Activate the movie scene"
 > "What's the current temperature in the living room?"
 > "Notify everyone that dinner is ready"
+
+---
+
+## 🔒 Security & Privacy
+
+### No Data Collection
+
+This MCP server **does NOT**:
+- ❌ Send telemetry or analytics
+- ❌ "Phone home" to external services
+- ❌ Collect usage statistics
+- ❌ Transmit your data anywhere
+
+### What It Does
+
+✅ Communicates **only** with:
+1. Your AI assistant (Claude, GPT, Cursor, etc.)
+2. Your Home Assistant instance (configured via `HASS_HOST`)
+
+### Security Auditing
+
+```bash
+# Run security audit
+npm run security:scan
+
+# Check for vulnerabilities
+npm run security:audit
+
+# Verify network calls
+npm run security:check-network
+```
+
+For detailed security information, see:
+- [SECURITY.md](./SECURITY.md) - Security policy and reporting
+- [SECURITY_AUDIT.md](./SECURITY_AUDIT.md) - Complete security audit
 
 ---
 
