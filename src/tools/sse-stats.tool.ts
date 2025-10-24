@@ -13,21 +13,56 @@ export const getSSEStatsTool: Tool = {
     try {
       if (params.token !== APP_CONFIG.HASS_TOKEN) {
         return {
-          success: false,
-          message: "Authentication failed",
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(
+                {
+                  success: false,
+                  message: "Authentication failed",
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
       }
 
       const stats = await sseManager.getStatistics();
       return {
-        success: true,
-        statistics: stats,
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                success: true,
+                statistics: stats,
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     } catch (error) {
       return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                success: false,
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Unknown error occurred",
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     }
   },

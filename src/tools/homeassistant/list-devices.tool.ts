@@ -166,14 +166,23 @@ async function executeListDevicesLogic(params: ListDevicesParams): Promise<Recor
 
         logger.debug(`Found ${devices.length} devices matching criteria`);
 
+        // Return content property as expected by FastMCP validation
+        // Return content property as expected by FastMCP validation
         return {
-            devices,
-            total_count: devices.length,
-            filters_applied: {
-                domain: params.domain,
-                area: params.area,
-                floor: params.floor
-            }
+            content: [
+                {
+                    type: "text",
+                    text: JSON.stringify({
+                        devices,
+                        total_count: devices.length,
+                        filters_applied: {
+                            domain: params.domain,
+                            area: params.area,
+                            floor: params.floor
+                        }
+                    }, null, 2)
+                }
+            ]
         };
 
     } catch (error) {

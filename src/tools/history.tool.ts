@@ -55,9 +55,16 @@ async function executeHistoryLogic(params: HistoryParams): Promise<Record<string
         const currentState = await hass.getState(params.entity_id);
         if (!currentState) {
             return {
-                success: false,
-                error: `Entity '${params.entity_id}' not found`,
-                message: "Please check the entity_id is correct"
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({
+                            success: false,
+                            error: `Entity '${params.entity_id}' not found`,
+                            message: "Please check the entity_id is correct"
+                        }, null, 2)
+                    }
+                ]
             };
         }
 
@@ -72,15 +79,22 @@ async function executeHistoryLogic(params: HistoryParams): Promise<Record<string
 
         if (!history || history.length === 0) {
             return {
-                success: true,
-                entity_id: params.entity_id,
-                current_state: currentState.state,
-                history_count: 0,
-                message: "No history data found for the specified time range",
-                time_range: {
-                    start: startTime.toISOString(),
-                    end: endTime.toISOString()
-                }
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({
+                            success: true,
+                            entity_id: params.entity_id,
+                            current_state: currentState.state,
+                            history_count: 0,
+                            message: "No history data found for the specified time range",
+                            time_range: {
+                                start: startTime.toISOString(),
+                                end: endTime.toISOString()
+                            }
+                        }, null, 2)
+                    }
+                ]
             };
         }
 
@@ -137,23 +151,30 @@ async function executeHistoryLogic(params: HistoryParams): Promise<Record<string
         }, {} as Record<string, string>);
 
         return {
-            success: true,
-            entity_id: params.entity_id,
-            current_state: currentState.state,
-            friendly_name: currentState.attributes?.friendly_name || params.entity_id,
-            time_range: {
-                start: startTime.toISOString(),
-                end: endTime.toISOString(),
-                duration_hours: Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60))
-            },
-            statistics: {
-                total_entries: history.length,
-                returned_entries: formattedHistory.length,
-                state_changes: stateChanges,
-                unique_states: uniqueStates,
-                time_in_each_state: stateTimingsFormatted
-            },
-            history: formattedHistory
+            content: [
+                {
+                    type: "text",
+                    text: JSON.stringify({
+                        success: true,
+                        entity_id: params.entity_id,
+                        current_state: currentState.state,
+                        friendly_name: currentState.attributes?.friendly_name || params.entity_id,
+                        time_range: {
+                            start: startTime.toISOString(),
+                            end: endTime.toISOString(),
+                            duration_hours: Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60))
+                        },
+                        statistics: {
+                            total_entries: history.length,
+                            returned_entries: formattedHistory.length,
+                            state_changes: stateChanges,
+                            unique_states: uniqueStates,
+                            time_in_each_state: stateTimingsFormatted
+                        },
+                        history: formattedHistory
+                    }, null, 2)
+                }
+            ]
         };
 
     } catch (error) {

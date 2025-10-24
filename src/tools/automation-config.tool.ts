@@ -370,9 +370,14 @@ export const automationConfigTool: Tool = {
             automation_id: string;
           };
           return {
-            success: true,
-            message: "Successfully created automation",
-            automation_id: responseData.automation_id,
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: "Successfully created automation",
+                automation_id: responseData.automation_id
+              }, null, 2)
+            }]
           };
         }
 
@@ -405,9 +410,14 @@ export const automationConfigTool: Tool = {
             automation_id: string;
           };
           return {
-            success: true,
-            automation_id: responseData.automation_id,
-            message: "Automation updated successfully",
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                automation_id: responseData.automation_id,
+                message: "Automation updated successfully"
+              }, null, 2)
+            }]
           };
         }
 
@@ -436,8 +446,13 @@ export const automationConfigTool: Tool = {
           }
 
           return {
-            success: true,
-            message: `Successfully deleted automation ${params.automation_id}`,
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: `Successfully deleted automation ${params.automation_id}`
+              }, null, 2)
+            }]
           };
         }
 
@@ -490,17 +505,26 @@ export const automationConfigTool: Tool = {
           const newAutomation =
             (await createResponse.json()) as AutomationResponse;
           return {
-            success: true,
-            message: `Successfully duplicated automation ${params.automation_id}`,
-            new_automation_id: newAutomation.automation_id,
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: true,
+                message: `Successfully duplicated automation ${params.automation_id}`,
+                new_automation_id: newAutomation.automation_id
+              }, null, 2)
+            }]
           };
         }
       }
     } catch (error) {
       return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            success: false,
+            message: error instanceof Error ? error.message : "Unknown error occurred"
+          }, null, 2)
+        }]
       };
     }
   },

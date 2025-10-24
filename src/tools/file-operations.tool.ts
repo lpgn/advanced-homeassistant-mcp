@@ -71,20 +71,30 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
                 });
 
                 return {
-                    success: true,
-                    operation: "read",
-                    path: resolvedPath,
-                    content: response.content || response,
-                    encoding: params.encoding,
-                    size: response.content?.length || 0
+                    content: [{
+                        type: "text",
+                        text: JSON.stringify({
+                            success: true,
+                            operation: "read",
+                            path: resolvedPath,
+                            content: response.content || response,
+                            encoding: params.encoding,
+                            size: response.content?.length || 0
+                        }, null, 2)
+                    }]
                 };
             }
 
             case "write": {
                 if (!params.content) {
                     return {
-                        success: false,
-                        error: "Content is required for write operation"
+                        content: [{
+                            type: "text",
+                            text: JSON.stringify({
+                                success: false,
+                                error: "Content is required for write operation"
+                            }, null, 2)
+                        }]
                     };
                 }
 
@@ -96,11 +106,16 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
                 });
 
                 return {
-                    success: true,
-                    operation: "write",
-                    path: resolvedPath,
-                    bytes_written: params.content.length,
-                    encoding: params.encoding
+                    content: [{
+                        type: "text",
+                        text: JSON.stringify({
+                            success: true,
+                            operation: "write",
+                            path: resolvedPath,
+                            bytes_written: params.content.length,
+                            encoding: params.encoding
+                        }, null, 2)
+                    }]
                 };
             }
 
@@ -111,9 +126,14 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
                 });
 
                 return {
-                    success: true,
-                    operation: "delete",
-                    path: resolvedPath
+                    content: [{
+                        type: "text",
+                        text: JSON.stringify({
+                            success: true,
+                            operation: "delete",
+                            path: resolvedPath
+                        }, null, 2)
+                    }]
                 };
             }
 
@@ -125,11 +145,16 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
                 });
 
                 return {
-                    success: true,
-                    operation: "list",
-                    path: resolvedPath,
-                    files: response.files || response,
-                    count: Array.isArray(response.files) ? response.files.length : 0
+                    content: [{
+                        type: "text",
+                        text: JSON.stringify({
+                            success: true,
+                            operation: "list",
+                            path: resolvedPath,
+                            files: response.files || response,
+                            count: Array.isArray(response.files) ? response.files.length : 0
+                        }, null, 2)
+                    }]
                 };
             }
 
@@ -139,25 +164,40 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
                         path: resolvedPath
                     });
                     return {
-                        success: true,
-                        operation: "exists",
-                        path: resolvedPath,
-                        exists: true
+                        content: [{
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                operation: "exists",
+                                path: resolvedPath,
+                                exists: true
+                            }, null, 2)
+                        }]
                     };
                 } catch (error) {
                     return {
-                        success: true,
-                        operation: "exists",
-                        path: resolvedPath,
-                        exists: false
+                        content: [{
+                            type: "text",
+                            text: JSON.stringify({
+                                success: true,
+                                operation: "exists",
+                                path: resolvedPath,
+                                exists: false
+                            }, null, 2)
+                        }]
                     };
                 }
             }
 
             default:
                 return {
-                    success: false,
-                    error: `Unknown operation: ${params.operation}`
+                    content: [{
+                        type: "text",
+                        text: JSON.stringify({
+                            success: false,
+                            error: `Unknown operation: ${params.operation}`
+                        }, null, 2)
+                    }]
                 };
         }
 
@@ -169,28 +209,43 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
         
         if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
             return {
-                success: false,
-                error: "File or directory not found",
-                path: params.path,
-                message: "The specified path does not exist"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "File or directory not found",
+                        path: params.path,
+                        message: "The specified path does not exist"
+                    }, null, 2)
+                }]
             };
         }
 
         if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
             return {
-                success: false,
-                error: "Permission denied",
-                path: params.path,
-                message: "Home Assistant does not have permission to access this file"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "Permission denied",
+                        path: params.path,
+                        message: "Home Assistant does not have permission to access this file"
+                    }, null, 2)
+                }]
             };
         }
 
         if (errorMessage.includes('service') && errorMessage.includes('not found')) {
             return {
-                success: false,
-                error: "File operations not available",
-                message: "The required Home Assistant services (file_get_contents, file_write, etc.) are not available",
-                suggestion: "These services were added in Home Assistant 2021.6. Please update your installation or use the python_script integration for file operations."
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "File operations not available",
+                        message: "The required Home Assistant services (file_get_contents, file_write, etc.) are not available",
+                        suggestion: "These services were added in Home Assistant 2021.6. Please update your installation or use the python_script integration for file operations."
+                    }, null, 2)
+                }]
             };
         }
 

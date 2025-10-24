@@ -53,9 +53,14 @@ async function executeErrorLogLogic(params: ErrorLogParams): Promise<Record<stri
         
         if (!response || !Array.isArray(response)) {
             return {
-                success: false,
-                error: "Unable to retrieve error logs",
-                message: "The system_log service may not be available"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "Unable to retrieve error logs",
+                        message: "The system_log service may not be available"
+                    }, null, 2)
+                }]
             };
         }
 
@@ -88,11 +93,16 @@ async function executeErrorLogLogic(params: ErrorLogParams): Promise<Record<stri
         }));
 
         return {
-            success: true,
-            log_count: formattedLogs.length,
-            total_available: logs.length,
-            filter_applied: params.filter || null,
-            logs: formattedLogs
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    success: true,
+                    log_count: formattedLogs.length,
+                    total_available: logs.length,
+                    filter_applied: params.filter || null,
+                    logs: formattedLogs
+                }, null, 2)
+            }]
         };
 
     } catch (error) {
@@ -104,11 +114,16 @@ async function executeErrorLogLogic(params: ErrorLogParams): Promise<Record<stri
             const configDir = await hass.callService("homeassistant", "get_config", {});
             
             return {
-                success: false,
-                error: "Direct log access not available through API",
-                message: "Try checking the logs in Home Assistant UI (Settings > System > Logs) or access the log file directly",
-                config_directory: configDir,
-                suggestion: "Enable the system_log integration if not already enabled"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "Direct log access not available through API",
+                        message: "Try checking the logs in Home Assistant UI (Settings > System > Logs) or access the log file directly",
+                        config_directory: configDir,
+                        suggestion: "Enable the system_log integration if not already enabled"
+                    }, null, 2)
+                }]
             };
         } catch {
             throw error;

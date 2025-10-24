@@ -142,14 +142,19 @@ async function executeSystemManagementLogic(params: SystemManagementParams): Pro
         response = await hass.callService(serviceDomain, serviceName, params.params || {});
 
         return {
-            success: true,
-            action: params.action,
-            service: `${serviceDomain}.${serviceName}`,
-            response: response,
-            message: `Successfully executed ${params.action}`,
-            warning: ["restart", "stop"].includes(params.action) 
-                ? "Home Assistant is restarting/stopping - connection will be lost"
-                : undefined
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    success: true,
+                    action: params.action,
+                    service: `${serviceDomain}.${serviceName}`,
+                    response: response,
+                    message: `Successfully executed ${params.action}`,
+                    warning: ["restart", "stop"].includes(params.action) 
+                        ? "Home Assistant is restarting/stopping - connection will be lost"
+                        : undefined
+                }, null, 2)
+            }]
         };
 
     } catch (error) {
@@ -159,19 +164,29 @@ async function executeSystemManagementLogic(params: SystemManagementParams): Pro
         
         if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
             return {
-                success: false,
-                error: `Service not available for action: ${params.action}`,
-                message: "The requested system management service is not available",
-                suggestion: "Check that the required integration is loaded in Home Assistant"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: `Service not available for action: ${params.action}`,
+                        message: "The requested system management service is not available",
+                        suggestion: "Check that the required integration is loaded in Home Assistant"
+                    }, null, 2)
+                }]
             };
         }
 
         if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
             return {
-                success: false,
-                error: "Permission denied",
-                message: "The Home Assistant token does not have permission for this system operation",
-                suggestion: "Ensure the token has administrator privileges"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "Permission denied",
+                        message: "The Home Assistant token does not have permission for this system operation",
+                        suggestion: "Ensure the token has administrator privileges"
+                    }, null, 2)
+                }]
             };
         }
 

@@ -79,8 +79,13 @@ export const controlTool: Tool = {
       // Validate that either entity_id or area_id is provided
       if (!params.entity_id && !params.area_id) {
         return {
-          success: false,
-          message: "Either entity_id or area_id must be provided"
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              success: false,
+              message: "Either entity_id or area_id must be provided"
+            }, null, 2)
+          }]
         };
       }
 
@@ -95,8 +100,13 @@ export const controlTool: Tool = {
           domain = 'light';
         } else {
           return {
-            success: false,
-            message: `Command ${params.command} not supported for area control`
+            content: [{
+              type: "text",
+              text: JSON.stringify({
+                success: false,
+                message: `Command ${params.command} not supported for area control`
+              }, null, 2)
+            }]
           };
         }
       }
@@ -104,8 +114,13 @@ export const controlTool: Tool = {
       // Explicitly handle unsupported domains
       if (!['light', 'climate', 'switch', 'cover', 'contact'].includes(domain)) {
         return {
-          success: false,
-          message: `Unsupported domain: ${domain}`
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              success: false,
+              message: `Unsupported domain: ${domain}`
+            }, null, 2)
+          }]
         };
       }
 
@@ -192,8 +207,13 @@ export const controlTool: Tool = {
 
       if (!response.ok) {
         return {
-          success: false,
-          message: `Failed to execute ${service} for ${params.entity_id || params.area_id}`
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              success: false,
+              message: `Failed to execute ${service} for ${params.entity_id || params.area_id}`
+            }, null, 2)
+          }]
         };
       }
 
@@ -207,14 +227,23 @@ export const controlTool: Tool = {
             `Command ${service} executed successfully on ${target}`;
 
       return {
-        success: true,
-        message: successMessage,
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            success: true,
+            message: successMessage
+          }, null, 2)
+        }]
       };
     } catch (error) {
       return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            success: false,
+            message: error instanceof Error ? error.message : "Unknown error occurred"
+          }, null, 2)
+        }]
       };
     }
   },

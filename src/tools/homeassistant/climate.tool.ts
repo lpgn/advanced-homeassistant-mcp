@@ -134,7 +134,14 @@ async function executeClimateControlLogic(params: ClimateControlParams): Promise
     switch (params.action) {
         case "list": {
             const devices = await haClimateService.getClimateDevices();
-            return { devices };
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ devices }, null, 2)
+                    }
+                ]
+            };
         }
 
         case "get": {
@@ -145,7 +152,14 @@ async function executeClimateControlLogic(params: ClimateControlParams): Promise
             if (!deviceDetails) {
                 throw new Error(`Climate entity_id '${params.entity_id}' not found.`);
             }
-            return deviceDetails;
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(deviceDetails, null, 2)
+                    }
+                ]
+            };
         }
 
         case "set_hvac_mode": {
@@ -160,7 +174,14 @@ async function executeClimateControlLogic(params: ClimateControlParams): Promise
                  throw new Error(`Failed to set HVAC mode for '${params.entity_id}'. Entity not found or mode not supported?`);
             }
             deviceDetails = await haClimateService.getClimateDevice(params.entity_id);
-            return { status: "success", state: deviceDetails };
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ status: "success", state: deviceDetails }, null, 2)
+                    }
+                ]
+            };
         }
 
          case "set_temperature": {
@@ -184,7 +205,14 @@ async function executeClimateControlLogic(params: ClimateControlParams): Promise
                  throw new Error(`Failed to set temperature for '${params.entity_id}'. Entity not found or temperature setting not supported?`);
             }
             deviceDetails = await haClimateService.getClimateDevice(params.entity_id);
-            return { status: "success", state: deviceDetails };
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ status: "success", state: deviceDetails }, null, 2)
+                    }
+                ]
+            };
         }
 
         case "set_fan_mode": {
@@ -199,7 +227,14 @@ async function executeClimateControlLogic(params: ClimateControlParams): Promise
                  throw new Error(`Failed to set fan mode for '${params.entity_id}'. Entity not found or mode not supported?`);
             }
             deviceDetails = await haClimateService.getClimateDevice(params.entity_id);
-            return { status: "success", state: deviceDetails };
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ status: "success", state: deviceDetails }, null, 2)
+                    }
+                ]
+            };
         }
 
         default:

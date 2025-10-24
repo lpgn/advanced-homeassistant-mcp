@@ -64,10 +64,15 @@ async function executeShellCommandLogic(params: ShellCommandParams): Promise<Rec
         });
 
         return {
-            success: true,
-            command: params.command,
-            output: response,
-            message: "Shell command executed successfully"
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    success: true,
+                    command: params.command,
+                    output: response,
+                    message: "Shell command executed successfully"
+                }, null, 2)
+            }]
         };
 
     } catch (error) {
@@ -77,11 +82,16 @@ async function executeShellCommandLogic(params: ShellCommandParams): Promise<Rec
         
         if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
             return {
-                success: false,
-                error: "Shell command service not available",
-                message: "The shell_command integration is not configured in Home Assistant",
-                suggestion: "Add shell_command to your configuration.yaml. Note: Direct shell execution may not be available. Consider using the SSH add-on or SSH & Web Terminal add-on for command execution.",
-                alternative: "You can also use the 'call_service' tool to interact with HA services instead of shell commands."
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "Shell command service not available",
+                        message: "The shell_command integration is not configured in Home Assistant",
+                        suggestion: "Add shell_command to your configuration.yaml. Note: Direct shell execution may not be available. Consider using the SSH add-on or SSH & Web Terminal add-on for command execution.",
+                        alternative: "You can also use the 'call_service' tool to interact with HA services instead of shell commands."
+                    }, null, 2)
+                }]
             };
         }
 

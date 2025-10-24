@@ -50,16 +50,21 @@ export const addonTool: Tool = {
 
         const data = (await response.json()) as HassAddonResponse;
         return {
-          success: true,
-          addons: data.data.addons.map((addon) => ({
-            name: addon.name,
-            slug: addon.slug,
-            description: addon.description,
-            version: addon.version,
-            installed: addon.installed,
-            available: addon.available,
-            state: addon.state,
-          })),
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              addons: data.data.addons.map((addon) => ({
+                name: addon.name,
+                slug: addon.slug,
+                description: addon.description,
+                version: addon.version,
+                installed: addon.installed,
+                available: addon.available,
+                state: addon.state,
+              }))
+            }, null, 2)
+          }]
         };
       } else {
         if (!params.slug) {
@@ -116,16 +121,25 @@ export const addonTool: Tool = {
 
         const data = (await response.json()) as HassAddonInfoResponse;
         return {
-          success: true,
-          message: `Successfully ${params.action}ed add-on ${params.slug}`,
-          data: data.data,
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              message: `Successfully ${params.action}ed add-on ${params.slug}`,
+              data: data.data
+            }, null, 2)
+          }]
         };
       }
     } catch (error) {
       return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            success: false,
+            message: error instanceof Error ? error.message : "Unknown error occurred"
+          }, null, 2)
+        }]
       };
     }
   },

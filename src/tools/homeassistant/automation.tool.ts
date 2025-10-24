@@ -65,9 +65,15 @@ async function executeAutomationLogic(params: AutomationParams): Promise<Record<
                 }));
 
             return {
-                success: true,
-                automations,
-                total_count: automations.length
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({
+                            automations,
+                            total_count: automations.length
+                        }, null, 2)
+                    }
+                ]
             };
 
         } else {
@@ -81,10 +87,17 @@ async function executeAutomationLogic(params: AutomationParams): Promise<Record<
             });
 
             return {
-                success: true,
-                message: `Successfully ${service}d automation ${params.automation_id}`,
-                automation_id: params.automation_id,
-                action: params.action
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({
+                            success: true,
+                            message: `Successfully ${service}d automation ${params.automation_id}`,
+                            automation_id: params.automation_id,
+                            action: params.action
+                        }, null, 2)
+                    }
+                ]
             };
         }
 

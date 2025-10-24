@@ -64,9 +64,15 @@ async function executeSceneLogic(params: SceneParams): Promise<Record<string, un
                 }));
 
             return {
-                success: true,
-                scenes,
-                total_count: scenes.length
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({
+                            scenes,
+                            total_count: scenes.length
+                        }, null, 2)
+                    }
+                ]
             };
         
         } else if (params.action === "activate") {
@@ -79,9 +85,16 @@ async function executeSceneLogic(params: SceneParams): Promise<Record<string, un
             });
 
             return {
-                success: true,
-                message: `Successfully activated scene ${params.scene_id}`,
-                scene_id: params.scene_id
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({
+                            success: true,
+                            message: `Successfully activated scene ${params.scene_id}`,
+                            scene_id: params.scene_id
+                        }, null, 2)
+                    }
+                ]
             };
         }
 

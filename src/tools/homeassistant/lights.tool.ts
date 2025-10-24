@@ -111,7 +111,14 @@ async function executeLightsControlLogic(params: LightsControlParams): Promise<R
     switch (params.action) {
         case "list": {
             const lights = await haLightsService.getLights();
-            return { lights };
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ lights }, null, 2)
+                    }
+                ]
+            };
         }
 
         case "get": {
@@ -122,7 +129,14 @@ async function executeLightsControlLogic(params: LightsControlParams): Promise<R
             if (!lightDetails) {
                 throw new Error(`Light entity_id '${params.entity_id}' not found.`);
             }
-            return lightDetails;
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(lightDetails, null, 2)
+                    }
+                ]
+            };
         }
 
         case "turn_on": {
@@ -139,7 +153,14 @@ async function executeLightsControlLogic(params: LightsControlParams): Promise<R
                 throw new Error(`Failed to turn on light '${params.entity_id}'. Entity not found?`);
             }
             lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
-            return { status: "success", state: lightDetails };
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ status: "success", state: lightDetails }, null, 2)
+                    }
+                ]
+            };
         }
 
         case "turn_off": {
@@ -151,7 +172,14 @@ async function executeLightsControlLogic(params: LightsControlParams): Promise<R
                 throw new Error(`Failed to turn off light '${params.entity_id}'. Entity not found?`);
             }
             lightDetails = await haLightsService.getLight(params.entity_id); // Get updated state
-            return { status: "success", state: lightDetails };
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify({ status: "success", state: lightDetails }, null, 2)
+                    }
+                ]
+            };
         }
 
         default:

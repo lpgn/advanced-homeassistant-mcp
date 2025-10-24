@@ -46,8 +46,13 @@ export const packageTool: Tool = {
 
         const data = (await response.json()) as HacsResponse;
         return {
-          success: true,
-          packages: data.repositories,
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              packages: data.repositories
+            }, null, 2)
+          }]
         };
       } else {
         if (!params.repository) {
@@ -91,15 +96,24 @@ export const packageTool: Tool = {
         }
 
         return {
-          success: true,
-          message: `Successfully ${params.action}ed package ${params.repository}`,
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              success: true,
+              message: `Successfully ${params.action}ed package ${params.repository}`
+            }, null, 2)
+          }]
         };
       }
     } catch (error) {
       return {
-        success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error occurred",
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            success: false,
+            message: error instanceof Error ? error.message : "Unknown error occurred"
+          }, null, 2)
+        }]
       };
     }
   },

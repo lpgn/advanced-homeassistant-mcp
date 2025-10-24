@@ -79,13 +79,18 @@ async function executeCallServiceLogic(params: CallServiceParams): Promise<Recor
         const success = response && (response.context || response.success !== false);
 
         return {
-            success: success,
-            service: `${params.domain}.${params.service}`,
-            service_data: serviceData,
-            response: response || { message: "Service called successfully" },
-            message: success 
-                ? `Successfully called ${params.domain}.${params.service}`
-                : "Service call completed but response format is unexpected"
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    success: success,
+                    service: `${params.domain}.${params.service}`,
+                    service_data: serviceData,
+                    response: response || { message: "Service called successfully" },
+                    message: success 
+                        ? `Successfully called ${params.domain}.${params.service}`
+                        : "Service call completed but response format is unexpected"
+                }, null, 2)
+            }]
         };
 
     } catch (error) {
@@ -96,19 +101,29 @@ async function executeCallServiceLogic(params: CallServiceParams): Promise<Recor
         
         if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
             return {
-                success: false,
-                error: `Service ${params.domain}.${params.service} not found`,
-                message: "Please check the domain and service name are correct",
-                suggestion: "Use 'list services' or check Home Assistant Developer Tools > Services for available services"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: `Service ${params.domain}.${params.service} not found`,
+                        message: "Please check the domain and service name are correct",
+                        suggestion: "Use 'list services' or check Home Assistant Developer Tools > Services for available services"
+                    }, null, 2)
+                }]
             };
         }
 
         if (errorMessage.includes('required') || errorMessage.includes('missing')) {
             return {
-                success: false,
-                error: "Missing required parameters",
-                message: errorMessage,
-                suggestion: "Check the service documentation for required parameters"
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "Missing required parameters",
+                        message: errorMessage,
+                        suggestion: "Check the service documentation for required parameters"
+                    }, null, 2)
+                }]
             };
         }
 

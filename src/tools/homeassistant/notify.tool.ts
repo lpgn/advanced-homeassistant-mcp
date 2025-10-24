@@ -68,9 +68,16 @@ async function executeNotifyLogic(params: NotifyParams): Promise<Record<string, 
         await hass.callService(domain, service_name, serviceData);
 
         return {
-            success: true,
-            message: "Notification sent successfully",
-            target: params.target || "default"
+            content: [
+                {
+                    type: "text",
+                    text: JSON.stringify({
+                        success: true,
+                        message: "Notification sent successfully",
+                        target: params.target || "default"
+                    }, null, 2)
+                }
+            ]
         };
 
     } catch (error) {
