@@ -49,10 +49,21 @@ export const subscribeEventsTool: Tool = {
 
     if (!sseClient || !sseClient.authenticated) {
       return {
-        success: false,
-        message: sseClient
-          ? "Authentication failed"
-          : "Maximum client limit reached",
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                success: false,
+                message: sseClient
+                  ? "Authentication failed"
+                  : "Maximum client limit reached",
+              },
+              null,
+              2
+            ),
+          },
+        ],
       };
     }
 
