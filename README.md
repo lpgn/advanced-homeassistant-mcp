@@ -261,13 +261,26 @@ RATE_LIMIT_MAX=50
 - **Tools Layer**: Device control, automation, notifications
 - **Resource Manager**: State management and caching
 
-### Built-in Tools
+### Built-in Tools (27 Total)
 
-- 🔦 **Lights Control**: Full spectrum lighting management
-- 🌡️ **Climate Control**: HVAC and thermostat operations
-- ⚙️ **Automation**: Scene and automation triggers
+#### Core Control Tools
+- 🔦 **Lights Control**: Full spectrum lighting management with RGB and brightness
+- 🌡️ **Climate Control**: HVAC and thermostat operations with multi-zone support
+- ⚙️ **Automation**: Scene and automation triggers with configuration management
 - 📱 **Notifications**: Multi-channel alert system
-- 📋 **Device Management**: Discovery and organization
+- 🎛️ **Device Control**: Universal device control (switches, covers, fans, etc.)
+
+#### Discovery & Context Tools ⭐ NEW
+- 🔍 **Entity Search**: Natural language entity search with fuzzy matching
+- 📊 **Live Context**: Real-time state information for all entities in YAML format
+- 📝 **System Prompts**: Context-aware prompts with entity inventory and usage guidance
+
+#### Advanced Features
+- 📋 **Device Management**: List and filter devices by domain, area, or floor
+- 📜 **History**: Query historical state data and trends
+- 🔔 **Event Subscriptions**: Real-time SSE event streaming
+- 🛠️ **Service Calls**: Execute any Home Assistant service
+- 🔧 **System Management**: Restart, reload configurations, and updates
 
 ---
 
@@ -275,10 +288,24 @@ RATE_LIMIT_MAX=50
 
 Once integrated, your AI assistant can understand commands like:
 
+### Basic Device Control
 > "Turn off all lights in the bedroom"
 > "Set the thermostat to 72°F"
 > "Activate the movie scene"
+
+### Smart Queries with New Tools ⭐
+> "Find all my kitchen lights" *(uses entity search)*
+> "What lights are currently on?" *(uses live context)*
+> "Is the front door locked?" *(uses live context for real-time state)*
+> "Show me all temperature sensors" *(uses entity search with domain filter)*
+
+### Context-Aware Actions
+> "If the garage door is open, close it" *(checks state, then acts)*
+> "Turn off lights in empty rooms" *(analyzes presence sensors)*
+
+### Information Queries
 > "What's the current temperature in the living room?"
+> "When was the front door last opened?" *(uses history)*
 > "Notify everyone that dinner is ready"
 
 ---

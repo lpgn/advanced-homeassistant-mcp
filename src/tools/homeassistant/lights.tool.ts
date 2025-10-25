@@ -80,11 +80,7 @@ const lightsControlSchema = z.object({
     entity_id: z.string().optional().describe("The entity ID of the light to control (required for get, turn_on, turn_off)"),
     brightness: z.number().min(0).max(255).optional().describe("Brightness level (0-255)"),
     color_temp: z.number().min(153).max(500).optional().describe("Color temperature in Mireds (153-500)"),
-    rgb_color: z.tuple([
-        z.number().min(0).max(255),
-        z.number().min(0).max(255),
-        z.number().min(0).max(255)
-    ]).optional().describe("RGB color as [r, g, b] (0-255 each)"),
+    rgb_color: z.array(z.number().min(0).max(255)).length(3).optional().describe("RGB color as [r, g, b] (0-255 each)"),
 });
 
 // Infer the type from the schema

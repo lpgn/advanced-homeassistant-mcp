@@ -46,51 +46,63 @@ export class ErrorLogTool extends BaseTool {
 // Shared execution logic
 async function executeErrorLogLogic(params: ErrorLogParams): Promise<Record<string, unknown>> {
     try {
-        const hass = await get_hass();
+        // Fetch error log directly from REST API endpoint
+        const baseUrl = process.env.HASS_HOST || "http://localhost:8123";
+        const token = process.env.HASS_TOKEN || "";
         
-        // Call the system_log/list service to get error logs
-        const response = await hass.callService("system_log", "list", {});
+        const response = await fetch(`${baseUrl}/api/error_log`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "text/plain",
+            },
+        });
         
-        if (!response || !Array.isArray(response)) {
+        if (!response.ok) {
+            throw new Error(`Failed to fetch error log: ${response.status} ${response.statusText}`);
+        }
+        
+        const logText = await response.text();
+        const logLines = logText.split('\n').filter(line => line.trim());
+        
+        if (!logLines || logLines.length === 0) {
             return {
                 content: [{
                     type: "text",
                     text: JSON.stringify({
-                        success: false,
-                        error: "Unable to retrieve error logs",
-                        message: "The system_log service may not be available"
+                        success: true,
+                        log_count: 0,
+                        message: "No errors in log",
+                        logs: []
                     }, null, 2)
                 }]
             };
         }
 
-        let logs = response;
+        let logs = logLines;
 
         // Filter logs if keyword provided
         if (params.filter) {
             const filterLower = params.filter.toLowerCase();
-            logs = logs.filter((log: any) => {
-                const message = (log.message || '').toLowerCase();
-                const name = (log.name || '').toLowerCase();
-                const level = (log.level || '').toLowerCase();
-                return message.includes(filterLower) || 
-                       name.includes(filterLower) || 
-                       level.includes(filterLower);
-            });
+            logs = logs.filter((line: string) => 
+                line.toLowerCase().includes(filterLower)
+            );
         }
 
         // Limit to requested number of lines
-        const limitedLogs = logs.slice(0, params.lines);
+        const limitedLogs = logs.slice(-params.lines); // Get last N lines
 
-        // Format logs for readability
-        const formattedLogs = limitedLogs.map((log: any) => ({
-            timestamp: log.timestamp || 'Unknown',
-            level: log.level || 'INFO',
-            source: log.name || 'Unknown',
-            message: log.message || '',
-            exception: log.exception || null,
-            count: log.count || 1
-        }));
+        // Parse log lines to extract structured information
+        const formattedLogs = limitedLogs.map((line: string) => {
+            // Try to parse timestamp and level from log line
+            const timestampMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+            const levelMatch = line.match(/(ERROR|WARNING|INFO|DEBUG|CRITICAL)/);
+            
+            return {
+                timestamp: timestampMatch ? timestampMatch[1] : 'Unknown',
+                level: levelMatch ? levelMatch[1] : 'UNKNOWN',
+                message: line,
+            };
+        });
 
         return {
             content: [{
@@ -108,26 +120,17 @@ async function executeErrorLogLogic(params: ErrorLogParams): Promise<Record<stri
     } catch (error) {
         logger.error(`Error retrieving error logs: ${error instanceof Error ? error.message : String(error)}`);
         
-        // If system_log service is not available, try to read from file
-        try {
-            const hass = await get_hass();
-            const configDir = await hass.callService("homeassistant", "get_config", {});
-            
-            return {
-                content: [{
-                    type: "text",
-                    text: JSON.stringify({
-                        success: false,
-                        error: "Direct log access not available through API",
-                        message: "Try checking the logs in Home Assistant UI (Settings > System > Logs) or access the log file directly",
-                        config_directory: configDir,
-                        suggestion: "Enable the system_log integration if not already enabled"
-                    }, null, 2)
-                }]
-            };
-        } catch {
-            throw error;
-        }
+        return {
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                    message: "Failed to retrieve error logs. The error_log API endpoint may not be accessible.",
+                    suggestion: "Check that your Home Assistant instance is running and accessible, and that the long-lived access token has the correct permissions."
+                }, null, 2)
+            }]
+        };
     }
 }
 

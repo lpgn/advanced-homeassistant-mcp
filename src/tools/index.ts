@@ -11,6 +11,9 @@ import { callServiceTool } from "./call-service.tool.js";
 import { fileOperationsTool } from "./file-operations.tool.js";
 import { shellCommandTool } from "./shell-command.tool.js";
 import { systemManagementTool } from "./system-management.tool.js";
+import { getLiveContextTool } from "./live-context.tool.js";
+import { entitySearchTool } from "./entity-search.tool.js";
+import { getSystemPromptTool } from "./prompts.tool.js";
 
 // Import Tool objects (not classes) from homeassistant directory
 import { lightsControlTool } from "./homeassistant/lights.tool.js";
@@ -58,6 +61,10 @@ export const tools: Tool[] = [
   fileOperationsTool,
   shellCommandTool,
   systemManagementTool,
+  // New advanced tools from official HA MCP integration
+  getLiveContextTool,
+  entitySearchTool,
+  getSystemPromptTool,
   // Home Assistant tools
   lightsControlTool,
   climateControlTool,
@@ -70,11 +77,6 @@ export const tools: Tool[] = [
 // Function to get a tool by name
 export function getToolByName(name: string): Tool | undefined {
   return tools.find((tool) => tool.name === name);
-}
-
-// Function to get all tools
-export function getAllTools(): Tool[] {
-  return [...tools];
 }
 
 // Export all tools individually
@@ -91,6 +93,10 @@ export {
   fileOperationsTool,
   shellCommandTool,
   systemManagementTool,
+  // New advanced tools from official HA MCP integration
+  getLiveContextTool,
+  entitySearchTool,
+  getSystemPromptTool,
   // Home Assistant tools
   lightsControlTool,
   climateControlTool,

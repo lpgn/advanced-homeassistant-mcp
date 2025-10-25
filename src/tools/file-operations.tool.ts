@@ -50,6 +50,33 @@ export class FileOperationsTool extends BaseTool {
 // Shared execution logic
 async function executeFileOperationsLogic(params: FileOperationsParams): Promise<Record<string, unknown>> {
     try {
+        // File operations are not available through the standard Home Assistant REST API
+        // They require either:
+        // 1. Supervisor API access (hassio) for /config directory
+        // 2. Direct file system access (not available through REST API)
+        // 3. Custom integration or python_script
+        
+        return {
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    success: false,
+                    error: "File operations not supported",
+                    operation: params.operation,
+                    path: params.path,
+                    message: "Direct file operations are not available through the Home Assistant REST API for security reasons.",
+                    alternatives: [
+                        "Use the Home Assistant File Editor add-on",
+                        "Access files via SSH/Terminal",
+                        "Use the Studio Code Server add-on",
+                        "Use the Supervisor API if running Home Assistant OS/Supervised (requires Supervisor access token)"
+                    ],
+                    note: "File operations through the API were intentionally restricted to prevent unauthorized access to the file system."
+                }, null, 2)
+            }]
+        };
+        
+        /* Original implementation kept for reference - these services don't exist in HA
         const hass = await get_hass();
         
         // Get Home Assistant config directory
@@ -65,7 +92,7 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
 
         switch (params.operation) {
             case "read": {
-                // Use the file_get_contents service
+                // Use the file_get_contents service - DOES NOT EXIST
                 const response = await hass.callService("homeassistant", "file_get_contents", {
                     path: resolvedPath
                 });
@@ -84,172 +111,21 @@ async function executeFileOperationsLogic(params: FileOperationsParams): Promise
                     }]
                 };
             }
-
-            case "write": {
-                if (!params.content) {
-                    return {
-                        content: [{
-                            type: "text",
-                            text: JSON.stringify({
-                                success: false,
-                                error: "Content is required for write operation"
-                            }, null, 2)
-                        }]
-                    };
-                }
-
-                // Use the file_write service
-                await hass.callService("homeassistant", "file_write", {
-                    path: resolvedPath,
-                    content: params.content,
-                    encoding: params.encoding
-                });
-
-                return {
-                    content: [{
-                        type: "text",
-                        text: JSON.stringify({
-                            success: true,
-                            operation: "write",
-                            path: resolvedPath,
-                            bytes_written: params.content.length,
-                            encoding: params.encoding
-                        }, null, 2)
-                    }]
-                };
-            }
-
-            case "delete": {
-                // Use the file_delete service
-                await hass.callService("homeassistant", "file_delete", {
-                    path: resolvedPath
-                });
-
-                return {
-                    content: [{
-                        type: "text",
-                        text: JSON.stringify({
-                            success: true,
-                            operation: "delete",
-                            path: resolvedPath
-                        }, null, 2)
-                    }]
-                };
-            }
-
-            case "list": {
-                // Use the file_list service
-                const response = await hass.callService("homeassistant", "file_list", {
-                    path: resolvedPath,
-                    recursive: params.recursive
-                });
-
-                return {
-                    content: [{
-                        type: "text",
-                        text: JSON.stringify({
-                            success: true,
-                            operation: "list",
-                            path: resolvedPath,
-                            files: response.files || response,
-                            count: Array.isArray(response.files) ? response.files.length : 0
-                        }, null, 2)
-                    }]
-                };
-            }
-
-            case "exists": {
-                try {
-                    await hass.callService("homeassistant", "file_get_contents", {
-                        path: resolvedPath
-                    });
-                    return {
-                        content: [{
-                            type: "text",
-                            text: JSON.stringify({
-                                success: true,
-                                operation: "exists",
-                                path: resolvedPath,
-                                exists: true
-                            }, null, 2)
-                        }]
-                    };
-                } catch (error) {
-                    return {
-                        content: [{
-                            type: "text",
-                            text: JSON.stringify({
-                                success: true,
-                                operation: "exists",
-                                path: resolvedPath,
-                                exists: false
-                            }, null, 2)
-                        }]
-                    };
-                }
-            }
-
-            default:
-                return {
-                    content: [{
-                        type: "text",
-                        text: JSON.stringify({
-                            success: false,
-                            error: `Unknown operation: ${params.operation}`
-                        }, null, 2)
-                    }]
-                };
-        }
-
+        */
     } catch (error) {
         logger.error(`File operation error: ${error instanceof Error ? error.message : String(error)}`);
         
-        // Provide helpful error messages
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        
-        if (errorMessage.includes('not found') || errorMessage.includes('does not exist')) {
-            return {
-                content: [{
-                    type: "text",
-                    text: JSON.stringify({
-                        success: false,
-                        error: "File or directory not found",
-                        path: params.path,
-                        message: "The specified path does not exist"
-                    }, null, 2)
-                }]
-            };
-        }
-
-        if (errorMessage.includes('permission') || errorMessage.includes('denied')) {
-            return {
-                content: [{
-                    type: "text",
-                    text: JSON.stringify({
-                        success: false,
-                        error: "Permission denied",
-                        path: params.path,
-                        message: "Home Assistant does not have permission to access this file"
-                    }, null, 2)
-                }]
-            };
-        }
-
-        if (errorMessage.includes('service') && errorMessage.includes('not found')) {
-            return {
-                content: [{
-                    type: "text",
-                    text: JSON.stringify({
-                        success: false,
-                        error: "File operations not available",
-                        message: "The required Home Assistant services (file_get_contents, file_write, etc.) are not available",
-                        suggestion: "These services were added in Home Assistant 2021.6. Please update your installation or use the python_script integration for file operations."
-                    }, null, 2)
-                }]
-            };
-        }
-
-        throw error;
+        return {
+            content: [{
+                type: "text",
+                text: JSON.stringify({
+                    success: false,
+                    error: error instanceof Error ? error.message : String(error),
+                    operation: params.operation,
+                    path: params.path
+                }, null, 2)
+            }]
+        };
     }
 }
 
