@@ -71,15 +71,22 @@ async function main(): Promise<void> {
         server.addTool(climateControlTool);
         logger.info(`Added tool: ${climateControlTool.name}`);
 
-        // Add prompts
+        // Add prompts with proper load function (FastMCP expects load to return string, not messages)
         for (const prompt of prompts) {
             server.addPrompt({
                 name: prompt.name,
                 description: prompt.description,
-                arguments: prompt.arguments,
-                handler: async (args: Record<string, string>) => {
-                    const response = await handlePrompt(prompt.name, args);
-                    return `# ${response.title}\n\n${response.content}${response.suggestions ? '\n\n## Suggestions:\n' + response.suggestions.map(s => `- ${s}`).join('\n') : ''}`;
+                arguments: prompt.arguments || [],
+                load: async (args: Record<string, string>) => {
+                    try {
+                        const response = await handlePrompt(prompt.name, args || {});
+                        // FastMCP's load function should return a string, not messages
+                        // The string is the prompt content that will be formatted by FastMCP
+                        return `# ${response.title}\n\n${response.content}${response.suggestions ? '\n\n## Suggestions:\n' + response.suggestions.map(s => `- ${s}`).join('\n') : ''}`;
+                    } catch (error) {
+                        logger.error(`Error in prompt handler for ${prompt.name}:`, error);
+                        return `Error loading prompt: ${error instanceof Error ? error.message : String(error)}`;
+                    }
                 }
             });
             logger.info(`Added prompt: ${prompt.name}`);

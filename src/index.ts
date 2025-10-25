@@ -80,11 +80,12 @@ async function main(): Promise<void> {
     server.registerTool(tool);
   });
 
-  // Register prompts
-  prompts.forEach(prompt => {
-    server.registerPrompt(prompt, handlePrompt);
-  });
-  logger.info(`Registered ${prompts.length} guided prompts`);
+  // Register prompts - DISABLED: Using stdio-server.ts with fastmcp instead
+  // The old MCP server doesn't properly handle prompts
+  // prompts.forEach(prompt => {
+  //   server.registerPrompt(prompt, handlePrompt);
+  // });
+  // logger.info(`Registered ${prompts.length} guided prompts`);
 
   // Add optional tools here as needed
   // server.registerTool(new ControlTool());

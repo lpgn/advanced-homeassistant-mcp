@@ -12,6 +12,7 @@ export interface Prompt {
         description: string;
         required: boolean;
     }>;
+    load?: (args?: Record<string, string>) => Promise<any>;
 }
 
 export const prompts: Prompt[] = [
