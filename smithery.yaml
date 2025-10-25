@@ -259,3 +259,105 @@ tools:
         detailed:
           type: boolean
       required: []
+
+  - name: dashboard_config
+    description: Create and configure Home Assistant Lovelace dashboards
+    parameters:
+      type: object
+      properties:
+        operation:
+          type: string
+          enum:
+            - create_view
+            - create_card
+            - generate_layout
+            - list_card_types
+            - get_recommendations
+        config:
+          type: object
+          description: Operation-specific configuration payload
+      required:
+        - operation
+
+  - name: domain_summary
+    description: Summarize entities within a Home Assistant domain
+    parameters:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Domain to summarize (e.g., light, switch, sensor)
+        example_limit:
+          type: number
+          description: Number of example entities to include (default 3)
+      required:
+        - domain
+
+  - name: get_entity
+    description: Retrieve Home Assistant entity state with optional field filtering
+    parameters:
+      type: object
+      properties:
+        entity_id:
+          type: string
+          description: Entity ID to query (e.g., light.living_room)
+        fields:
+          type: array
+          items:
+            type: string
+          description: Specific fields to return using dot-notation
+        detailed:
+          type: boolean
+          description: When true, include full entity payload
+      required:
+        - entity_id
+
+  - name: get_version
+    description: Get Home Assistant version and core system details
+    parameters:
+      type: object
+      properties: {}
+      required: []
+
+  - name: system_overview
+    description: Retrieve an overview of system configuration, entities, and services
+    parameters:
+      type: object
+      properties: {}
+      required: []
+
+  - name: restart_ha
+    description: Restart the Home Assistant instance (requires explicit confirmation)
+    parameters:
+      type: object
+      properties:
+        confirm:
+          type: boolean
+          description: Must be true to initiate restart
+      required:
+        - confirm
+
+  - name: yaml_editor
+    description: Read, validate, and prepare edits for Home Assistant YAML files
+    parameters:
+      type: object
+      properties:
+        operation:
+          type: string
+          enum:
+            - read
+            - write
+            - update
+            - validate
+            - list
+        file_path:
+          type: string
+          description: Relative path to YAML file (required for all but list)
+        content:
+          type: [object, array, string, number, boolean]
+          description: Content to write or merge for write/update operations
+        backup:
+          type: boolean
+          description: Create a backup before writing (default true)
+      required:
+        - operation

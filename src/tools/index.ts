@@ -14,6 +14,13 @@ import { systemManagementTool } from "./system-management.tool.js";
 import { getLiveContextTool } from "./live-context.tool.js";
 import { entitySearchTool } from "./entity-search.tool.js";
 import { getSystemPromptTool } from "./prompts.tool.js";
+import { dashboardConfigTool } from "./dashboard-config.tool.js";
+import { domainSummaryTool } from "./domain-summary.tool.js";
+import { getEntityTool } from "./entity-query.tool.js";
+import { restartHaTool } from "./restart.tool.js";
+import { systemOverviewTool } from "./system-overview.tool.js";
+import { getVersionTool } from "./version.tool.js";
+import { yamlEditorTool } from "./yaml-editor.tool.js";
 
 // Import Tool objects (not classes) from homeassistant directory
 import { lightsControlTool } from "./homeassistant/lights.tool.js";
@@ -65,6 +72,13 @@ export const tools: Tool[] = [
   getLiveContextTool,
   entitySearchTool,
   getSystemPromptTool,
+  dashboardConfigTool,
+  domainSummaryTool,
+  getEntityTool,
+  getVersionTool,
+  systemOverviewTool,
+  restartHaTool,
+  yamlEditorTool,
   // Home Assistant tools
   lightsControlTool,
   climateControlTool,
@@ -97,6 +111,13 @@ export {
   getLiveContextTool,
   entitySearchTool,
   getSystemPromptTool,
+  dashboardConfigTool,
+  domainSummaryTool,
+  getEntityTool,
+  getVersionTool,
+  systemOverviewTool,
+  restartHaTool,
+  yamlEditorTool,
   // Home Assistant tools
   lightsControlTool,
   climateControlTool,

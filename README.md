@@ -261,7 +261,7 @@ RATE_LIMIT_MAX=50
 - **Tools Layer**: Device control, automation, notifications
 - **Resource Manager**: State management and caching
 
-### Built-in Tools (27 Total)
+### Built-in Tools (28 Total)
 
 #### Core Control Tools
 - 🔦 **Lights Control**: Full spectrum lighting management with RGB and brightness
@@ -274,13 +274,24 @@ RATE_LIMIT_MAX=50
 - 🔍 **Entity Search**: Natural language entity search with fuzzy matching
 - 📊 **Live Context**: Real-time state information for all entities in YAML format
 - 📝 **System Prompts**: Context-aware prompts with entity inventory and usage guidance
+- 🧾 **Entity Snapshot**: Targeted entity lookups with field filtering for token-efficient responses
+
+#### System Insight & Diagnostics
+- 🆔 **Version Insight**: Retrieve Home Assistant version, timezone, and unit system details
+- 🗂️ **System Overview**: Full inventory of entities, domains, services, and loaded components
+- � **Domain Summary**: Quick domain-level stats with state distribution and common attributes
+
+#### Dashboard & Configuration Tools
+- 🗺️ **Dashboard Builder**: Generate Lovelace views, cards, and layout scaffolding programmatically
+- 🧰 **YAML Editor Helper**: Discover configuration files and validate YAML operations safely
 
 #### Advanced Features
 - 📋 **Device Management**: List and filter devices by domain, area, or floor
 - 📜 **History**: Query historical state data and trends
 - 🔔 **Event Subscriptions**: Real-time SSE event streaming
 - 🛠️ **Service Calls**: Execute any Home Assistant service
-- 🔧 **System Management**: Restart, reload configurations, and updates
+- 🔧 **System Management**: Reload configurations, manage updates, and execute system tasks
+- 🔁 **Safe Restart**: Explicit confirmation workflow for restarting Home Assistant remotely
 
 ---
 
