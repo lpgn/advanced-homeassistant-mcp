@@ -402,28 +402,6 @@ docker exec -i homeassistant-mcp-server bun run src/stdio-server.ts
 
 **For detailed configuration and multi-client setup, see [LOCAL_MCP_SETUP.md](./LOCAL_MCP_SETUP.md)**
 
-Then add to your MCP client configuration (see [LOCAL_MCP_SETUP.md](./LOCAL_MCP_SETUP.md) for details):
-
-```json
-{
-  "mcpServers": {
-    "homeassistant-local": {
-      "command": "docker",
-      "args": [
-        "exec",
-        "-i",
-        "homeassistant-mcp-server",
-        "bun",
-        "run",
-        "src/stdio-server.ts"
-      ]
-    }
-  }
-}
-```
-
-**See [LOCAL_MCP_SETUP.md](./LOCAL_MCP_SETUP.md) for complete setup instructions and troubleshooting.**
-
 ---
 
 ## 🛠️ Usage
