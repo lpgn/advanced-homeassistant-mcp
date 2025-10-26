@@ -37,6 +37,24 @@ export class ShellCommandTool extends BaseTool {
     }
 
     public async execute(params: ShellCommandParams, _context: MCPContext): Promise<Record<string, unknown>> {
+        // Check if dangerous operations are enabled
+        const dangerousOpsEnabled = process.env.ENABLE_DANGEROUS_OPERATIONS === 'true';
+        const shellCommandsEnabled = process.env.ENABLE_SHELL_COMMANDS === 'true';
+        
+        if (!dangerousOpsEnabled && !shellCommandsEnabled) {
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "Shell commands are disabled",
+                        message: "Shell command execution is disabled for security reasons.",
+                        suggestion: "To enable, set ENABLE_SHELL_COMMANDS=true or ENABLE_DANGEROUS_OPERATIONS=true in your .env file and restart the container."
+                    }, null, 2)
+                }]
+            };
+        }
+        
         logger.warn(`⚠️  DANGEROUS: Executing shell command: ${params.command}`);
         
         const validatedParams = this.validateParams(params);

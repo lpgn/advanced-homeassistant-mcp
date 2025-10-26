@@ -50,6 +50,28 @@ export class SystemManagementTool extends BaseTool {
     }
 
     public async execute(params: SystemManagementParams, _context: MCPContext): Promise<Record<string, unknown>> {
+        // Check if system management operations are enabled
+        const dangerousOpsEnabled = process.env.ENABLE_DANGEROUS_OPERATIONS === 'true';
+        const systemRestartEnabled = process.env.ENABLE_SYSTEM_RESTART === 'true';
+        const supervisorAccess = process.env.ALLOW_SUPERVISOR_ACCESS === 'true';
+        
+        // Restart and stop are the most dangerous
+        const isDangerous = params.action === 'restart' || params.action === 'stop';
+        
+        if (isDangerous && !dangerousOpsEnabled && !systemRestartEnabled) {
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "System restart/stop operations are disabled",
+                        message: "Home Assistant restart and stop operations are disabled for security reasons. Reload operations may still work.",
+                        suggestion: "To enable, set ENABLE_SYSTEM_RESTART=true or ENABLE_DANGEROUS_OPERATIONS=true in your .env file and restart the container."
+                    }, null, 2)
+                }]
+            };
+        }
+        
         logger.info(`Executing SystemManagementTool: ${params.action}`);
         
         const validatedParams = this.validateParams(params);

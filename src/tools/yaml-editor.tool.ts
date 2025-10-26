@@ -20,6 +20,22 @@ export const yamlEditorTool = {
     });
     
     try {
+      // Check if YAML editing is enabled for write operations
+      const dangerousOpsEnabled = process.env.ENABLE_DANGEROUS_OPERATIONS === 'true';
+      const yamlEditorEnabled = process.env.ENABLE_YAML_EDITOR === 'true';
+      const configModsAllowed = process.env.ALLOW_CONFIG_MODIFICATIONS === 'true';
+      
+      const isReadOnly = params.operation === 'read' || params.operation === 'list' || params.operation === 'validate';
+      
+      if (!isReadOnly && !dangerousOpsEnabled && !yamlEditorEnabled && !configModsAllowed) {
+        return wrapResult({
+          success: false,
+          error: "YAML write operations are disabled",
+          message: "YAML file write/update operations are disabled for security reasons. Read and validation operations may still work.",
+          suggestion: "To enable, set ENABLE_YAML_EDITOR=true or ENABLE_DANGEROUS_OPERATIONS=true in your .env file and restart the container."
+        });
+      }
+      
       const HASS_HOST = process.env.HASS_HOST;
       const HASS_TOKEN = process.env.HASS_TOKEN;
 

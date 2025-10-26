@@ -40,6 +40,27 @@ export class FileOperationsTool extends BaseTool {
     }
 
     public async execute(params: FileOperationsParams, _context: MCPContext): Promise<Record<string, unknown>> {
+        // Check if file operations are enabled
+        const dangerousOpsEnabled = process.env.ENABLE_DANGEROUS_OPERATIONS === 'true';
+        const fileOpsEnabled = process.env.ENABLE_FILE_OPERATIONS === 'true';
+        
+        // For read-only operations, be more lenient
+        const isReadOnly = params.operation === 'read' || params.operation === 'list' || params.operation === 'exists';
+        
+        if (!isReadOnly && !dangerousOpsEnabled && !fileOpsEnabled) {
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        success: false,
+                        error: "File write operations are disabled",
+                        message: "File write/delete operations are disabled for security reasons. Read operations may still work.",
+                        suggestion: "To enable, set ENABLE_FILE_OPERATIONS=true or ENABLE_DANGEROUS_OPERATIONS=true in your .env file and restart the container."
+                    }, null, 2)
+                }]
+            };
+        }
+        
         logger.debug(`Executing FileOperationsTool with params: ${JSON.stringify(params)}`);
         
         const validatedParams = this.validateParams(params);
