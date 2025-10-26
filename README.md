@@ -142,22 +142,265 @@ bun run start:stdio
 
 ### Option 5: Local Docker Setup (Recommended for Development)
 
-For local development with the full feature set:
+For local development with the full feature set, follow these steps:
+
+#### Step 1: Clone the Repository
 
 ```bash
+# Clone the repository
 git clone https://github.com/jango-blockchained/homeassistant-mcp.git
 cd homeassistant-mcp
+```
 
-# Create .env file with your Home Assistant credentials
+#### Step 2: Configure Environment Variables
+
+Create a `.env` file with your Home Assistant credentials:
+
+```bash
+# Copy the example file
 cp .env.example .env
-# Edit .env with your HASS_URL and HASS_TOKEN
 
-# Start the container
+# Edit .env with your editor
+# Windows: notepad .env
+# Linux/Mac: nano .env
+```
+
+Add your Home Assistant details:
+
+```env
+# Required: Your Home Assistant URL (include http:// or https://)
+HASS_URL=http://192.168.1.100:8123
+
+# Required: Your Home Assistant Long-Lived Access Token
+HASS_TOKEN=your_long_lived_access_token_here
+
+# Optional: Server configuration
+NODE_ENV=production
+LOG_LEVEL=info
+```
+
+**Getting a Home Assistant Token:**
+1. Open Home Assistant web interface
+2. Click your profile (bottom left corner)
+3. Scroll down to "Long-Lived Access Tokens"
+4. Click "Create Token"
+5. Give it a name (e.g., "MCP Server")
+6. Copy the token immediately (you won't see it again!)
+7. Paste into `.env` file as `HASS_TOKEN=...`
+
+#### Step 3: Start the Docker Container
+
+```bash
+# Start the container in detached mode
 docker-compose up -d
 
-# Verify it's running
-docker-compose ps
+# The container will:
+# - Pull the Bun runtime image
+# - Install dependencies
+# - Build the TypeScript code
+# - Start the MCP server
 ```
+
+**First-time build takes 2-3 minutes**. Subsequent starts are instant.
+
+#### Step 4: Verify the Container is Running
+
+```bash
+# Check container status
+docker-compose ps
+
+# You should see:
+# NAME                       STATUS
+# homeassistant-mcp-server   Up X seconds (healthy)
+```
+
+**Note:** If status shows "unhealthy", that's okay! The HTTP health check may fail, but the stdio transport (which MCP uses) works fine.
+
+#### Step 5: Check Logs (Optional)
+
+```bash
+# View recent logs
+docker-compose logs --tail=50
+
+# Follow logs in real-time
+docker-compose logs -f
+
+# Look for these success messages:
+# ✓ "Added tool: [tool_name]" (should see 29 tools)
+# ✓ "Added prompt: [prompt_name]" (should see 10 prompts)
+# ✓ "FastMCP server started successfully"
+```
+
+#### Step 6: Test the Connection
+
+```bash
+# Test that the stdio server responds
+docker exec -i homeassistant-mcp-server bun run src/stdio-server.ts
+
+# Press Ctrl+C to stop the test
+```
+
+#### Step 7: Configure Your MCP Client
+
+Add this configuration to your MCP client (VS Code Insiders, Cursor, Claude Desktop, etc.):
+
+**For VS Code Insiders:** `%APPDATA%\Code - Insiders\User\mcp.json`
+
+**For Cursor:** `%APPDATA%\Cursor\User\mcp.json`
+
+**For Claude Desktop:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-local": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "homeassistant-mcp-server",
+        "bun",
+        "run",
+        "src/stdio-server.ts"
+      ]
+    }
+  }
+}
+```
+
+**Quick copy:** A reference config is in `.vscode/mcp-config.json`
+
+#### Step 8: Restart Your MCP Client
+
+- **VS Code Insiders:** Close and reopen completely
+- **Cursor:** Close and reopen completely
+- **Claude Desktop:** Restart the application
+
+#### Step 9: Verify Tools Are Available
+
+After restarting, you should see in your MCP client:
+- ✅ 29 tools available
+- ✅ 10 prompts available
+- ✅ Server status: Connected
+
+Try a test command:
+> "What is my Home Assistant version?"
+
+This should use the `get_version` tool and return your HA details.
+
+---
+
+### Troubleshooting Docker Setup
+
+#### Container Won't Start
+
+```bash
+# Check for errors
+docker-compose logs
+
+# Common issues:
+# - Port 7123 already in use: Change port in docker-compose.yml
+# - .env file missing: Create it with HASS_URL and HASS_TOKEN
+# - Docker not running: Start Docker Desktop
+```
+
+#### Container Starts But Shows "Unhealthy"
+
+This is usually fine! The health check tests the HTTP server, but MCP uses stdio transport.
+
+```bash
+# Verify stdio works
+docker exec -i homeassistant-mcp-server bun run src/stdio-server.ts
+
+# If you see JSON output, it's working correctly
+```
+
+#### Can't Connect from MCP Client
+
+```bash
+# 1. Verify container is running
+docker-compose ps
+
+# 2. Check container name matches your config
+docker ps --filter "name=homeassistant-mcp-server"
+
+# 3. Test stdio server manually
+docker exec -i homeassistant-mcp-server bun run src/stdio-server.ts
+
+# 4. Check MCP client logs for connection errors
+```
+
+#### Home Assistant Connection Errors
+
+```bash
+# Test Home Assistant is reachable from container
+docker exec homeassistant-mcp-server curl -I http://your-ha-ip:8123
+
+# Check .env file has correct values
+docker exec homeassistant-mcp-server cat /app/.env
+
+# Verify token works
+docker exec homeassistant-mcp-server curl -H "Authorization: Bearer YOUR_TOKEN" http://your-ha-ip:8123/api/
+```
+
+#### Rebuild Container After Code Changes
+
+```bash
+# Stop and rebuild
+docker-compose down
+docker-compose up -d --build
+
+# Or force rebuild
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+#### Clear Everything and Start Fresh
+
+```bash
+# Stop and remove containers, networks, volumes
+docker-compose down -v
+
+# Remove the image
+docker rmi advanced-homeassistant-mcp-homeassistant-mcp
+
+# Start fresh
+docker-compose up -d --build
+```
+
+---
+
+### Quick Command Reference
+
+```bash
+# Start container
+docker-compose up -d
+
+# Stop container
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Restart container
+docker-compose restart
+
+# Rebuild after changes
+docker-compose up -d --build
+
+# Check status
+docker-compose ps
+
+# Execute commands in container
+docker exec -it homeassistant-mcp-server bash
+
+# Test stdio server
+docker exec -i homeassistant-mcp-server bun run src/stdio-server.ts
+```
+
+---
+
+**For detailed configuration and multi-client setup, see [LOCAL_MCP_SETUP.md](./LOCAL_MCP_SETUP.md)**
 
 Then add to your MCP client configuration (see [LOCAL_MCP_SETUP.md](./LOCAL_MCP_SETUP.md) for details):
 
