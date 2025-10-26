@@ -47,7 +47,6 @@ docker-compose.override.yaml
 
 # IDEs and editors
 .idea/
-.vscode/
 *.swp
 *.swo
 .DS_Store

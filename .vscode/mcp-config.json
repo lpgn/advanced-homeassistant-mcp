@@ -1,0 +1,16 @@
+{
+	"mcpServers": {
+		"homeassistant-local": {
+			"type": "stdio",
+			"command": "docker",
+			"args": [
+				"exec",
+				"-i",
+				"homeassistant-mcp-server",
+				"bun",
+				"run",
+				"src/stdio-server.ts"
+			]
+		}
+	}
+}
