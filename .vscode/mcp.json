@@ -1,5 +1,5 @@
 {
-	"mcpServers": {
+	"servers": {
 		"homeassistant-local": {
 			"type": "stdio",
 			"command": "docker",

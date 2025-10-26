@@ -102,3 +102,5 @@ bun.lock
 
 
 taskplan.md
+env
+env.docker
