@@ -76,7 +76,12 @@ async function executeCallServiceLogic(params: CallServiceParams): Promise<Recor
         const response = await hass.callService(params.domain, params.service, serviceData);
 
         // Check if we have a context ID (indicates successful service call)
-        const success = response && (response.context || response.success !== false);
+        const success = Boolean(
+            response && (
+                (typeof response === "object" && response !== null && "context" in response && response.context) ||
+                response.success !== false
+            )
+        );
 
         return {
             content: [{
