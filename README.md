@@ -49,6 +49,14 @@ A powerful, secure, and extensible Model Context Protocol (MCP) server that enab
 
 - **Speech-to-Text**: Whisper model integration for voice commands
 - **Wake Word Detection**: Always-listening capabilities with custom wake words
+
+### 🎨 Advanced Dashboard Generator
+
+- **Device-Optimized Layouts**: Generate dashboards for mobile, desktop, tablet, and wall panels
+- **Smart Prioritization**: Organize by most-used, by-area, by-type, or custom priority
+- **Usage Analysis**: Track and analyze entity usage patterns for data-driven layouts
+- **Auto-Optimization**: Convert existing dashboards for different devices
+- **20+ Card Types**: Support for all Lovelace card types with intelligent selection
 - **NLP Processing**: Advanced intent recognition and entity extraction
 - **Context Awareness**: Learns from usage patterns and user behavior
 
@@ -131,6 +139,47 @@ bun install
 bun run build
 bun run start:stdio
 ```
+
+### Option 5: Local Docker Setup (Recommended for Development)
+
+For local development with the full feature set:
+
+```bash
+git clone https://github.com/jango-blockchained/homeassistant-mcp.git
+cd homeassistant-mcp
+
+# Create .env file with your Home Assistant credentials
+cp .env.example .env
+# Edit .env with your HASS_URL and HASS_TOKEN
+
+# Start the container
+docker-compose up -d
+
+# Verify it's running
+docker-compose ps
+```
+
+Then add to your MCP client configuration (see [LOCAL_MCP_SETUP.md](./LOCAL_MCP_SETUP.md) for details):
+
+```json
+{
+  "mcpServers": {
+    "homeassistant-local": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "homeassistant-mcp-server",
+        "bun",
+        "run",
+        "src/stdio-server.ts"
+      ]
+    }
+  }
+}
+```
+
+**See [LOCAL_MCP_SETUP.md](./LOCAL_MCP_SETUP.md) for complete setup instructions and troubleshooting.**
 
 ---
 
@@ -292,6 +341,16 @@ RATE_LIMIT_MAX=50
 - 🛠️ **Service Calls**: Execute any Home Assistant service
 - 🔧 **System Management**: Reload configurations, manage updates, and execute system tasks
 - 🔁 **Safe Restart**: Explicit confirmation workflow for restarting Home Assistant remotely
+- 🎨 **Dashboard Generator**: Create device-optimized layouts with smart prioritization
+
+#### Dashboard Generator Features ⭐
+- 📱 **Device Types**: Mobile, Desktop, Tablet, Wall Panel layouts
+- 🎯 **Smart Priority**: Most-used, by-area, by-type, or custom organization
+- 📊 **Usage Analysis**: Track entity usage patterns for data-driven designs
+- 🔄 **Auto-Optimize**: Convert existing dashboards for different devices
+- 💡 **20+ Card Types**: Full Lovelace card support with intelligent selection
+
+**See [DASHBOARD_GENERATOR_GUIDE.md](./DASHBOARD_GENERATOR_GUIDE.md) for complete documentation and [DASHBOARD_EXAMPLES.md](./DASHBOARD_EXAMPLES.md) for quick-start examples.**
 
 ---
 
