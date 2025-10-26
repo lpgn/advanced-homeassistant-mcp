@@ -84,9 +84,39 @@ async function main(): Promise<void> {
         // --- Temporarily removed system_info tool --- 
         server.addTool({
             name: "system_info",
-            description: "Get basic information about this MCP server",
-            execute: (): Promise<string> => {
-                return Promise.resolve("Home Assistant MCP Server (fastmcp)");
+            description: "Get basic information about this MCP server and current runtime",
+            execute: async () => {
+                const uptimeSeconds = Math.round(process.uptime());
+                const runtime = process.versions?.bun ? "bun" : "node";
+                const runtimeVersion = process.versions?.bun ?? process.version;
+
+                const payload = {
+                    success: true,
+                    server: {
+                        name: "Home Assistant MCP Server",
+                        transport: "fastmcp-stdio",
+                        version: "1.0.0",
+                        tools_registered: tools.length,
+                    },
+                    runtime: {
+                        pid: process.pid,
+                        platform: process.platform,
+                        arch: process.arch,
+                        runtime,
+                        runtime_version: runtimeVersion,
+                        uptime_seconds: uptimeSeconds,
+                        use_stdio_transport: process.env.USE_STDIO_TRANSPORT === "true",
+                    },
+                };
+
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(payload, null, 2),
+                        },
+                    ],
+                };
             },
         });
         logger.info("Adding tool: system_info");

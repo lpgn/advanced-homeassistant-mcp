@@ -23,6 +23,27 @@ export const subscribeEventsTool: Tool = {
       .describe('Domain to monitor (e.g., "light", "switch", etc.)'),
   }),
   execute: async (params: SSEParams) => {
+    if (process.env.USE_STDIO_TRANSPORT === "true") {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: JSON.stringify(
+              {
+                success: false,
+                message:
+                  "SSE subscriptions are not available when running in stdio transport mode.",
+                suggestion:
+                  "Start the HTTP server or disable USE_STDIO_TRANSPORT to use subscribe_events.",
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    }
+
     const clientId = uuidv4();
 
     // Set up SSE headers
