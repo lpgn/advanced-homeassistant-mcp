@@ -310,47 +310,56 @@ RATE_LIMIT_MAX=50
 - **Tools Layer**: Device control, automation, notifications
 - **Resource Manager**: State management and caching
 
-### Built-in Tools (28 Total)
+### Built-in Tools (29 Total)
 
-#### Core Control Tools
-- 🔦 **Lights Control**: Full spectrum lighting management with RGB and brightness
-- 🌡️ **Climate Control**: HVAC and thermostat operations with multi-zone support
-- ⚙️ **Automation**: Scene and automation triggers with configuration management
-- 📱 **Notifications**: Multi-channel alert system
-- 🎛️ **Device Control**: Universal device control (switches, covers, fans, etc.)
+#### Device Control Tools (6)
+- 🔦 **lights_control**: Full spectrum lighting management with RGB, brightness, and color temperature
+- 🌡️ **climate_control**: HVAC and thermostat operations with multi-zone support
+- ⚙️ **automation**: Scene and automation triggers with configuration management
+- 📱 **notify**: Multi-channel alert and notification system
+- 🎛️ **control**: Universal device control (switches, covers, fans, locks, media players)
+- 📋 **list_devices**: List and filter devices by domain, area, or floor
 
-#### Discovery & Context Tools ⭐ NEW
-- 🔍 **Entity Search**: Natural language entity search with fuzzy matching
-- 📊 **Live Context**: Real-time state information for all entities in YAML format
-- 📝 **System Prompts**: Context-aware prompts with entity inventory and usage guidance
-- 🧾 **Entity Snapshot**: Targeted entity lookups with field filtering for token-efficient responses
+#### Discovery & Context Tools (4) ⭐
+- 🔍 **entity_search**: Natural language entity search with fuzzy matching and domain filtering
+- 📊 **get_live_context**: Real-time state information for all entities with optional domain filtering
+- 📝 **get_system_prompt**: Context-aware system prompts with entity inventory and usage guidance
+- 🧾 **get_entity**: Targeted entity lookups with field filtering for token-efficient responses
 
-#### System Insight & Diagnostics
-- 🆔 **Version Insight**: Retrieve Home Assistant version, timezone, and unit system details
-- 🗂️ **System Overview**: Full inventory of entities, domains, services, and loaded components
-- � **Domain Summary**: Quick domain-level stats with state distribution and common attributes
+#### System Insight & Diagnostics (3) ⭐
+- 🆔 **get_version**: Retrieve Home Assistant version, timezone, unit system, and installation details
+- 🗂️ **system_overview**: Complete inventory of entities, domains, services, and loaded components
+- 📊 **domain_summary**: Domain-level statistics with state distribution, common attributes, and examples
 
-#### Dashboard & Configuration Tools
-- 🗺️ **Dashboard Builder**: Generate Lovelace views, cards, and layout scaffolding programmatically
-- 🧰 **YAML Editor Helper**: Discover configuration files and validate YAML operations safely
+#### Dashboard & Configuration Tools (3) ⭐
+- 🎨 **dashboard_config**: Generate device-optimized Lovelace dashboards (mobile/desktop/tablet/wall-panel)
+  - Smart prioritization (most-used, by-area, by-type, custom)
+  - Usage pattern analysis
+  - Auto-optimization for different devices
+  - 20+ card types with intelligent selection
+- 🧰 **yaml_editor**: Discover configuration files and validate YAML operations safely
+- ⚙️ **automation_config**: Advanced automation creation, updating, and configuration management
 
-#### Advanced Features
-- 📋 **Device Management**: List and filter devices by domain, area, or floor
-- 📜 **History**: Query historical state data and trends
-- 🔔 **Event Subscriptions**: Real-time SSE event streaming
-- 🛠️ **Service Calls**: Execute any Home Assistant service
-- 🔧 **System Management**: Reload configurations, manage updates, and execute system tasks
-- 🔁 **Safe Restart**: Explicit confirmation workflow for restarting Home Assistant remotely
-- 🎨 **Dashboard Generator**: Create device-optimized layouts with smart prioritization
+#### System Management Tools (6)
+- 🔧 **system_management**: Reload configurations, manage updates, restart services
+- 🔁 **restart_ha**: Safe restart with explicit confirmation workflow
+- 🛠️ **call_service**: Execute any Home Assistant service with parameters
+- 📂 **file_operations**: Read, write, delete, and list configuration files
+- 💻 **shell_command**: Execute shell commands in Home Assistant environment
+- � **addon**: Manage Home Assistant add-ons (list, install, uninstall, start, stop)
 
-#### Dashboard Generator Features ⭐
-- 📱 **Device Types**: Mobile, Desktop, Tablet, Wall Panel layouts
-- 🎯 **Smart Priority**: Most-used, by-area, by-type, or custom organization
-- 📊 **Usage Analysis**: Track entity usage patterns for data-driven designs
-- 🔄 **Auto-Optimize**: Convert existing dashboards for different devices
-- 💡 **20+ Card Types**: Full Lovelace card support with intelligent selection
+#### Data & Events Tools (4)
+- 📜 **history**: Query historical state data and trends with time-based filtering
+- � **subscribe_events**: Real-time SSE event streaming for state changes
+- � **get_sse_stats**: Get SSE connection statistics and monitoring data
+- 📋 **error_log**: Retrieve and filter Home Assistant error logs
 
-**See [DASHBOARD_GENERATOR_GUIDE.md](./DASHBOARD_GENERATOR_GUIDE.md) for complete documentation and [DASHBOARD_EXAMPLES.md](./DASHBOARD_EXAMPLES.md) for quick-start examples.**
+#### Package Management (1)
+- � **package**: Manage HACS packages (list, install, uninstall, update)
+
+#### Utility Tools (2)
+- ℹ️ **system_info**: Get MCP server information and status
+- 🏠 **scene**: Manage and activate Home Assistant scenes
 
 ---
 
@@ -377,6 +386,195 @@ Once integrated, your AI assistant can understand commands like:
 > "What's the current temperature in the living room?"
 > "When was the front door last opened?" *(uses history)*
 > "Notify everyone that dinner is ready"
+
+### Dashboard Generation ⭐
+> "Generate a mobile dashboard with my most used entities"
+> "Create a wall panel layout for the entryway"
+> "Optimize my desktop dashboard for a tablet"
+> "Analyze my usage patterns over the last 2 weeks"
+
+---
+
+## 📖 Complete Tools Reference
+
+### 🔦 lights_control
+Control lights with advanced features including RGB, brightness, color temperature, and effects.
+
+**Operations:** turn_on, turn_off, toggle, set_brightness, set_color, set_temperature
+
+### 🌡️ climate_control
+Manage climate devices and thermostats with HVAC modes, temperature settings, and fan control.
+
+**Operations:** set_temperature, set_hvac_mode, set_fan_mode, set_humidity
+
+### 🎛️ control
+Universal device control for switches, covers, fans, locks, and media players.
+
+**Operations:** turn_on, turn_off, toggle, open, close, stop, set_position
+
+### ⚙️ automation
+Manage automations and scenes with trigger, enable/disable, and configuration.
+
+**Operations:** trigger, list, toggle, get_config
+
+### 📱 notify
+Send notifications through Home Assistant's notification services.
+
+**Operations:** send (with title, message, target)
+
+### 📋 list_devices
+List and filter devices by domain, area, or floor with detailed information.
+
+**Parameters:** domain, area, floor
+
+### 🔍 entity_search
+Search for entities using natural language queries with fuzzy matching.
+
+**Parameters:** query, domain (optional), limit (default: 10)
+
+### 📊 get_live_context
+Get real-time state information for all or filtered entities.
+
+**Parameters:** domain (optional for filtering)
+
+### 📝 get_system_prompt
+Generate context-aware system prompts with entity inventory.
+
+**Parameters:** domain_filter, include_entities, include_areas
+
+### 🧾 get_entity
+Get detailed information about specific entities with field filtering.
+
+**Parameters:** entity_id, fields (optional)
+
+### 🆔 get_version
+Retrieve Home Assistant version, timezone, unit system, and installation details.
+
+**Returns:** version, timezone, unit_system, location, installation_type
+
+### 🗂️ system_overview
+Get complete system inventory including entities, domains, and services.
+
+**Returns:** total_entities, domains_summary, areas, services_count, integrations
+
+### 📊 domain_summary
+Get domain-level statistics with state distribution and examples.
+
+**Parameters:** domain, example_limit (default: 3)
+
+### 🎨 dashboard_config
+Generate device-optimized Lovelace dashboards with smart layouts.
+
+**Operations:**
+- `generate_smart_layout`: Create complete device-optimized dashboard
+- `analyze_usage_patterns`: Track entity usage statistics
+- `optimize_for_device`: Convert layouts for different devices
+- `list_card_types`: Show all available card types
+- `create_view`: Create single dashboard view
+- `create_card`: Create individual card configuration
+- `get_recommendations`: Get AI optimization suggestions
+
+**Parameters:** operation, config (device_type, priority, areas)
+
+**See:** [DASHBOARD_GENERATOR_GUIDE.md](./DASHBOARD_GENERATOR_GUIDE.md)
+
+### 🧰 yaml_editor
+Discover and validate YAML configuration files safely.
+
+**Operations:** discover, validate, read, write
+
+### ⚙️ automation_config
+Advanced automation configuration and management.
+
+**Operations:** create, update, delete, duplicate
+
+### 🔧 system_management
+System-level operations for configuration and updates.
+
+**Operations:** restart, reload_core_config, reload_automation, reload_script, check_config
+
+### 🔁 restart_ha
+Safe Home Assistant restart with explicit confirmation.
+
+**Parameters:** confirm (must be true)
+
+### 🛠️ call_service
+Execute any Home Assistant service with parameters.
+
+**Parameters:** domain, service, entity_id, service_data
+
+### 📂 file_operations
+Manage configuration files (read, write, delete, list).
+
+**Operations:** read, write, delete, list, exists
+
+**Parameters:** operation, path, content, encoding
+
+### 💻 shell_command
+Execute shell commands in Home Assistant environment.
+
+**Parameters:** command, timeout
+
+### 🔌 addon
+Manage Home Assistant add-ons.
+
+**Operations:** list, info, install, uninstall, start, stop, restart
+
+### 📜 history
+Query historical state data with time-based filtering.
+
+**Parameters:** entity_ids, start_time, end_time, minimal_response
+
+### 🔔 subscribe_events
+Real-time SSE event streaming for state changes.
+
+**Parameters:** token, entity_id, domain, events
+
+### 📊 get_sse_stats
+Get SSE connection statistics and monitoring data.
+
+**Parameters:** token
+
+### 📋 error_log
+Retrieve and filter Home Assistant error logs.
+
+**Parameters:** lines (default: 50), filter
+
+### 📦 package
+Manage HACS packages and custom components.
+
+**Operations:** list, install, uninstall, update
+
+**Parameters:** action, category, repository
+
+### ℹ️ system_info
+Get MCP server information and status.
+
+**Returns:** server_name, version, features
+
+### 🏠 scene
+Manage and activate Home Assistant scenes.
+
+**Operations:** list, activate
+
+**Parameters:** action, scene_id
+
+---
+
+## 🎯 Available Prompts (10)
+
+The server includes guided prompts for common tasks:
+
+1. **create_automation** - Interactive automation creation wizard
+2. **debug_automation** - Troubleshoot automation issues
+3. **troubleshoot_entity** - Diagnose entity problems
+4. **routine_optimizer** - Optimize daily routines and schedules
+5. **automation_health_check** - Analyze automation performance
+6. **entity_naming_consistency** - Check and fix entity naming
+7. **dashboard_layout_generator** - Generate dashboard layouts
+8. **energy_optimization** - Analyze and optimize energy usage
+9. **security_audit** - Review security configuration
+10. **backup_strategy** - Backup recommendations and planning
 
 ---
 
