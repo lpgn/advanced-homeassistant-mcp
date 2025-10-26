@@ -19,6 +19,11 @@ import { tools } from "./tools/index.js";
 import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
 import { climateControlTool } from './tools/homeassistant/climate.tool.js';
 
+// Import dangerous operations tools
+import { fileOperationsTool } from './tools/file-operations.tool.js';
+import { yamlEditorTool } from './tools/yaml-editor.tool.js';
+import { shellCommandTool } from './tools/shell-command.tool.js';
+
 // Import prompts
 import { prompts } from './prompts/index.js';
 import { handlePrompt } from './prompts/handlers.js';
@@ -70,6 +75,16 @@ async function main(): Promise<void> {
 
         server.addTool(climateControlTool);
         logger.info(`Added tool: ${climateControlTool.name}`);
+
+        // Add dangerous operations tools (controlled by environment variables)
+        server.addTool(fileOperationsTool);
+        logger.info(`Added tool: ${fileOperationsTool.name}`);
+
+        server.addTool(yamlEditorTool);
+        logger.info(`Added tool: ${yamlEditorTool.name}`);
+
+        server.addTool(shellCommandTool);
+        logger.info(`Added tool: ${shellCommandTool.name}`);
 
         // Add prompts with proper load function (FastMCP expects load to return string, not messages)
         for (const prompt of prompts) {
