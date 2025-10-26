@@ -15,10 +15,6 @@ import { FastMCP } from "fastmcp";
 // Import refactored Home Assistant tools
 import { tools } from "./tools/index.js";
 
-// Import Home Assistant specific tools (FastMCP versions)
-import { lightsControlTool } from './tools/homeassistant/lights.tool.js';
-import { climateControlTool } from './tools/homeassistant/climate.tool.js';
-
 // Import prompts
 import { prompts } from './prompts/index.js';
 import { handlePrompt } from './prompts/handlers.js';
@@ -52,7 +48,7 @@ async function main(): Promise<void> {
 
         logger.info("Initializing FastMCP server..."); // Goes to file log
 
-        // Add tools from the tools registry
+        // Add tools from the tools registry (includes lightsControlTool and climateControlTool)
         for (const tool of tools) {
             // Pass the Zod schema directly - FastMCP supports StandardSchemaV1
             server.addTool({
@@ -63,13 +59,6 @@ async function main(): Promise<void> {
             });
             logger.info(`Added tool: ${tool.name}`);
         }
-
-        // Add Home Assistant specific tools
-        server.addTool(lightsControlTool);
-        logger.info(`Added tool: ${lightsControlTool.name}`);
-
-        server.addTool(climateControlTool);
-        logger.info(`Added tool: ${climateControlTool.name}`);
 
         // Add prompts with proper load function (FastMCP expects load to return string, not messages)
         for (const prompt of prompts) {

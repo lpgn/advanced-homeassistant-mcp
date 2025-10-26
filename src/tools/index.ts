@@ -19,7 +19,6 @@ import { domainSummaryTool } from "./domain-summary.tool.js";
 import { getEntityTool } from "./entity-query.tool.js";
 import { restartHaTool } from "./restart.tool.js";
 import { systemOverviewTool } from "./system-overview.tool.js";
-import { getVersionTool } from "./version.tool.js";
 import { yamlEditorTool } from "./yaml-editor.tool.js";
 
 // Import Tool objects (not classes) from homeassistant directory
@@ -75,7 +74,6 @@ export const tools: Tool[] = [
   dashboardConfigTool,
   domainSummaryTool,
   getEntityTool,
-  getVersionTool,
   systemOverviewTool,
   restartHaTool,
   yamlEditorTool,
@@ -114,7 +112,6 @@ export {
   dashboardConfigTool,
   domainSummaryTool,
   getEntityTool,
-  getVersionTool,
   systemOverviewTool,
   restartHaTool,
   yamlEditorTool,
