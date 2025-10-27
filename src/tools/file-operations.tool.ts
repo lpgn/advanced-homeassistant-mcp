@@ -34,7 +34,7 @@ export class FileOperationsTool extends BaseTool {
             metadata: {
                 category: "system",
                 version: "1.0.0",
-                tags: ["files", "configuration", "advanced", "dangerous"],
+                tags: ["files", "configuration", "advanced"],
             }
         });
     }

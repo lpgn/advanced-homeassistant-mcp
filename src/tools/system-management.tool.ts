@@ -44,7 +44,7 @@ export class SystemManagementTool extends BaseTool {
             metadata: {
                 category: "system",
                 version: "1.0.0",
-                tags: ["system", "management", "configuration", "dangerous"],
+                tags: ["system", "management", "configuration"],
             }
         });
     }

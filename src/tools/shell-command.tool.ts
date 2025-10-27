@@ -1,8 +1,7 @@
 /**
  * Shell Command Tool for Home Assistant
  * 
- * Execute arbitrary shell commands on the Home Assistant host
- * WARNING: This tool provides UNRESTRICTED shell access - extremely dangerous!
+ * Execute shell commands on the Home Assistant host
  */
 
 import { z } from "zod";
@@ -26,12 +25,12 @@ export class ShellCommandTool extends BaseTool {
     constructor() {
         super({
             name: "shell_command",
-            description: "Execute arbitrary shell commands on the Home Assistant host. ⚠️ EXTREMELY DANGEROUS - Full shell access with no restrictions!",
+            description: "Execute shell commands on the Home Assistant host.",
             parameters: shellCommandSchema,
             metadata: {
                 category: "system",
                 version: "1.0.0",
-                tags: ["shell", "command", "advanced", "dangerous", "unrestricted"],
+                tags: ["shell", "command", "advanced"],
             }
         });
     }
@@ -54,7 +53,7 @@ export class ShellCommandTool extends BaseTool {
             };
         }
         
-        logger.warn(`Executing shell command: ${params.command}`);
+        logger.info(`Executing shell command: ${params.command}`);
         
         const validatedParams = this.validateParams(params);
         return await executeShellCommandLogic(validatedParams);
@@ -66,7 +65,7 @@ async function executeShellCommandLogic(params: ShellCommandParams): Promise<Rec
     try {
         const hass = await get_hass();
         
-        logger.warn(`Executing shell command: ${params.command}`);
+        logger.info(`Executing shell command: ${params.command}`);
 
         // Use the shell_command service
         // First, we need to create a temporary shell_command in configuration
@@ -119,7 +118,7 @@ async function executeShellCommandLogic(params: ShellCommandParams): Promise<Rec
 // Tool object export for FastMCP/stdio transport
 export const shellCommandTool: Tool = {
     name: "shell_command",
-    description: "Execute arbitrary shell commands on the Home Assistant host. ⚠️ EXTREMELY DANGEROUS - Full shell access with no restrictions!",
+    description: "Execute shell commands on the Home Assistant host.",
     parameters: shellCommandSchema,
     execute: executeShellCommandLogic
 };
